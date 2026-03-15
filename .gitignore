@@ -1,0 +1,8 @@
+.env
+ingest-single/
+*.tsv
+*.vtt
+*.srt
+*.mp4
+tiktok_transcripts/
+tiktok/

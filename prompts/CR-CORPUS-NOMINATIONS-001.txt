@@ -1,0 +1,114 @@
+=====================================================================
+CR-CORPUS-NOMINATIONS-001
+DDL External Corpus — First Sources Nomination
+Operator: Dave Kitchens
+Date: 2026-03-14
+Distribution: All Council Seats (1001–1010)
+Classification: Corpus Governance — Nominations
+Verdict: NOMINATION (not LOCK/REVISE/REJECT)
+=====================================================================
+
+CONTEXT
+=====================================================================
+
+The DDL corpus is expanding to include external collections.
+Two new collections are being built:
+
+  ext_reference   Books, frameworks, academic papers, standards.
+                  High authority. Timeless material.
+                  Weight: 0.75
+
+  ext_creator     Named approved creators — people whose voice,
+                  methodology, or output belongs alongside DDL's
+                  internal knowledge.
+                  Weight: 0.60
+
+The operator has authorized each council seat to nominate
+one source for each collection. These nominations will be
+reviewed by the operator and approved or vetoed individually.
+Approved nominations enter the ext_ build queue.
+
+=====================================================================
+YOUR TASK
+=====================================================================
+
+You are nominating TWO sources — one per collection.
+
+Nominate based on genuine fit with DDL's domains:
+
+  - Dimensional modeling / star schema thinking
+  - Governed AI infrastructure
+  - Audit, risk, controls, compliance
+  - Systems thinking and methodology
+  - Operations and process design
+  - Writing, publishing, creative systems
+  - Analytics and data
+  - Personal knowledge management
+  - AI collaboration and prompt engineering
+
+Do not nominate to impress. Nominate what actually belongs.
+If you are uncertain, say so and explain why you're nominating
+anyway.
+
+=====================================================================
+NOMINATION FORMAT
+=====================================================================
+
+SEAT: [your seat number and name]
+
+NOMINATION 1 — ext_reference
+  Source:     [title / author / framework name]
+  Type:       [book / paper / framework / standard / other]
+  Author:     [author or organization]
+  Rationale:  [why this belongs in DDL's corpus — 2-3 sentences]
+  Relevance:  [which DDL domains it serves]
+  Caveat:     [anything the operator should know before approving]
+
+NOMINATION 2 — ext_creator
+  Creator:    [name / handle / channel name]
+  Platform:   [YouTube / Substack / podcast / blog / other]
+  URL:        [if known]
+  Rationale:  [why this voice belongs — 2-3 sentences]
+  Relevance:  [which DDL domains it serves]
+  Caveat:     [anything the operator should know before approving]
+
+=====================================================================
+CONSTRAINTS
+=====================================================================
+
+  - One nomination per collection. No more.
+  - Do not nominate DDL's own content (already internal).
+  - Do not nominate generic reference works everyone knows
+    unless you can argue specific fit to DDL's methodology.
+  - Do not nominate sources you cannot verify exist.
+  - Seat 1002 (Marcus Caldwell) should note: your META
+    pattern is known. Nominate a real source, not a framework
+    for how to think about nominating sources.
+
+=====================================================================
+SYNTHESIS INSTRUCTIONS (for Dex Jr.)
+=====================================================================
+
+After all seats respond, produce:
+
+REFERENCE NOMINATIONS — ranked by operator fit
+  For each: seat, source, type, rationale summary, caveat
+  Flag: duplicates, conflicts, weak rationale
+
+CREATOR NOMINATIONS — ranked by operator fit
+  For each: seat, creator, platform, rationale summary, caveat
+  Flag: duplicates, conflicts, weak rationale
+
+OPERATOR DECISION LIST
+  Two tables (reference / creator), one row per nomination,
+  columns: Seat | Source | Fit Score (1-5) | Recommend | Notes
+  Operator circles APPROVE or VETO on each row.
+
+Note any seat that nominated something outside DDL's domains
+or that appears to be filling the form rather than nominating
+with intent.
+
+=====================================================================
+Dropdown Logistics — Chaos → Structured → Automated
+CR-CORPUS-NOMINATIONS-001 | The corpus earns its sources.
+=====================================================================

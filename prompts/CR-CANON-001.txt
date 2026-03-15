@@ -1,0 +1,44 @@
+python dex-council.py --from-file "C:\Users\dexjr\dex-rag\prompts\CR-CANON-001.txt" --all --rag --save council-runs/CR-CANON-001 --ingest
+```
+
+Save this as `CR-CANON-001.txt` in your prompts folder:
+```
+CR-CANON-001 — NAMING REVIEW
+Seat 1002 (Marcus Caldwell) | 2026-03-13
+Classification: Canon Decision — Terminology
+
+DDL's llms.txt at /llms.txt follows the open standard in format only.
+At v1.4 it is 400+ lines covering operator identity, design system,
+wing architecture, AI council (10 seats), council review log, local AI
+infrastructure, content type registry, 160+ routes, canon glossary, and
+rules of engagement. Any AI that reads it arrives fully oriented.
+
+This is not a crawl hint. It is a portable operating context for AI
+collaborators. It needs a name.
+
+THE QUESTION: What do we call this class of document?
+
+Requirements for the name:
+1. Distinguishes from standard llms.txt spec
+2. Reflects what it is — portable AI operating context
+3. Coinable as DDL canon term (trademark eligible, not genericized)
+4. Works as noun ("the ___") and modifier ("___ standard", "___ format")
+5. Feels DDL — methodology-grade, not hype
+
+CANDIDATES:
+A. OperatorManifest — precise, DDL vocabulary, clean line from spec
+B. ManifestOS — implies the document runs something, not just describes
+C. ContextManifest — literal, clean, possibly too generic
+D. GroundFile — plays off GroundTruth series, foundation document
+E. CanonFile — plays off CanonPress, risk: brand conflation
+F. Open proposal — if none fit, propose an alternative
+
+You are naming the CLASS OF DOCUMENT, not reviewing llms.txt content.
+The name enters the canon glossary, appears in llms.txt itself, and
+lives at /knowledge/glossary. Small decision, long downstream reach.
+
+VERDICT FORMAT:
+VERDICT: LOCK / REVISE / REJECT
+RECOMMENDATION: [preferred term or proposal]
+RATIONALE: [tight]
+CONCERN: [one thing to watch, if any]

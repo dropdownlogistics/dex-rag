@@ -1,0 +1,562 @@
+#!/usr/bin/env python3
+"""
+DEX JR. RAG PIPELINE - Phase 1 Ingestion (Dual Collections)
+
+Collections:
+  - ddl_archive : RAW (everything)   [NORMAL mode]
+  - dex_canon   : CANON (canon+foundation)
+
+Modes:
+  - NORMAL: writes RAW + CANON (conditional)
+  - BUILD CANON: writes CANON only (does NOT expand RAW)
+
+Notes:
+  - Per-user Chroma DB location: ~\\.dex-jr\\chromadb
+  - Guardrail: skip extremely large files in NORMAL mode to avoid chunking stalls
+
+Changes from v4.1:
+  - PHASE1_EXTENSIONS expanded: .txt .md .html .jsx .json .py .cs .js .mjs .ts .tsx .css .sql .sh .bat .ps1 .bas .csv .yml .yaml .toml .ipynb .prisma
+  - Fixed phantom chunk count: switched add() to upsert() with pre-check
+  - Fixed SyntaxWarning on escape sequence in docstring
+  - scan_archive print updated to reflect all supported extensions
+  - Added --collection flag: route ingest to any named ChromaDB collection
+  - Added --ext-filter flag: limit ingest to specific file extensions
+  - Added --nominated-by flag: tag chunks with nominating seat(s) for ext_ collections
+"""
+
+import os
+import sys
+import time
+import argparse
+import hashlib
+from typing import Optional, List, Tuple
+
+import requests
+
+
+# -----------------------------
+# CONFIG
+# -----------------------------
+CHROMA_DIR = r"C:\Users\dkitc\.dex-jr\chromadb"
+
+RAW_COLLECTION = "ddl_archive"
+CANON_COLLECTION = "dex_canon"
+
+OLLAMA_URL = "http://localhost:11434/api/embeddings"
+EMBED_MODEL = "nomic-embed-text"
+
+# Chunking heuristic
+CHUNK_SIZE_TOKENS = 500
+CHUNK_OVERLAP_TOKENS = 50
+CHARS_PER_TOKEN = 4
+
+# File scan
+PHASE1_EXTENSIONS = {
+    # Original
+    ".txt", ".md", ".html", ".jsx", ".json",
+    # Code
+    ".py", ".cs", ".js", ".mjs", ".ts", ".tsx",
+    ".css", ".sql", ".sh", ".bat", ".ps1", ".bas",
+    # Config / data
+    ".csv", ".yml", ".yaml", ".toml",
+    # Notebooks
+    ".ipynb",
+    # Prisma schema
+    ".prisma",
+}
+SKIP_FILENAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
+
+# Guardrail: skip huge files in NORMAL mode (5MB of text)
+MAX_TEXT_CHARS_NORMAL = 5_000_000  # ~5MB (roughly)
+
+# Canon classification markers (path-based)
+CANON_PATH_MARKERS = [
+    "councilreview", "council reviews", "council_reviews",
+    "governance", "standards", "protocol", "charter",
+    "dexos",
+    "video_transcripts",
+    "tiktok",
+    "councilnom",
+]
+FOUNDATION_PATH_MARKERS = [
+    "mindframe", "dexcontinuum", "missionstatement",
+    "visionstatement", "participationprinciples"
+]
+ARCHIVE_PATH_MARKERS = [
+    "threads", "chatgpt", "exports", "transcripts",
+    "logs", "conversations"
+]
+
+
+def classify_tier(rel_path: str, filename: str, folder: str) -> Tuple[str, str]:
+    s = f"{rel_path} {filename} {folder}".lower()
+    if any(m in s for m in CANON_PATH_MARKERS):
+        return ("canon", "ratified")
+    if any(m in s for m in FOUNDATION_PATH_MARKERS):
+        return ("foundation", "conceptual")
+    if any(m in s for m in ARCHIVE_PATH_MARKERS):
+        return ("archive", "historical")
+    return ("unknown", "unknown")
+
+
+# -----------------------------
+# EMBEDDING
+# -----------------------------
+def get_embedding(text: str) -> Optional[List[float]]:
+    try:
+        r = requests.post(
+            OLLAMA_URL,
+            json={"model": EMBED_MODEL, "prompt": text},
+            timeout=60,
+        )
+        r.raise_for_status()
+        return r.json().get("embedding")
+    except Exception as e:
+        print(f"    ? Embedding failed: {e}")
+        return None
+
+
+# -----------------------------
+# CHUNKING
+# -----------------------------
+def chunk_text(text: str) -> List[str]:
+    """
+    Chunk a text string into overlapping segments.
+
+    This is intentionally simple and safe for most files.
+    Guardrail for extremely large files is handled before calling this.
+    """
+    char_size = CHUNK_SIZE_TOKENS * CHARS_PER_TOKEN
+    char_overlap = CHUNK_OVERLAP_TOKENS * CHARS_PER_TOKEN
+
+    t = (text or "").strip()
+    if not t:
+        return []
+    if len(t) <= char_size:
+        return [t]
+
+    out: List[str] = []
+    start = 0
+    n = len(t)
+
+    while start < n:
+        end = min(n, start + char_size)
+
+        # Prefer breaking on paragraph/sentence boundary (best-effort)
+        if end < n:
+            para = t.rfind("\n\n", start + char_size // 2, end)
+            if para > start:
+                end = para + 2
+            else:
+                for sep in [". ", ".\n", "!\n", "?\n", "! ", "? "]:
+                    brk = t.rfind(sep, start + char_size // 2, end)
+                    if brk > start:
+                        end = brk + len(sep)
+                        break
+
+        chunk = t[start:end].strip()
+        if chunk:
+            out.append(chunk)
+
+        # Move window forward with overlap
+        start = end - char_overlap
+        if start < 0:
+            start = 0
+        if end == n:
+            break
+
+    return out
+
+
+# -----------------------------
+# FILE HELPERS
+# -----------------------------
+def sha256_file(path: str) -> Optional[str]:
+    h = hashlib.sha256()
+    try:
+        with open(path, "rb") as f:
+            for b in iter(lambda: f.read(8192), b""):
+                h.update(b)
+        return h.hexdigest()
+    except Exception:
+        return None
+
+
+def read_text_file(path: str) -> Optional[str]:
+    # Try a few encodings; keep it simple
+    for enc in ("utf-8", "utf-8-sig", "cp1252", "latin-1"):
+        try:
+            with open(path, "r", encoding=enc) as f:
+                return f.read()
+        except Exception:
+            continue
+    return None
+
+
+def scan_archive(root: str, extensions: Optional[set] = None) -> List[dict]:
+    if extensions is None:
+        extensions = PHASE1_EXTENSIONS
+    files = []
+    for r, dirs, names in os.walk(root):
+        dirs[:] = [d for d in dirs if not d.startswith(".")]
+        for n in names:
+            if n in SKIP_FILENAMES:
+                continue
+            ext = os.path.splitext(n)[1].lower()
+            if ext not in extensions:
+                continue
+            full = os.path.join(r, n)
+            rel = os.path.relpath(full, root)
+            files.append(
+                {
+                    "path": full,
+                    "rel_path": rel,
+                    "filename": n,
+                    "extension": ext,
+                    "folder": os.path.basename(r),
+                }
+            )
+    return files
+
+
+# -----------------------------
+# INGEST
+# -----------------------------
+def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fast: bool = False,
+           collection: Optional[str] = None, ext_filter: Optional[set] = None,
+           nominated_by: Optional[str] = None) -> None:
+    import chromadb
+
+    ext_list = ", ".join(sorted(ext_filter if ext_filter else PHASE1_EXTENSIONS))
+
+    print("\n" + "=" * 60)
+    print("  DEX JR. RAG PIPELINE - PHASE 1 INGESTION")
+    print(f"  Archive: {archive_path}")
+    if collection:
+        print(f"  Mode: SCOPED COLLECTION → {collection}")
+    else:
+        print(f"  Mode: {'BUILD CANON' if build_canon else 'NORMAL'}")
+    print(f"  Extensions: {ext_list}")
+    if nominated_by:
+        print(f"  Nominated by: {nominated_by}")
+    print("=" * 60)
+
+    os.makedirs(CHROMA_DIR, exist_ok=True)
+    client = chromadb.PersistentClient(path=CHROMA_DIR)
+
+    if reset:
+        # NOTE: On Windows this can occasionally hang if the DB is locked.
+        # If that happens, delete the folder manually:
+        #   C:\\Users\\dexjr\\.dex-jr\\chromadb
+        for cname in (RAW_COLLECTION, CANON_COLLECTION):
+            try:
+                client.delete_collection(cname)
+            except Exception:
+                pass
+
+    raw_col = client.get_or_create_collection(
+        RAW_COLLECTION, metadata={"description": "DDL Archive RAW"}
+    )
+    canon_col = client.get_or_create_collection(
+        CANON_COLLECTION, metadata={"description": "Dex Canon"}
+    )
+
+    # Scoped collection — created on demand when --collection is specified
+    scoped_col = None
+    scoped_existing_ids: set = set()
+    if collection:
+        scoped_col = client.get_or_create_collection(
+            collection, metadata={"description": f"DDL Scoped Collection: {collection}"}
+        )
+        print(f"\n  Scoped collection '{collection}': {scoped_col.count()} existing chunks")
+
+    raw_count_start = raw_col.count()
+    canon_count_start = canon_col.count()
+
+    print(f"\n  Existing chunks in RAW:   {raw_count_start}")
+    print(f"  Existing chunks in CANON: {canon_count_start}")
+
+    active_extensions = ext_filter if ext_filter else PHASE1_EXTENSIONS
+    print(f"\n  Scanning archive for {', '.join(sorted(active_extensions))} files...")
+    files = scan_archive(archive_path, active_extensions)
+    print(f"  Found: {len(files)} files")
+    if not files:
+        return
+
+    print("\n  Running dedup pass (SHA-256)...")
+    seen_hashes = set()
+    unique_files = []
+    dupes = 0
+
+    for f in files:
+        h = sha256_file(f["path"])
+        if not h:
+            continue
+        if h in seen_hashes:
+            dupes += 1
+            continue
+        seen_hashes.add(h)
+        f["hash"] = h
+        unique_files.append(f)
+
+    print(f"  Unique files: {len(unique_files)}")
+    print(f"  Duplicates skipped: {dupes}")
+
+    # Load existing IDs from DB to accurately detect new vs existing chunks
+    # Skipped in --fast mode (auto-ingest path) — upsert handles dedup, delta reporting approximate
+    if fast:
+        print("\n  Fast mode: skipping ID load, using upsert directly.")
+    else:
+        print("\n  Loading existing chunk IDs...")
+
+    raw_existing_ids: set = set()
+    canon_existing_ids: set = set()
+
+    if not fast:
+        if not build_canon and raw_count_start > 0:
+            try:
+                result = raw_col.get(include=[])
+                raw_existing_ids = set(result["ids"])
+                print(f"  RAW IDs loaded:   {len(raw_existing_ids)}")
+            except Exception as e:
+                print(f"  Warning: could not load RAW IDs: {e}")
+
+        if canon_count_start > 0:
+            try:
+                result = canon_col.get(include=[])
+                canon_existing_ids = set(result["ids"])
+                print(f"  CANON IDs loaded: {len(canon_existing_ids)}")
+            except Exception as e:
+                print(f"  Warning: could not load CANON IDs: {e}")
+
+    if not fast and scoped_col and scoped_col.count() > 0:
+        try:
+            result = scoped_col.get(include=[])
+            scoped_existing_ids = set(result["ids"])
+            print(f"  SCOPED IDs loaded: {len(scoped_existing_ids)}")
+        except Exception as e:
+            print(f"  Warning: could not load SCOPED IDs: {e}")
+
+    seen_chunk_ids: set = set()  # run-scoped de-dupe
+
+    print("\n  Ingesting...")
+    start_time = time.time()
+
+    files_skipped = 0
+    errors = 0
+    add_raw = 0
+    add_canon = 0
+    add_scoped = 0
+    skip_raw_existing = 0
+    skip_canon_existing = 0
+    skip_scoped_existing = 0
+
+    total_files = len(unique_files)
+
+    for i, f in enumerate(unique_files):
+        if (i + 1) % 100 == 0 or i == 0:
+            elapsed = time.time() - start_time
+            rate = ((i + 1) / elapsed) * 60 if elapsed > 0 else 0
+            print(
+                f"    [{i+1}/{total_files}] {rate:.0f} files/min"
+                f" | RAW+{add_raw} CANON+{add_canon}"
+                + (f" SCOPED+{add_scoped}" if scoped_col else "")
+            )
+
+        tier, status = classify_tier(f["rel_path"], f["filename"], f["folder"])
+        file_id_prefix = f"f_{f['hash'][:16]}"
+
+        # NORMAL mode skip: if RAW has any chunk for this file, skip file
+        if (not build_canon) and any(
+            eid.startswith(file_id_prefix) for eid in raw_existing_ids
+        ):
+            files_skipped += 1
+            continue
+
+        text = read_text_file(f["path"])
+        if not text or len(text.strip()) < 50:
+            continue
+
+        # Guardrail: skip huge files in NORMAL mode (prevents chunk_text stalls)
+        if (not build_canon) and len(text) > MAX_TEXT_CHARS_NORMAL:
+            continue
+
+        chunks = chunk_text(text)
+        if not chunks:
+            continue
+
+        # Determine where to store
+        if scoped_col:
+            # SCOPED mode: write ONLY to the named collection, skip RAW/CANON
+            store_to_raw = False
+            store_to_canon = False
+            store_to_scoped = True
+        else:
+            store_to_raw = (not build_canon)
+            store_to_canon = tier in ("canon", "foundation")
+            store_to_scoped = False
+
+        # If nowhere to store, skip
+        if not store_to_raw and not store_to_canon and not store_to_scoped:
+            continue
+
+        for ci, chunk in enumerate(chunks):
+            chunk_id = f"{file_id_prefix}_c{ci}"
+
+            if chunk_id in seen_chunk_ids:
+                continue
+            seen_chunk_ids.add(chunk_id)
+
+            emb = get_embedding(chunk)
+            if emb is None:
+                errors += 1
+                continue
+
+            md = {
+                "source_file": f["rel_path"],
+                "filename": f["filename"],
+                "folder": f["folder"],
+                "file_type": f["extension"],
+                "chunk_index": ci,
+                "total_chunks": len(chunks),
+                "file_hash": f["hash"][:16],
+                "char_count": len(chunk),
+                "tier": tier,
+                "status": status,
+            }
+            if nominated_by:
+                md["nominated_by"] = nominated_by
+            if collection:
+                md["collection_tag"] = collection
+
+            if store_to_raw:
+                if chunk_id not in raw_existing_ids:
+                    try:
+                        raw_col.upsert(
+                            ids=[chunk_id],
+                            embeddings=[emb],
+                            documents=[chunk],
+                            metadatas=[md],
+                        )
+                        raw_existing_ids.add(chunk_id)
+                        add_raw += 1
+                    except Exception as e:
+                        print(f"    ? RAW upsert failed ({chunk_id}): {e}")
+                        errors += 1
+                else:
+                    skip_raw_existing += 1
+
+            if store_to_canon:
+                if chunk_id not in canon_existing_ids:
+                    try:
+                        canon_col.upsert(
+                            ids=[chunk_id],
+                            embeddings=[emb],
+                            documents=[chunk],
+                            metadatas=[md],
+                        )
+                        canon_existing_ids.add(chunk_id)
+                        add_canon += 1
+                    except Exception as e:
+                        print(f"    ? CANON upsert failed ({chunk_id}): {e}")
+                        errors += 1
+                else:
+                    skip_canon_existing += 1
+
+            if store_to_scoped:
+                if chunk_id not in scoped_existing_ids:
+                    try:
+                        scoped_col.upsert(
+                            ids=[chunk_id],
+                            embeddings=[emb],
+                            documents=[chunk],
+                            metadatas=[md],
+                        )
+                        scoped_existing_ids.add(chunk_id)
+                        add_scoped += 1
+                    except Exception as e:
+                        print(f"    ? SCOPED upsert failed ({chunk_id}): {e}")
+                        errors += 1
+                else:
+                    skip_scoped_existing += 1
+
+    elapsed = time.time() - start_time
+
+    raw_count_end = raw_col.count()
+    canon_count_end = canon_col.count()
+
+    print("\n" + "=" * 60)
+    print("  INGESTION COMPLETE")
+    print("=" * 60)
+    print(f"  Files skipped (already in RAW): {files_skipped}")
+    print(f"  New chunks added RAW:           {add_raw}")
+    print(f"  New chunks added CANON:         {add_canon}")
+    if scoped_col:
+        print(f"  New chunks added SCOPED:        {add_scoped}  → {collection}")
+        print(f"  Chunks skipped (SCOPED exist):  {skip_scoped_existing}")
+    print(f"  Chunks skipped (RAW existing):  {skip_raw_existing}")
+    print(f"  Chunks skipped (CANON existing):{skip_canon_existing}")
+    print(f"  Errors:                         {errors}")
+    print(f"  Time: {elapsed:.0f}s ({elapsed/60:.1f} min)")
+    print(f"  DB total chunks RAW:   {raw_count_end}  (was {raw_count_start}, delta +{raw_count_end - raw_count_start})")
+    print(f"  DB total chunks CANON: {canon_count_end}  (was {canon_count_start}, delta +{canon_count_end - canon_count_start}){' [approx — fast mode]' if fast else ''}")
+    if scoped_col:
+        scoped_end = scoped_col.count()
+        print(f"  DB total chunks {collection}: {scoped_end}")
+    print(f"  DB location: {CHROMA_DIR}")
+
+
+def main() -> None:
+    p = argparse.ArgumentParser(description="DEX JR RAG - Ingest")
+    p.add_argument("--path", type=str, required=True, help="Archive path")
+    p.add_argument("--reset", action="store_true", help="Reset collections")
+    p.add_argument(
+        "--build-canon",
+        action="store_true",
+        help="Backfill CANON only; do not expand RAW",
+    )
+    p.add_argument(
+        "--collection",
+        type=str,
+        default=None,
+        help="Route ingest to a named scoped collection (e.g. dex_code, ext_reference). Bypasses RAW/CANON routing.",
+    )
+    p.add_argument(
+        "--ext-filter",
+        nargs="+",
+        default=None,
+        help="Limit ingest to specific extensions (e.g. --ext-filter .py .cs .ts). Dot prefix required.",
+    )
+    p.add_argument(
+        "--nominated-by",
+        type=str,
+        default=None,
+        help="Tag chunks with nominating seat(s) for ext_ collections (e.g. '1002,1004').",
+    )
+    p.add_argument(
+        "--fast",
+        action="store_true",
+        help="Skip existing ID load — use upsert directly. Faster for auto-ingest. Delta reporting approximate.",
+    )
+    args = p.parse_args()
+
+    archive = args.path
+    if not os.path.isdir(archive):
+        print(f"? Not a directory: {archive}")
+        sys.exit(1)
+
+    ext_filter = set(args.ext_filter) if args.ext_filter else None
+
+    ingest(
+        archive,
+        reset=args.reset,
+        build_canon=args.build_canon,
+        fast=args.fast,
+        collection=args.collection,
+        ext_filter=ext_filter,
+        nominated_by=args.nominated_by,
+    )
+
+
+if __name__ == "__main__":
+    main()
