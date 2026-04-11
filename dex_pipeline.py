@@ -15,7 +15,9 @@ Authority: STD-DDL-METADATA-001
 Standalone status: temporary, migrate to dex_core when built
 """
 
+import shutil
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 # Valid source_type enum values per STD-DDL-METADATA-001
@@ -37,6 +39,10 @@ VALID_SOURCE_TYPES = {
     "system_telemetry",
     "unknown",
 }
+
+# Module-level constants for the canonical pipeline folders
+DDL_INGEST_ROOT = Path(r"C:\Users\dkitc\OneDrive\DDL_Ingest")
+DDL_STAGING_ROOT = Path(r"C:\Users\dkitc\OneDrive\DDL_Staging")
 
 
 def build_chunk_metadata(
@@ -188,6 +194,75 @@ def verify_ingest(
     return (success, actual_count)
 
 
+def move_to_staging(source_path: str) -> Path:
+    """
+    Atomically move a file from DDL_Ingest to DDL_Staging,
+    preserving its relative path structure within the inbox.
+
+    A file at DDL_Ingest/foo/bar/baz.txt becomes
+    DDL_Staging/foo/bar/baz.txt — same relative path, different root.
+
+    If the destination directory doesn't exist, it's created. If a
+    file already exists at the destination (collision), the function
+    raises FileExistsError rather than overwriting — collisions
+    require operator review.
+
+    Per ADR-INGEST-PIPELINE-001 §"Three folders, three states":
+    nothing is ever deleted. This function only moves forward.
+
+    Args:
+        source_path: Absolute path to a file inside DDL_Ingest.
+
+    Returns:
+        Path object pointing to the new location in DDL_Staging.
+
+    Raises:
+        ValueError: if source_path is not inside DDL_INGEST_ROOT.
+        FileNotFoundError: if source_path doesn't exist.
+        FileExistsError: if destination already exists (no overwrite).
+    """
+    source = Path(source_path).resolve()
+
+    # Validate: source exists
+    if not source.exists():
+        raise FileNotFoundError(
+            f"move_to_staging: source does not exist: {source}"
+        )
+
+    # Validate: source is a file, not a directory
+    if not source.is_file():
+        raise ValueError(
+            f"move_to_staging: source must be a file, got: {source}"
+        )
+
+    # Validate: source is inside DDL_INGEST_ROOT
+    try:
+        rel = source.relative_to(DDL_INGEST_ROOT)
+    except ValueError:
+        raise ValueError(
+            f"move_to_staging: source must be inside {DDL_INGEST_ROOT}, "
+            f"got: {source}"
+        )
+
+    # Compute destination
+    destination = DDL_STAGING_ROOT / rel
+
+    # Validate: no collision at destination
+    if destination.exists():
+        raise FileExistsError(
+            f"move_to_staging: destination already exists: {destination}. "
+            f"Collisions require operator review — no overwrite."
+        )
+
+    # Ensure destination directory exists
+    destination.parent.mkdir(parents=True, exist_ok=True)
+
+    # Atomic move via shutil.move (handles cross-device cases)
+    shutil.move(str(source), str(destination))
+
+    return destination
+
+
 # ────────────────────────────────────────────────────────────────────────
 # Self-test (run as: python dex_pipeline.py)
 # ────────────────────────────────────────────────────────────────────────
@@ -248,6 +323,42 @@ if __name__ == "__main__":
         print("[FAIL] should have raised on relative path")
     except ValueError as e:
         print(f"[OK] rejected relative source_path: {e}")
+
+    # ──────────────────────────────────────────────────────────
+    # move_to_staging() tests (use system temp, NOT DDL_Ingest)
+    # ──────────────────────────────────────────────────────────
+    import tempfile
+    import os
+
+    # Test: rejects path outside DDL_Ingest
+    with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tf:
+        tf.write(b"test content")
+        outside_path = tf.name
+    try:
+        try:
+            move_to_staging(outside_path)
+            print("[FAIL] should have rejected path outside DDL_Ingest")
+        except ValueError as e:
+            print(f"[OK] rejected path outside DDL_Ingest: {type(e).__name__}")
+    finally:
+        if os.path.exists(outside_path):
+            os.unlink(outside_path)
+
+    # Test: rejects nonexistent source
+    fake_path = str(DDL_INGEST_ROOT / "this_file_does_not_exist_12345.txt")
+    try:
+        move_to_staging(fake_path)
+        print("[FAIL] should have raised FileNotFoundError")
+    except FileNotFoundError as e:
+        print(f"[OK] rejected nonexistent source: FileNotFoundError")
+
+    # Test: rejects directory (not file)
+    try:
+        move_to_staging(str(DDL_INGEST_ROOT))
+        print("[FAIL] should have raised on directory input")
+    except (ValueError, FileNotFoundError) as e:
+        # Either is acceptable — directory exists but isn't a file
+        print(f"[OK] rejected directory: {type(e).__name__}")
 
     print()
     print("All self-tests passed.")
