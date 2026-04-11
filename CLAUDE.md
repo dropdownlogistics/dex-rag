@@ -1,4 +1,4 @@
- CLAUDE.md — dex-rag
+# CLAUDE.md — dex-rag
 
 Standing instructions for any Claude Code session in this repo.
 Repo: dex-rag (Dex Jr. — Seat 1010 of the DDL council)
@@ -461,10 +461,3 @@ The operator decides. This file describes how to work in dex-rag, not what
 to work on. When in doubt, ask. When clear, ship — within the rules above.
 
 The architecture does not change. The data does.
-Five things changed from v1:
-
-Workflow context section added — explains the Marcus / CC two-layer model and the 5-machine tailnet so any future CC session understands its role in the larger system.
-Rule 17 added — "Respect Pre-Existing Uncommitted Changes." Direct response to today's flag where CC correctly avoided dex_weights.py and fetch_leila_gharani.py.
-F-Code system section added — full F1-F6 vocabulary plus the Platinum Bounce protocol and the Task Completion ≠ Session Closure rule. This is the constitutional layer for how CC handles corrections.
-Report templates section added — all four templates (Audit, ADR, Pre-flight, Status Report) inline.
-Open Items section rewritten — quick-win deletions marked complete with commit hashes, pre-existing modifications added, cosmetic flags from today's session captured, non-Python untracked files queued.
