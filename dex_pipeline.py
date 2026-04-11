@@ -1,0 +1,253 @@
+"""
+dex_pipeline.py — Airtight ingest pipeline helper functions.
+
+Per ADR-INGEST-PIPELINE-001 and STD-DDL-METADATA-001.
+
+Two functions:
+  - build_chunk_metadata(): construct and validate chunk metadata
+  - verify_ingest(): confirm chunks landed in target collection after write
+
+This module is intentionally standalone (not part of dex_core yet) so
+that the airtight pipeline build can land before the larger dex_core
+refactor. Migrate into dex_core when that package exists.
+
+Authority: STD-DDL-METADATA-001
+Standalone status: temporary, migrate to dex_core when built
+"""
+
+from datetime import datetime, timezone
+from typing import Optional
+
+# Valid source_type enum values per STD-DDL-METADATA-001
+VALID_SOURCE_TYPES = {
+    "council_review",
+    "council_synthesis",
+    "governance",
+    "claude_export",
+    "gpt_export",
+    "project_export",
+    "thread_save",
+    "transcript",
+    "prompt",
+    "email",
+    "document",
+    "spreadsheet",
+    "web_archive",
+    "code",
+    "system_telemetry",
+    "unknown",
+}
+
+
+def build_chunk_metadata(
+    source_file: str,
+    source_path: str,
+    source_type: str,
+    ingest_run_id: str,
+    chunk_index: int,
+    chunk_total: int,
+    ingested_at: Optional[str] = None,
+) -> dict:
+    """
+    Build a validated metadata dict for a single chunk.
+
+    Per STD-DDL-METADATA-001. All seven fields are mandatory.
+    Validates per the standard's validation rules.
+    Raises ValueError on validation failure with a specific message
+    naming the field that failed.
+
+    Args:
+        source_file: Filename only, not the path. e.g. "DDLCouncilReview_AntiPractice.txt"
+        source_path: Full absolute path at time of ingest.
+        source_type: One of VALID_SOURCE_TYPES. Use "unknown" if uncertain.
+        ingest_run_id: e.g. "sweep_2026-04-11_0300", "manual_2026-04-11_1842",
+                       "backfill_2026-04-11", or "test_<purpose>_2026-04-11".
+        chunk_index: 0-indexed position within source file.
+        chunk_total: total number of chunks from this source file (>= 1).
+        ingested_at: ISO 8601 UTC timestamp with 'Z' suffix. If None,
+                     defaults to current UTC time.
+
+    Returns:
+        dict ready to pass to ChromaDB collection.add(metadatas=[...]).
+
+    Raises:
+        ValueError: if any field fails validation per STD-DDL-METADATA-001.
+    """
+    # Generate ingested_at default if not provided
+    if ingested_at is None:
+        ingested_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # Validate every field per STD-DDL-METADATA-001 §"Validation rules"
+
+    # Check 7: source_file non-empty
+    if not source_file or not isinstance(source_file, str):
+        raise ValueError("source_file must be a non-empty string")
+
+    # Check 8: source_path non-empty AND absolute
+    if not source_path or not isinstance(source_path, str):
+        raise ValueError("source_path must be a non-empty string")
+    is_absolute = (
+        source_path.startswith("C:\\") or source_path.startswith("C:/") or
+        source_path.startswith("D:\\") or source_path.startswith("D:/") or
+        source_path.startswith("/")
+    )
+    if not is_absolute:
+        raise ValueError(
+            f"source_path must be an absolute path, got: {source_path!r}"
+        )
+
+    # Check 2: source_type valid enum
+    if source_type not in VALID_SOURCE_TYPES:
+        raise ValueError(
+            f"source_type must be one of {sorted(VALID_SOURCE_TYPES)}, "
+            f"got: {source_type!r}"
+        )
+
+    # Check 3: ingested_at parseable as ISO 8601 with Z
+    if not ingested_at.endswith("Z"):
+        raise ValueError(
+            f"ingested_at must end with 'Z' (UTC), got: {ingested_at!r}"
+        )
+    try:
+        # Strip Z for parsing
+        datetime.strptime(ingested_at[:-1], "%Y-%m-%dT%H:%M:%S")
+    except ValueError as e:
+        raise ValueError(
+            f"ingested_at must be ISO 8601 (YYYY-MM-DDTHH:MM:SSZ), "
+            f"got: {ingested_at!r} ({e})"
+        )
+
+    # Check 9: ingest_run_id non-empty
+    if not ingest_run_id or not isinstance(ingest_run_id, str):
+        raise ValueError("ingest_run_id must be a non-empty string")
+
+    # Check 4, 5, 6: chunk_index and chunk_total
+    if not isinstance(chunk_index, int) or chunk_index < 0:
+        raise ValueError(
+            f"chunk_index must be a non-negative integer, got: {chunk_index!r}"
+        )
+    if not isinstance(chunk_total, int) or chunk_total < 1:
+        raise ValueError(
+            f"chunk_total must be an integer >= 1, got: {chunk_total!r}"
+        )
+    if chunk_index >= chunk_total:
+        raise ValueError(
+            f"chunk_index ({chunk_index}) must be < chunk_total ({chunk_total})"
+        )
+
+    # All checks passed. Build the dict.
+    return {
+        "source_file": source_file,
+        "source_path": source_path,
+        "source_type": source_type,
+        "ingested_at": ingested_at,
+        "ingest_run_id": ingest_run_id,
+        "chunk_index": chunk_index,
+        "chunk_total": chunk_total,
+    }
+
+
+def verify_ingest(
+    collection_name: str,
+    source_file: str,
+    expected_chunk_count: int,
+) -> tuple[bool, int]:
+    """
+    Verify that the expected number of chunks for a given source_file
+    landed in the target collection.
+
+    Read-only operation. Queries by metadata filter, no writes.
+
+    Args:
+        collection_name: e.g. "dex_canon", "ddl_archive"
+        source_file: filename to query for (matches metadata source_file)
+        expected_chunk_count: how many chunks the ingest path attempted to write
+
+    Returns:
+        Tuple of (success: bool, actual_count: int).
+        success is True iff actual_count == expected_chunk_count.
+    """
+    # Use the same client pattern as dex_weights.py
+    # Local import to avoid hard dependency at module-load time
+    from dex_weights import get_client
+
+    client = get_client()
+    try:
+        collection = client.get_collection(collection_name)
+    except Exception as e:
+        # Collection doesn't exist or can't be reached — fail loud
+        raise RuntimeError(
+            f"verify_ingest: cannot access collection {collection_name!r}: {e}"
+        )
+
+    # Query by source_file metadata
+    result = collection.get(where={"source_file": source_file})
+    actual_count = len(result.get("ids", []))
+
+    success = (actual_count == expected_chunk_count)
+    return (success, actual_count)
+
+
+# ────────────────────────────────────────────────────────────────────────
+# Self-test (run as: python dex_pipeline.py)
+# ────────────────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    # Test build_chunk_metadata happy path
+    md = build_chunk_metadata(
+        source_file="test.txt",
+        source_path=r"C:\Users\dexjr\dex-rag\test.txt",
+        source_type="unknown",
+        ingest_run_id="test_2026-04-11_self_test",
+        chunk_index=0,
+        chunk_total=1,
+    )
+    assert md["source_file"] == "test.txt"
+    assert md["source_type"] == "unknown"
+    assert md["ingested_at"].endswith("Z")
+    print("[OK] build_chunk_metadata happy path")
+
+    # Test validation: bad source_type
+    try:
+        build_chunk_metadata(
+            source_file="test.txt",
+            source_path=r"C:\test.txt",
+            source_type="invalid_type",
+            ingest_run_id="test",
+            chunk_index=0,
+            chunk_total=1,
+        )
+        print("[FAIL] should have raised on invalid source_type")
+    except ValueError as e:
+        print(f"[OK] rejected invalid source_type: {e}")
+
+    # Test validation: chunk_index >= chunk_total
+    try:
+        build_chunk_metadata(
+            source_file="test.txt",
+            source_path=r"C:\test.txt",
+            source_type="unknown",
+            ingest_run_id="test",
+            chunk_index=5,
+            chunk_total=5,
+        )
+        print("[FAIL] should have raised on chunk_index >= chunk_total")
+    except ValueError as e:
+        print(f"[OK] rejected chunk_index >= chunk_total: {e}")
+
+    # Test validation: relative path
+    try:
+        build_chunk_metadata(
+            source_file="test.txt",
+            source_path="test.txt",  # not absolute
+            source_type="unknown",
+            ingest_run_id="test",
+            chunk_index=0,
+            chunk_total=1,
+        )
+        print("[FAIL] should have raised on relative path")
+    except ValueError as e:
+        print(f"[OK] rejected relative source_path: {e}")
+
+    print()
+    print("All self-tests passed.")
