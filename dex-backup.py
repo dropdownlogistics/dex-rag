@@ -132,6 +132,90 @@ def check_triggers(expected_write_chunks: int = 0) -> tuple[bool, list[str]]:
     return (len(fired) > 0, fired)
 
 
+def build_check_status(expected_write_chunks: int = 0) -> dict:
+    """
+    Lightweight status of the most recent backup, suitable for the
+    --check-only --json path consumed by ensure_backup_current().
+
+    Does NOT call validate_backup() — that function compares the backup
+    against current live state and would fail on any drift since the
+    backup was taken. This function checks existence + manifest + sqlite
+    readability only, plus runs check_triggers() to report what would
+    fire if a write happened now.
+    """
+    result = {
+        "exists": False,
+        "most_recent": None,
+        "most_recent_path": None,
+        "manifest_valid": False,
+        "sqlite_present": False,
+        "sqlite_readable": False,
+        "age_hours": None,
+        "created_at": None,
+        "total_chunk_count": None,
+        "triggers_to_fire": [],
+        "should_backup": False,
+        "live_chunk_count": None,
+        "expected_write_chunks": expected_write_chunks,
+    }
+
+    backups = find_existing_backups()
+    if not backups:
+        result["should_backup"] = True
+        result["triggers_to_fire"] = ["no_existing_backups"]
+        return result
+
+    most_recent = backups[0]
+    result["exists"] = True
+    result["most_recent"] = most_recent.name
+    result["most_recent_path"] = str(most_recent)
+
+    manifest = read_manifest(most_recent)
+    if manifest is None:
+        result["should_backup"] = True
+        result["triggers_to_fire"] = ["most_recent_manifest_invalid"]
+        return result
+
+    result["manifest_valid"] = True
+    result["created_at"] = manifest.get("created_at")
+    result["total_chunk_count"] = manifest.get("total_chunk_count")
+
+    if result["created_at"]:
+        try:
+            last = datetime.fromisoformat(result["created_at"].replace("Z", "+00:00"))
+            age = (datetime.now(timezone.utc) - last).total_seconds()
+            result["age_hours"] = round(age / 3600, 2)
+        except (ValueError, TypeError):
+            pass
+
+    sqlite_path = most_recent / "chroma.sqlite3"
+    result["sqlite_present"] = sqlite_path.exists()
+    if sqlite_path.exists():
+        try:
+            db_uri = f"file:/{str(sqlite_path).replace(chr(92), '/')}?mode=ro"
+            con = sqlite3.connect(db_uri, uri=True)
+            con.close()
+            result["sqlite_readable"] = True
+        except Exception as e:
+            result["sqlite_error"] = str(e)
+
+    # Trigger check (uses check_triggers — same logic as the main backup path)
+    try:
+        should, fired = check_triggers(expected_write_chunks)
+        result["should_backup"] = should
+        result["triggers_to_fire"] = fired
+    except Exception as e:
+        result["trigger_check_error"] = type(e).__name__
+
+    # Live count for context
+    try:
+        result["live_chunk_count"] = get_live_chunk_count()
+    except Exception as e:
+        result["live_count_error"] = type(e).__name__
+
+    return result
+
+
 def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -335,13 +419,17 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Check triggers, report, no copy")
     parser.add_argument("--rotate-only", action="store_true", help="Skip backup, just rotate")
     parser.add_argument("--check-only", action="store_true", help="Validate most recent backup")
+    parser.add_argument("--json", action="store_true", help="Output structured JSON (only with --check-only)")
     parser.add_argument("--expected-chunks", type=int, default=0, help="For pre-batch trigger")
     args = parser.parse_args()
 
-    print(f"dex-backup {BACKUP_TOOL_VERSION}")
-    print(f"Live: {LIVE_CHROMADB}")
-    print(f"Backup root: {BACKUP_ROOT}")
-    print()
+    # Suppress banner in --check-only --json mode so stdout is clean JSON
+    json_mode = args.check_only and args.json
+    if not json_mode:
+        print(f"dex-backup {BACKUP_TOOL_VERSION}")
+        print(f"Live: {LIVE_CHROMADB}")
+        print(f"Backup root: {BACKUP_ROOT}")
+        print()
 
     # Pre-flight
     if not LIVE_CHROMADB.exists():
@@ -352,6 +440,16 @@ def main():
         sys.exit(2)
 
     if args.check_only:
+        if args.json:
+            # Lightweight JSON status for ensure_backup_current() callers.
+            # Does NOT call validate_backup() — see build_check_status() docstring.
+            status = build_check_status(args.expected_chunks)
+            print(json.dumps(status))
+            if not status["exists"]:
+                sys.exit(2)
+            if not status["manifest_valid"] or not status.get("sqlite_readable", False):
+                sys.exit(1)
+            sys.exit(0)
         backups = find_existing_backups()
         if not backups:
             print("No backups found.")

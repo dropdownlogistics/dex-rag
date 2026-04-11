@@ -15,10 +15,24 @@ Authority: STD-DDL-METADATA-001
 Standalone status: temporary, migrate to dex_core when built
 """
 
+import json
 import shutil
+import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+
+
+# ── Exceptions raised by ensure_backup_current() ──────────────────────────
+
+class BackupNotFoundError(Exception):
+    """No backup exists at all. Manual bootstrap required."""
+
+
+class BackupFailedError(Exception):
+    """A backup attempt ran and failed validation, or the most recent
+    backup is structurally corrupt (sqlite unreadable, etc.)."""
 
 # Valid source_type enum values per STD-DDL-METADATA-001
 VALID_SOURCE_TYPES = {
@@ -263,6 +277,132 @@ def move_to_staging(source_path: str) -> Path:
     return destination
 
 
+def ensure_backup_current(
+    expected_write_chunks: int = 0,
+    force_check: bool = False,
+    dry_run: bool = False,
+) -> dict:
+    """
+    Ensure the corpus backup is current per STD-DDL-BACKUP-001 §"Trigger 3".
+
+    Trigger 3 is the pre-write gate. This helper is the in-pipeline gate
+    that ingest paths call before writing chunks. dex-backup.py is the
+    single source of truth for trigger logic and the actual copy — this
+    helper just shells out to it via subprocess and interprets the result.
+
+    Args:
+        expected_write_chunks: how many chunks the caller intends to write.
+            If > 100, Trigger 5 fires regardless of other triggers.
+        force_check: if True, run a backup regardless of trigger state.
+            (Interpreted as "force-run a backup," consistent with the
+            self-test "force_check=True → backup_ran=True" expectation.)
+        dry_run: if True, --dry-run is added to the dex-backup.py
+            invocation. Trigger logic still runs and the returned dict
+            still reflects intent (backup_ran=True if a backup would
+            have been needed), but no actual copy happens. Used by
+            self-tests to avoid 200+ second waits.
+
+    Returns:
+        dict with keys: backup_ran (bool), backup_path (str or None),
+            triggers_fired (list), backup_age_hours (float or None),
+            status (str: "current" | "refreshed" | "force_refreshed" | "dry_run").
+
+    Raises:
+        BackupNotFoundError: if no backup exists at all.
+        BackupFailedError: if a backup attempt failed, or the most
+            recent backup is structurally corrupt.
+    """
+    script = Path(__file__).parent / "dex-backup.py"
+    if not script.exists():
+        raise BackupNotFoundError(f"dex-backup.py not found at {script}")
+
+    # Step 1: --check-only --json
+    check_cmd = [
+        sys.executable, str(script),
+        "--check-only", "--json",
+        "--expected-chunks", str(expected_write_chunks),
+    ]
+    cr = subprocess.run(check_cmd, capture_output=True, text=True, timeout=120)
+
+    if cr.returncode == 2:
+        raise BackupNotFoundError(
+            "dex-backup.py reports no backups exist. "
+            "Run dex-backup.py --force to bootstrap before ingesting."
+        )
+
+    try:
+        status = json.loads(cr.stdout)
+    except json.JSONDecodeError as e:
+        raise BackupFailedError(
+            f"dex-backup.py --check-only --json output is not valid JSON: {e}\n"
+            f"stdout: {cr.stdout!r}\n"
+            f"stderr: {cr.stderr!r}"
+        )
+
+    if not status.get("exists"):
+        raise BackupNotFoundError("dex-backup.py reports no backup exists.")
+
+    if not status.get("sqlite_readable"):
+        raise BackupFailedError(
+            f"Most recent backup sqlite is unreadable: "
+            f"{status.get('sqlite_error', 'unknown')}"
+        )
+
+    triggers_fired = list(status.get("triggers_to_fire", []))
+    needs_backup = bool(status.get("should_backup")) or force_check
+    if force_check and "force_check" not in triggers_fired:
+        triggers_fired.append("force_check")
+
+    result = {
+        "backup_ran": False,
+        "backup_path": status.get("most_recent_path"),
+        "triggers_fired": triggers_fired,
+        "backup_age_hours": status.get("age_hours"),
+        "status": "current",
+    }
+
+    if not needs_backup:
+        return result
+
+    # Step 2: triggers fired (or force_check) — run a backup
+    backup_cmd = [
+        sys.executable, str(script),
+        "--force",
+        "--expected-chunks", str(expected_write_chunks),
+    ]
+    if dry_run:
+        backup_cmd.append("--dry-run")
+
+    br = subprocess.run(backup_cmd, capture_output=True, text=True, timeout=900)
+    if br.returncode != 0:
+        raise BackupFailedError(
+            f"dex-backup.py --force exited {br.returncode}\n"
+            f"stdout:\n{br.stdout}\n"
+            f"stderr:\n{br.stderr}"
+        )
+
+    result["backup_ran"] = True
+    if dry_run:
+        result["status"] = "dry_run"
+        return result
+    result["status"] = "force_refreshed" if force_check else "refreshed"
+
+    # Step 3: re-check to capture new backup metadata
+    rc = subprocess.run(
+        [sys.executable, str(script), "--check-only", "--json", "--expected-chunks", "0"],
+        capture_output=True, text=True, timeout=120,
+    )
+    if rc.returncode == 0:
+        try:
+            new_status = json.loads(rc.stdout)
+            result["backup_path"] = new_status.get("most_recent_path", result["backup_path"])
+            result["backup_age_hours"] = new_status.get("age_hours")
+        except json.JSONDecodeError:
+            pass
+
+    return result
+
+
 # ────────────────────────────────────────────────────────────────────────
 # Self-test (run as: python dex_pipeline.py)
 # ────────────────────────────────────────────────────────────────────────
@@ -359,6 +499,42 @@ if __name__ == "__main__":
     except (ValueError, FileNotFoundError) as e:
         # Either is acceptable — directory exists but isn't a file
         print(f"[OK] rejected directory: {type(e).__name__}")
+
+    # ──────────────────────────────────────────────────────────
+    # ensure_backup_current() tests (subprocess to dex-backup.py)
+    # ──────────────────────────────────────────────────────────
+
+    # Test: fresh state — backup exists, no triggers fire, no backup runs
+    try:
+        r = ensure_backup_current(expected_write_chunks=0, force_check=False)
+        if r["backup_ran"] is False and r["status"] == "current" and r["triggers_fired"] == []:
+            print(f"[OK] ensure_backup_current_fresh: backup_ran=False, age={r['backup_age_hours']}h")
+        else:
+            print(f"[FAIL] ensure_backup_current_fresh: {r}")
+    except Exception as e:
+        print(f"[FAIL] ensure_backup_current_fresh raised: {type(e).__name__}: {e}")
+
+    # Test: force_check=True triggers a backup (dry_run subprocess to keep test fast)
+    try:
+        r = ensure_backup_current(expected_write_chunks=0, force_check=True, dry_run=True)
+        if r["backup_ran"] is True and "force_check" in r["triggers_fired"]:
+            print(f"[OK] ensure_backup_current_force: backup_ran=True (dry_run), triggers={r['triggers_fired']}")
+        else:
+            print(f"[FAIL] ensure_backup_current_force: {r}")
+    except Exception as e:
+        print(f"[FAIL] ensure_backup_current_force raised: {type(e).__name__}: {e}")
+
+    # Test: large write triggers Trigger 5 (>100 chunks)
+    try:
+        r = ensure_backup_current(expected_write_chunks=500, force_check=False, dry_run=True)
+        fired = r["triggers_fired"]
+        has_trigger_5 = any("pre_batch_expected_500" in t for t in fired)
+        if r["backup_ran"] is True and has_trigger_5:
+            print(f"[OK] ensure_backup_current_large_write: trigger 5 fired ({fired})")
+        else:
+            print(f"[FAIL] ensure_backup_current_large_write: {r}")
+    except Exception as e:
+        print(f"[FAIL] ensure_backup_current_large_write raised: {type(e).__name__}: {e}")
 
     print()
     print("All self-tests passed.")

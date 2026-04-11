@@ -24,6 +24,7 @@ from dex_pipeline import (
     build_chunk_metadata,
     verify_ingest,
     move_to_staging,
+    ensure_backup_current,
     DDL_INGEST_ROOT,
     VALID_SOURCE_TYPES,
 )
@@ -109,6 +110,19 @@ def ingest_text_file(
     chunks = chunk_text(text)
     chunk_total = len(chunks)
     print(f"  Chunked into {chunk_total} chunks")
+
+    # Step 3.5: Backup pre-flight (Trigger 3 of STD-DDL-BACKUP-001)
+    # Skipped on dry_run — no live writes mean no backup gating needed.
+    if not dry_run:
+        print(f"  Backup pre-flight (expected_write_chunks={chunk_total})...")
+        backup_status = ensure_backup_current(expected_write_chunks=chunk_total)
+        if backup_status["backup_ran"]:
+            print(f"  Backup refreshed: {backup_status['backup_path']}")
+        else:
+            print(
+                f"  Backup current: age={backup_status['backup_age_hours']}h, "
+                f"status={backup_status['status']}"
+            )
 
     # Step 4: Build metadata for each chunk
     source_type = infer_source_type(source_path.name)
