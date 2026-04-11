@@ -1,4 +1,3 @@
-```markdown
 # ADR-INGEST-PIPELINE-001 — DDL Content Pipeline & Self-Documenting Ingest Loop
 
 **Status:** Proposed — awaiting operator ratification
@@ -396,4 +395,3 @@ The operator decides. The architecture does not change. The data does.
 ---
 
 **End of ADR-INGEST-PIPELINE-001**
-``

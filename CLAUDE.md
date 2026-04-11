@@ -13,9 +13,10 @@ Last cleanup: 2026-04-12 (6 commits, -589 lines, untracked)
 
 dex-rag is the local RAG infrastructure for Dex Jr., the 10th seat of the
 DDL council. It runs on Reborn (RTX 3070, 32GB RAM, Windows 11) and serves
-governed retrieval over a corpus of ~560K+ chunks across seven ChromaDB
-collections: dex_canon, ddl_archive, ext_canon, ext_archive, dex_code,
-ext_creator, ext_reference.
+governed retrieval over a corpus of ~542K chunks across four live ChromaDB
+collections: dex_canon, ddl_archive, dex_code, ext_creator. (Three
+additional collections referenced in earlier governance docs are pending
+resolution per ADR-INGEST-PIPELINE-001.)
 
 The system is mid-retool. The 2026-04-12 audit identified ~600 lines of dead
 code (now removed), 14 independent ChromaDB connection sites, 8 duplicate
