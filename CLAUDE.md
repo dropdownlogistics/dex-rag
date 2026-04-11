@@ -103,9 +103,20 @@ Report template (see below).
 ## dex-rag-specific rules
 
 ### 8. Corpus Integrity Is Sacred
-The seven corpus collections (dex_canon, ddl_archive, ext_canon, ext_archive,
-dex_code, ext_creator, ext_reference) represent ~560K+ chunks of governed
-knowledge that took months to build. NEVER:
+The four live corpus collections represent ~542K chunks of governed
+knowledge that took months to build:
+  - `dex_canon`    (230,082 chunks)
+  - `ddl_archive`  (291,520 chunks)
+  - `dex_code`     ( 20,384 chunks)
+  - `ext_creator`  (    922 chunks)
+
+Three additional collections (ext_canon, ext_archive, ext_reference)
+are referenced in earlier governance docs but do not exist in the live
+ChromaDB. Resolution is a pending decision in
+ADR-INGEST-PIPELINE-001. Until that decision lands, this rule applies
+to the four live collections only.
+
+NEVER:
   - Delete a collection
   - Drop chunks without operator approval
   - Re-ingest in a way that overwrites without backup
@@ -174,6 +185,10 @@ The seven live collections are defined there. Pending collections defined in
 the ADR are scoped — do not invent new collection names without checking the
 ADR first. When the query router is built, it must read collection definitions
 from a single source of truth, not from inline lists in entry points.
+
+NOTE 2026-04-11: ADR-CORPUS-001 and the live ChromaDB schema disagree
+on collection count (ADR says 7, live DB has 4). Resolution pending in
+ADR-INGEST-PIPELINE-001.
 
 ### 17. Respect Pre-Existing Uncommitted Changes
 If a file shows uncommitted modifications in `git status` at the start of a
