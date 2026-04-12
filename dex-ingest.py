@@ -301,7 +301,7 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
     print("  DEX JR. RAG PIPELINE - PHASE 1 INGESTION")
     print(f"  Archive: {archive_path}")
     if collection:
-        print(f"  Mode: SCOPED COLLECTION → {collection}")
+        print(f"  Mode: SCOPED COLLECTION -> {collection}")
     else:
         print(f"  Mode: {'BUILD CANON' if build_canon else 'NORMAL'}")
     print(f"  Extensions: {ext_list}")
