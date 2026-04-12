@@ -42,6 +42,7 @@ IDENTIFIER_PATTERN = re.compile(
     r"\b(?:STD|CR|ADR|PRO|OBS|SYS)(?:-[A-Z0-9]+){2,}\b"
 )
 PREFILTER_PER_ID = 5  # max chunks returned per detected identifier per collection
+BODY_MATCH_PER_ID = 3  # max body-contains chunks per identifier per collection
 
 
 def eprint(*args: Any, **kwargs: Any) -> None:
@@ -131,6 +132,54 @@ def prefilter_by_source_file(
     return hits
 
 
+def body_match_by_identifier(
+    client: chromadb.api.ClientAPI,
+    identifiers: list[str],
+    collection_names: list[str],
+    per_id: int = BODY_MATCH_PER_ID,
+) -> list[dict]:
+    """For each identifier, look up chunks whose body contains the identifier
+    string (case-sensitive $contains). Fallback for when the identifier is
+    discussed inside a file whose filename doesn't match the identifier."""
+    hits: list[dict] = []
+    seen_keys: set[tuple[str, str]] = set()
+    for ident in identifiers:
+        for name in collection_names:
+            try:
+                col = client.get_collection(name)
+            except Exception:
+                continue
+            try:
+                got = col.get(
+                    where_document={"$contains": ident},
+                    limit=per_id,
+                    include=["documents", "metadatas"],
+                )
+            except Exception as e:
+                eprint(f"  [warn] body-match get failed on {name}: {e}")
+                continue
+            ids = got.get("ids", []) or []
+            docs = got.get("documents", []) or []
+            metas = got.get("metadatas", []) or []
+            for cid, doc, md in zip(ids, docs, metas):
+                md = md or {}
+                key = (name, cid)
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                hits.append({
+                    "id": cid,
+                    "collection": name,
+                    "source_file": md.get("source_file") or md.get("filename") or "<unknown>",
+                    "ingest_run_id": md.get("ingest_run_id", ""),
+                    "distance": 0.0,
+                    "text": doc or "",
+                    "retrieval_source": "prefilter_body_match",
+                    "matched_identifier": ident,
+                })
+    return hits
+
+
 def search_collections(
     client: chromadb.api.ClientAPI,
     embedding: list[float],
@@ -196,8 +245,14 @@ def fmt_markdown(question: str, chunks: list[dict], answer: str | None) -> str:
         preview = c["text"][:CHUNK_PREVIEW_CHARS]
         if len(c["text"]) > CHUNK_PREVIEW_CHARS:
             preview += "..."
-        is_prefilter = c.get("retrieval_source", "vector").startswith("prefilter_")
-        tag = " [PREFILTER MATCH]" if is_prefilter else ""
+        rsrc = c.get("retrieval_source", "vector")
+        is_prefilter = rsrc.startswith("prefilter_")
+        if rsrc == "prefilter_body_match":
+            tag = " [BODY MATCH]"
+        elif is_prefilter:
+            tag = " [PREFILTER MATCH]"
+        else:
+            tag = ""
         dist_str = "n/a (prefilter)" if is_prefilter else f"{c['distance']:.4f}"
         lines.append(
             f"### {i}. {c['source_file']}{tag} (collection: {c['collection']}, "
@@ -249,6 +304,7 @@ def run_query(args: argparse.Namespace) -> int:
         return 2
 
     prefilter_hits: list[dict] = []
+    body_hits: list[dict] = []
     if use_prefilter:
         idents = extract_identifiers(args.question)
         if idents:
@@ -257,6 +313,15 @@ def run_query(args: argparse.Namespace) -> int:
             except Exception as e:
                 eprint(f"  [warn] prefilter step failed, falling through: {e}")
                 prefilter_hits = []
+            # B2 fallback: for identifiers with zero filename hits, run body-contains
+            matched_idents = {h.get("matched_identifier") for h in prefilter_hits}
+            body_idents = [i for i in idents if i not in matched_idents]
+            if body_idents:
+                try:
+                    body_hits = body_match_by_identifier(client, body_idents, collections)
+                except Exception as e:
+                    eprint(f"  [warn] body-match step failed, falling through: {e}")
+                    body_hits = []
 
     try:
         embedding = embed(args.question)
@@ -270,10 +335,10 @@ def run_query(args: argparse.Namespace) -> int:
         eprint(f"ERROR: ChromaDB query failed: {e}")
         return 2
 
-    # Merge: prefilter first, then vector; dedupe by (collection, id)
+    # Merge: filename-prefilter, then body-match, then vector; dedupe by (collection, id)
     seen: set[tuple[str, str]] = set()
     merged_all: list[dict] = []
-    for c in prefilter_hits + vector_hits:
+    for c in prefilter_hits + body_hits + vector_hits:
         key = (c["collection"], c.get("id", c["source_file"] + c["text"][:32]))
         if key in seen:
             continue
@@ -367,6 +432,22 @@ def run_self_test() -> int:
         steps.append(("B3 canary: STD-DDL-SWEEPREPORT-001 prefilter", prefilter_ok, note))
     except Exception as e:
         steps.append(("B3 canary: STD-DDL-SWEEPREPORT-001 prefilter", False, str(e)))
+
+    # 6. B2 canary: body-contains fallback must surface identifier in chunk body
+    try:
+        client = chromadb.PersistentClient(path=CHROMA_DIR)
+        body_hits = body_match_by_identifier(
+            client, ["CR-OPERATOR-CAPACITY-001"], DEFAULT_COLLECTIONS
+        )
+        ok = any(
+            h.get("retrieval_source") == "prefilter_body_match"
+            and "CR-OPERATOR-CAPACITY-001" in (h.get("text") or "")
+            for h in body_hits
+        )
+        note = f"{len(body_hits)} body-match hits" if ok else "no body-match chunks"
+        steps.append(("B2 canary: CR-OPERATOR-CAPACITY-001 body-match", ok, note))
+    except Exception as e:
+        steps.append(("B2 canary: CR-OPERATOR-CAPACITY-001 body-match", False, str(e)))
 
     print("\nSELF-TEST RESULTS")
     print("=" * 60)
