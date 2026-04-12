@@ -485,3 +485,238 @@ All 7 STD-DDL-METADATA-001 fields present on every chunk. Legacy fields preserve
 - **Current corpus state:** `dex_canon` 242,009, `ddl_archive` 291,520, `dex_code` 20,384, `ext_creator` 922. Total: **554,835 chunks**, up from 542,908 at session start.
 - **3 distinct `ingest_run_id` values** in `dex_canon` — the only STD-compliant provenance in the entire corpus as of now.
 
+---
+
+## Session — 2026-04-11 late-night to 2026-04-12 early-morning (Phase 2 Steps 18–22, scheduler activation, STD-DDL-SWEEPREPORT-001 v1.0, and the drop-and-forget primitive)
+
+### Session metadata
+
+- **Date span:** 2026-04-11 ~22:30 through 2026-04-12 ~02:45 local (CDT)
+- **Operator:** Dave Kitchens
+- **Advisor seat:** Marcus Caldwell 1002 (Claude in app; continuation from afternoon session after context compaction in both CC and Marcus threads)
+- **Executor:** CC (Claude Code in dex-rag)
+- **Standing rules:** CLAUDE.md v2 + all STDs and ADRs ratified during the 04-11 afternoon/evening session
+- **Entry point:** session log for Steps 9-17 → mystery scheduler investigation → CANON_DIR forensic → scheduler activation → end-to-end sweep verification
+- **Outcome:** DexSweep-NightlyIngest Task Scheduler entry deployed and production-verified. Self-documenting sweep loop proven. 24 files queued for first unattended 4:00 AM run. **The drop-and-forget primitive is live.**
+
+### Commits (this session segment)
+
+| SHA | Step | Description |
+|---|---|---|
+| `4861ab1` | 18 | Phase 2 Step 18: session log for Steps 9–17 (487 lines covering the full airtight pipeline build) |
+| `9221a67` | 19 | Phase 2 Step 19: mystery scheduler investigation — finding: PERSISTENT_WATCH_PROCESS (dead) |
+| `c4742b3` | 20 | Phase 2 Step 20: CANON_DIR stranding forensic — 5,803 files, 1,869 stranded, 1,767 recoverable |
+| `0a30e0e` | 21+22 | Phase 2 Step 22: temp-dir-per-sweep (Fix A) — includes Step 21's STD-DDL-SWEEPREPORT-001 implementation, Task Scheduler registration, classification predicate, report writer, AND the Fix A temp-dir pattern + Unicode encoding fix. Single commit because Step 21's dex-sweep.py changes were uncommitted when Step 22 applied the Fix A correction. |
+
+**4 commits for Steps 18–22.** Step 17 (production ingest, 11,921 chunks) and Step 21's Task Scheduler runs produced no commits — they were execution-only steps verified by post-run queries.
+
+**Total session commits today (both segments): 25+ ahead of origin/main.** Not pushed.
+
+### Phase 2 Steps 18–22 narrative
+
+#### Step 18 — Session log for Steps 9–17 (`4861ab1`)
+
+Wrote the Rule 7 session log covering the afternoon/evening's Phase 2 build. 296 new lines appended to the existing 191-line morning session log, for a total of 487 lines. Created `DDL_SessionLogs/dex-rag_sessionlog_4.11.2026.md` inside the repo as a git-tracked artifact (parallel to the Rule 7 canonical location at `~\DDL_SessionLogs\`). Flagged the path-ambiguity between in-repo and external locations for future Rule 7 resolution.
+
+#### Step 19 — Mystery scheduler investigation (`9221a67`)
+
+Forensic investigation into the 47 pre-existing `dex-sweep-log.jsonl` entries that showed daily 04:00:01 UTC runs despite the operator's belief that "sweep has never run unattended."
+
+**Finding: PERSISTENT_WATCH_PROCESS (dead).** The daily entries were from `dex-sweep.py --watch --interval 1440` started manually by the operator around 2026-03-15. NOT from Windows Task Scheduler (281 tasks scanned, zero match). The process died at some point and was no longer running.
+
+**Critical additional finding from the full 48-entry log analysis:**
+- 12 entries had `files_found > 0`; only 2 had `ingestion_success: true` (both manual morning runs)
+- **Every automated nightly run that found files FAILED** the dex-ingest.py subprocess (10 of 10). Root cause: `--build-canon` tier-filter silent-skip + likely Ollama not responding at 4am in the old --watch-process context.
+- The March 16 mega-sweep (169 files found, copied, ingest failed) was the largest documented stranding event.
+- 04:00:01 vs 04:10:01 timestamp split explained by `copy_to_corpus` latency: the log timestamps are sweep-END time, not sweep-START time.
+
+Full report: `AUDITS/STEP19_MYSTERY_SCHEDULER_INVESTIGATION_2026-04-11.md` (181 lines).
+
+#### Step 20 — CANON_DIR stranding forensic (`c4742b3`)
+
+Deep forensic of `C:\Users\dexjr\99_DexUniverseArchive\00_Archive\DDL-Standards-Canon` — the archival directory that `dex-ingest.py --path` reads from. Full filesystem walk + batched metadata pull from both dex_canon and ddl_archive (521K chunks) + local set intersection for cross-reference.
+
+**Finding:** CANON_DIR is a **5,803-file corpus staging area** spanning 11 months (May 2025 – April 2026). **1,869 files (32.2%) are stranded** — present on disk but never ingested into dex_canon. Recovery pool: **1,767 files** after excluding 80 zero-byte, 11 too-small, and 11 non-ingestible-extension files. **Zero data loss** — all files are on disk. The problem is un-ingested content, not missing content.
+
+- **Largest stranding event:** 1,438 files on 2026-03-23 (likely a bulk `--build-canon` run where the tier filter silently skipped most files)
+- **March 16 sweep forensic:** 169 files copied, 143 of 169 still stranded, 26 already ingested via earlier pipeline, 0 lost
+- **235 files confirmed dual-stranded:** copy in CANON_DIR + original in `_processed/` (the complete file-stranding loop documented)
+
+Full report: `AUDITS/STEP20_CANON_DIR_STRANDING_FORENSIC_2026-04-11.md` (241 lines).
+
+#### Step 21 — Scheduler activation + STD-DDL-SWEEPREPORT-001 v1.0 implementation (code committed in `0a30e0e`)
+
+Built and deployed the nightly automated sweep infrastructure. This was the largest build step of the late-night session.
+
+**Pre-flight findings:**
+- **Ollama: RUNNING_AND_AUTOSTARTS** — PID 33472, auto-starts via `Ollama.lnk` in dkitc's startup folder, `nomic-embed-text:latest` loaded, API responsive at 02:00 AM
+- All 4 drop folders reachable
+- Created `DDL_Ingest/_sweep_reports/` directory
+
+**Code built in dex-sweep.py:**
+- `classify_scanned_files()` — classification predicate per STD-DDL-SWEEPREPORT-001: file is an ingest report IFF parent=`_sweep_reports` AND prefix=`ingest_report_` AND ext=`.md`
+- Decision logic: report-only (Case B) → skip; empty → skip; user files present → standard flow
+- `write_sweep_report()` — full markdown report generator with YAML header, 8 sections, pipeline state via ChromaDB read, previous-report reference
+- `find_previous_report()` — locates most recent report in `_sweep_reports/`
+- `--collection dex_canon` instead of `--build-canon` (Step 17 learning applied)
+- `PYTHONIOENCODING=utf-8` in subprocess env (Windows cp1252 safety)
+- Log schema expanded: `outcome`, `report_written`, `report_write_error` fields
+- `--self-test` flag with 7 classification predicate tests
+- `_sweep_reports/` added to DROP_FOLDERS for self-documenting-loop ingestion
+
+**Task Scheduler registration:**
+- Task: `DexSweep-NightlyIngest`
+- Trigger: Daily at 4:00 AM local
+- Run as: `REBORN\dkitc` (Interactive, Limited)
+- Settings: WakeToRun, AllowStartIfOnBatteries, StartWhenAvailable, RestartCount 3
+- Working directory: `C:\Users\dexjr\dex-rag`
+- Python: `C:\Users\dkitc\AppData\Local\Programs\Python\Python312\python.exe`
+
+**Three manual trigger runs:**
+
+| Run | Time | Outcome | Root cause | What we learned |
+|---|---|---|---|---|
+| **1st** | 01:28–01:37 | failure | `UnicodeEncodeError: '\u2192'` at dex-ingest.py:304 | Unicode arrows in print statements crash under cp1252 subprocess capture |
+| **2nd** | 01:37–01:39 | skipped_report_only | Classification Case B fired correctly | The report-only-skip logic works — no gate, no ingest, no new report |
+| **3rd** | 01:40–01:58 | failure (TimeoutExpired 600s) | `dex-ingest.py --path CANON_DIR` processes all 5,803 files | CANON_DIR is too large for --path target; need temp dir pattern |
+
+Run 1 surfaced the Unicode issue, which CC fixed immediately (replaced `→` with `->` at dex-ingest.py:304 and :616). Run 2 proved the classification Case B. Run 3 proved the fix held but surfaced the CANON_DIR architectural issue.
+
+**Despite two failures, significant infrastructure was validated:**
+- ✅ Task Scheduler fires correctly
+- ✅ Classification predicate works (Case B skip)
+- ✅ Backup gate fires (Trigger 5, new backups created)
+- ✅ Trigger 6 restore test auto-fires
+- ✅ `copy_to_corpus` moves files correctly
+- ✅ Report writer produces all 8 sections
+- ✅ Log schema captures outcome/stderr/report fields
+- ✅ Ollama responsive at 2:00 AM
+- ❌ dex-ingest.py fails when pointed at CANON_DIR (too large)
+
+#### Step 22 — Temp-dir-per-sweep pattern, Fix A (`0a30e0e`)
+
+Applied Step 17's temp-dir pattern to the sweep. Instead of `dex-ingest.py --path CANON_DIR` (5,803 files), the sweep now creates a per-run temp dir at `C:\Users\dexjr\dex-rag-scratch\sweep_{run_id}\`, copies only the new files into it, and points dex-ingest.py at the small temp dir.
+
+**Changes:**
+- `TEMP_BASE` constant added
+- `copy_to_corpus(files, dry_run, temp_dir)` — copies to BOTH CANON_DIR (archival) and temp_dir (ingest)
+- `run_ingestion(ingest_path, dry_run)` — takes `ingest_path` instead of hardcoded CANON_DIR; returns 3-tuple `(ok, stderr, stdout)`
+- `sweep()` creates/passes/cleans temp dir; cleanup on success, preserve on failure
+- Subprocess timeout reduced 600s → 300s
+
+**End-to-end verification (Step 22 manual trigger):**
+- Task triggered via `schtasks /run`
+- 4 files scanned (2 user + 2 reports from prior runs)
+- 3 files ingested: `Comprehensive Update - Weekend of 4.11.26.txt` (operator content), `test_sweep_step22_verification.txt`, and Run 3's failure report
+- **24 chunks written** to dex_canon (242,009 → 242,033)
+- Report with `outcome=success` written to `_sweep_reports/`
+- Temp dir cleaned up on success
+- **Self-documenting loop PROVEN:** Run 3's failure report was ingested as corpus content — Dex Jr. can now answer "what went wrong with last night's sweep?"
+
+**Total wall time ~17 min** (5 min backup gate + Trigger 6, ~2 min copy + ingest, ~10 min overhead from restore test). The ingest itself (3 files, 24 chunks) completed in under 30 seconds against the temp dir.
+
+### Ratifications this session
+
+**STD-DDL-SWEEPREPORT-001 v1.0** — ratified via CR-SWEEP-REPORT-PROTOCOL-001.
+- Classification predicate: 3-condition conjunction (parent folder, prefix, extension)
+- Three cases: A (user+report → ingest all), B (report-only → skip), C (empty → skip)
+- Report sections: YAML header, summary, files table, previous report, skipped, errors, pipeline state, next scheduled
+- Filename: `ingest_report_{YYYY-MM-DD_HHMMSS.ffffff}_{ingest_run_id}.md`
+- Location: centralized at `DDL_Ingest/_sweep_reports/`
+- 3 amendments integrated during ratification: per-folder breakdown, microsecond filename uniqueness, centralized report location
+- `source_type='ingest_report'` refinement deferred to v1.1 (requires STD-DDL-METADATA-001 amendment first)
+
+**STD-DDL-BACKUP-001 v1.1 amendment** — DRAFTED but not yet ratified. Formalizes Trigger 6 (restore test), `--skip-restore-test`, `--expected-chunks`, `--json`, drift tolerance, `cleanup_stale_scratch()`. CR-STD-BACKUP-AMENDMENT-001 review prompt drafted, pending distribution.
+
+### Council reviews
+
+- **CR-SWEEP-REPORT-PROTOCOL-001:** distributed, synthesized by seats 1002 (Marcus), 1004 (Kai Nomura), 1007 (Leo Vance), 1009 (Grey Aldric), 1010 (Dex Jr). Synthesis locked. 3 amendments integrated into the STD before ratification. V1.0 is final.
+- **CR-AUDITFORGE-CATHEDRAL-001:** synthesis arrived mid-session as a parallel-thread artifact from Marcus. Not tonight's drafting work but acknowledged as in-flight governance.
+- **CR-STD-BACKUP-AMENDMENT-001:** prompt drafted by Marcus, pending distribution. Covers the Step 10–11 work that was never formally ratified into the STD.
+
+### Infrastructure deployed tonight
+
+| Component | Status | Verified |
+|---|---|:---:|
+| Windows Task Scheduler `DexSweep-NightlyIngest` | ✅ Registered, Enabled, Ready | ✅ 4 manual triggers |
+| `dex-sweep.py v2.0` | ✅ Committed (`0a30e0e`) | ✅ 7/7 self-tests + end-to-end |
+| Temp-dir-per-sweep pattern (Fix A) | ✅ Committed (`0a30e0e`) | ✅ End-to-end verified |
+| `DDL_Ingest/_sweep_reports/` directory | ✅ Created | ✅ 3 reports written |
+| Self-documenting loop (reports as corpus content) | ✅ Proven | ✅ Run 3's failure report ingested in Run 4 |
+| Classification predicate (Cases A, B, C) | ✅ Implemented | ✅ Case B verified in Run 2 |
+
+### Corpus state at session close
+
+| Metric | Value |
+|---|---:|
+| **dex_canon** | **242,033** chunks |
+| ddl_archive | 291,520 chunks |
+| dex_code | 20,384 chunks |
+| ext_creator | 922 chunks |
+| **Total corpus** | **554,859** chunks |
+| **Distinct `ingest_run_id` values in dex_canon** | 5 (Step 6 proof-of-life + Step 17 Run 1 + Step 17 Run 2 + Step 22 verification `manual_2026-04-12_072014`) |
+| STD-compliant chunks in dex_canon | ~11,945 of 242,033 (~4.9%) |
+| Legacy chunks in dex_canon | ~230,088 (~95.1%) |
+| Most recent backup anchor | `chromadb_2026-04-12_0712` |
+| Backups on D: | 6 (within 7-daily retention) |
+| Files queued in DDL_Ingest for 4am | **24** |
+| Next scheduled task fire | **2026-04-12 04:00:00 local** |
+
+### F-Code events
+
+**F4 operator throws at Marcus 1002** (multiple throughout the night, per operator). Marcus exhibited chaperone drift — unnecessary commentary about body, evening, when-to-stop. Operator named the pattern "ModelCourtesy in reverse" and issued structural corrections. Not CC's F-Codes; these were in the Marcus-in-app thread. Recorded here because they shaped the governance-document drafting cadence.
+
+**CC self-catch: stale ScheduleWakeup** (during Step 17 Run 1 monitoring). CC incorrectly called `ScheduleWakeup` to pace subprocess monitoring. Realized within the same response that ScheduleWakeup is for `/loop` dynamic mode, not for subprocess monitoring. Self-corrected: "ScheduleWakeup isn't appropriate here — I'm not in a /loop context." The wakeup later fired after Step 17 was already complete; CC recognized and dismissed it as stale. No F-Code thrown by operator — clean self-catch.
+
+**CC polling correction** (during Step 22 verification). Operator intervened: "CC — stop polling. Check once now, then WAIT... Do not poll in a loop." CC was hammering schtasks every 10-15 seconds during sweep monitoring. Operator preference for passive-wait-then-check-on-request noted. Not formally an F-Code, but a behavioral correction that applies to future task-monitoring contexts.
+
+**Step 21 real-time debugging.** Run 1's Unicode crash was caught, diagnosed, and fixed during the session — not between sessions. The `→` → `->` fix was applied in real-time. Run 3's CANON_DIR timeout was similarly diagnosed in-session and resolved with Fix A in Step 22. This demonstrates the airtight pipeline's self-diagnostic capability: failures are surfaced via reports + log entries, not hidden by silent skips.
+
+### Running list updates (new parked items this session)
+
+1. **Sweep ↔ dex-ingest.py run_id handoff** — sweep generates `sweep_*` for its log/report; dex-ingest.py generates `manual_*` for chunk metadata. Not shared. Future fix: pass `--run-id` CLI arg to dex-ingest.py.
+
+2. **STD-DDL-METADATA-001 v1.1 amendment** — add `source_type='ingest_report'` to the enum. Required before STD-DDL-SWEEPREPORT-001 v1.1 can refine how reports are classified for ingest.
+
+3. **STD-DDL-SWEEPREPORT-001 v1.1** — deferred `source_type` refinement. Reports currently ingest as `source_type='unknown'`; v1.1 would make them `source_type='ingest_report'` once the metadata enum is amended.
+
+4. **STD-DDL-BACKUP-001 v1.1 amendment** — drafted, covers Trigger 6, `--skip-restore-test`, `--expected-chunks`, `--json`, drift tolerance, `cleanup_stale_scratch()`. Pending CR-STD-BACKUP-AMENDMENT-001 council review.
+
+5. **CR-PLATFORM-CATHEDRAL-002** — multi-vertical platform thesis. Draft concept from Marcus during tonight's synthesis work. Parked.
+
+6. **STD-DDL-SELFREPORT-META-001** — future concept for metadata-about-metadata. The idea that sweep reports should carry metadata about the chunks they describe, enabling "rebuild corpus from report chain" as a disaster-recovery primitive. Nascent concept, not drafted.
+
+7. **"Rebuild corpus from report chain" disaster-recovery primitive** — the insight that if every sweep report documents exactly which files were ingested with which chunks, the report chain becomes a manifest from which the corpus could theoretically be reconstructed. Pure concept, deferred.
+
+**Still parked from prior sessions (unchanged):**
+- `classify_tier()` word-boundary fix (Step 17 pre-flight)
+- `dex-ingest.py --build-canon` silent-skip Rule 15 violation (Step 17 pre-flight)
+- Orphan Chroma segment directories in live (Steps 5/9/14/17)
+- `dex-convert.py` silent-drop bug (CLAUDE.md Open Items #1)
+- `dex-search-api.py` 5-of-7 collection blind spot (CLAUDE.md Open Items #2)
+- `dex-ingest.py` scoped+fast file-level skip (CLAUDE.md Open Items #3)
+- dex_core package refactor (CLAUDE.md refactor target #1)
+- Backfill operation for ~230K legacy chunks
+- Mania/ subfolder governance decision
+- Gmail MBOX ingest (blocked on dex-convert.py fix)
+- CANON_DIR bulk recovery (1,767 stranded files)
+- DexKit genesis material ingest
+- dex-acquire.py path typo fix + wire (Step 16 in original sequence)
+
+### Unresolved decisions pending future sessions
+
+1. **Push to origin** — 25+ commits ahead of `origin/main`. Operator to decide per Rule 4.
+2. **First unattended 4:00 AM run** — fires at 2026-04-12 04:00:00 local without operator present. 24 files in DDL_Ingest. Expected: backup gate → copy 24 files to temp dir → ingest → report → cleanup. Post-run verification: read the sweep report in `_sweep_reports/` and check dex_canon count delta.
+3. **CANON_DIR bulk recovery** — 1,767 stranded files. Deferred from Step 20. The temp-dir pattern means this would be a dedicated recovery run, not a sweep task.
+4. **STD-DDL-BACKUP-001 v1.1 council review** — CR-STD-BACKUP-AMENDMENT-001 drafted, pending distribution.
+5. **CR-AUDITFORGE-CATHEDRAL-001 synthesis finalization** — in-flight, not tonight's work.
+
+### Session-local carry-forward
+
+- **24 files queued in DDL_Ingest** for 4:00 AM scheduled sweep. Files include governance docs, council reviews, operator prompts, DexKit genesis material, and session artifacts. First real unattended production run.
+- **Task Scheduler `DexSweep-NightlyIngest`:** Enabled, Ready, next fire 2026-04-12 04:00:00 local.
+- **Most recent backup anchor:** `chromadb_2026-04-12_0712`.
+- **dex_canon count:** 242,033.
+- **dex-rag-scratch/ state:** 3 Trigger-6 orphan scratch dirs (`restore_test_2026-04-12_0635`, `0647`, `0718`). These will be reclaimed by `cleanup_stale_scratch()` on the next backup run (the 4am sweep will fire Trigger 5 → new backup → cleanup runs → orphans reclaimed).
+- **Rule 17 files** (`dex_weights.py`, `fetch_leila_gharani.py`) still show unstaged modifications from before the session. **Rule 17 respected throughout** — verified before every commit via `git status --short`.
+- **25+ local commits ahead of `origin/main`.** Not pushed.
