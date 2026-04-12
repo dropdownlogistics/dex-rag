@@ -450,7 +450,7 @@ def sweep(dry_run=False):
     triggered_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"\n  {'='*50}")
-    print(f"  DEX JR AUTO-SWEEP v2.0 — {ts}")
+    print(f"  DEX JR AUTO-SWEEP v2.0 - {ts}")
     print(f"  {'='*50}")
     print(f"  Scanning {len(DROP_FOLDERS)} drop folder(s)...")
 
@@ -486,7 +486,7 @@ def sweep(dry_run=False):
 
         # Case B: only reports, no user files — skip entirely
         if len(user_files) == 0 and len(ingest_reports) > 0:
-            print(f"  Reports only — no user files to ingest. Skipping.")
+            print(f"  Reports only - no user files to ingest. Skipping.")
             outcome = "skipped_report_only"
             return False
 
@@ -569,11 +569,11 @@ def sweep(dry_run=False):
                 print(f"  WARN: temp dir preserved for forensics: {temp_dir}")
 
         # Summary
-        print(f"\n  {'─'*50}")
+        print(f"\n  {'-'*50}")
         print(f"  Sweep complete: {len(copied)} file(s) processed, outcome={outcome}")
         if report_path:
             print(f"  Report: {os.path.basename(report_path)}")
-        print(f"  {'─'*50}\n")
+        print(f"  {'-'*50}\n")
 
         return len(copied) > 0
 
@@ -619,7 +619,7 @@ def sweep(dry_run=False):
 # -----------------------------
 def watch(interval_minutes, dry_run=False):
     """Continuously watch for new files."""
-    print(f"\n  DEX JR AUTO-SWEEP — Watch Mode")
+    print(f"\n  DEX JR AUTO-SWEEP - Watch Mode")
     print(f"  Checking every {interval_minutes} minute(s)")
     print(f"  Drop folders: {len(DROP_FOLDERS)}")
     for f in DROP_FOLDERS:
@@ -658,21 +658,21 @@ def run_self_tests():
     f2 = make_file(r"C:\DDL_Ingest\ingest_report_2026-04-12.md", "ingest_report_2026-04-12.md")
     u, r = classify_scanned_files([f2])
     assert len(u) == 1 and len(r) == 0, f"Case 2 failed"
-    print("  [OK] Case 2: wrong parent → user file")
+    print("  [OK] Case 2: wrong parent -> user file")
     passed += 1
 
     # Case 3: wrong prefix
     f3 = make_file(r"C:\DDL_Ingest\_sweep_reports\sweep_2026-04-12.md", "sweep_2026-04-12.md")
     u, r = classify_scanned_files([f3])
     assert len(u) == 1 and len(r) == 0, f"Case 3 failed"
-    print("  [OK] Case 3: wrong prefix → user file")
+    print("  [OK] Case 3: wrong prefix -> user file")
     passed += 1
 
     # Case 4: wrong extension
     f4 = make_file(r"C:\DDL_Ingest\_sweep_reports\ingest_report_2026-04-12.txt", "ingest_report_2026-04-12.txt")
     u, r = classify_scanned_files([f4])
     assert len(u) == 1 and len(r) == 0, f"Case 4 failed"
-    print("  [OK] Case 4: wrong extension → user file")
+    print("  [OK] Case 4: wrong extension -> user file")
     passed += 1
 
     # Case 5: mixed set
@@ -686,7 +686,7 @@ def run_self_tests():
     # Case 6: empty list
     u, r = classify_scanned_files([])
     assert len(u) == 0 and len(r) == 0, f"Case 6 failed"
-    print("  [OK] Case 6: empty list → both empty")
+    print("  [OK] Case 6: empty list -> both empty")
     passed += 1
 
     # Report filename generation: microsecond uniqueness

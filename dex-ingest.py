@@ -355,7 +355,7 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
                 print(f"  Reset: dropped {cname} (had {pre_drop_counts[cname]:,} chunks)")
             except Exception as e:
                 drop_failures.append({"collection": cname, "error": str(e)})
-                print(f"  Reset: WARN — {cname} drop failed: {e}")
+                print(f"  Reset: WARN - {cname} drop failed: {e}")
         append_reset_log({
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "source": "dex-ingest.py",
@@ -613,14 +613,14 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
     print(f"  New chunks added RAW:           {add_raw}")
     print(f"  New chunks added CANON:         {add_canon}")
     if scoped_col:
-        print(f"  New chunks added SCOPED:        {add_scoped}  → {collection}")
+        print(f"  New chunks added SCOPED:        {add_scoped}  -> {collection}")
         print(f"  Chunks skipped (SCOPED exist):  {skip_scoped_existing}")
     print(f"  Chunks skipped (RAW existing):  {skip_raw_existing}")
     print(f"  Chunks skipped (CANON existing):{skip_canon_existing}")
     print(f"  Errors:                         {errors}")
     print(f"  Time: {elapsed:.0f}s ({elapsed/60:.1f} min)")
     print(f"  DB total chunks RAW:   {raw_count_end}  (was {raw_count_start}, delta +{raw_count_end - raw_count_start})")
-    print(f"  DB total chunks CANON: {canon_count_end}  (was {canon_count_start}, delta +{canon_count_end - canon_count_start}){' [approx — fast mode]' if fast else ''}")
+    print(f"  DB total chunks CANON: {canon_count_end}  (was {canon_count_start}, delta +{canon_count_end - canon_count_start}){' [approx - fast mode]' if fast else ''}")
     if scoped_col:
         scoped_end = scoped_col.count()
         print(f"  DB total chunks {collection}: {scoped_end}")
@@ -657,7 +657,7 @@ def main() -> None:
     p.add_argument(
         "--fast",
         action="store_true",
-        help="Skip existing ID load — use upsert directly. Faster for auto-ingest. Delta reporting approximate.",
+        help="Skip existing ID load - use upsert directly. Faster for auto-ingest. Delta reporting approximate.",
     )
     p.add_argument(
         "--skip-backup-check",

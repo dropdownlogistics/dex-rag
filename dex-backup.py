@@ -542,7 +542,7 @@ def restore_test(backup_path: "Path | None" = None) -> dict:
             expected = manifest_counts.get(name)
             if expected is None:
                 tag = "EXTRA"
-                exp_str = "—"
+                exp_str = "-"
             elif expected == count:
                 tag = "OK"
                 exp_str = f"{expected:,}"
@@ -744,7 +744,7 @@ def main():
                 restored = rt['collections_verified'][name]
                 manifest_count = rt['manifest_counts'].get(name, None)
                 tag = "OK" if restored == manifest_count else "MISMATCH"
-                exp = f"{manifest_count:,}" if manifest_count is not None else "—"
+                exp = f"{manifest_count:,}" if manifest_count is not None else "-"
                 print(f"    {name:<15} restored={restored:>10,}  manifest={exp:>11}  [{tag}]")
             append_log({
                 "timestamp": utc_now_iso(),
