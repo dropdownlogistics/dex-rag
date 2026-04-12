@@ -1,22 +1,28 @@
 """Needoh stock watcher — polls 19 retailer URLs, texts Emily on new finds."""
 import json
 import os
+import re
+import smtplib
+import ssl
 from datetime import datetime
+from email.message import EmailMessage
 from pathlib import Path
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from twilio.rest import Client
 
 HERE = Path(__file__).parent
 load_dotenv(HERE / ".env")
 
-TWILIO_SID = os.environ["TWILIO_ACCOUNT_SID"]
-TWILIO_TOKEN = os.environ["TWILIO_AUTH_TOKEN"]
-TWILIO_FROM = os.environ["TWILIO_FROM_NUMBER"]
-EMILY_TO = os.environ["EMILY_PHONE_NUMBER"]
+GMAIL_ADDRESS = os.environ["GMAIL_ADDRESS"]
+GMAIL_APP_PASSWORD = os.environ["GMAIL_APP_PASSWORD"]
+EMILY_PHONE = re.sub(r"\D", "", os.environ["EMILY_PHONE_NUMBER"])[-10:]
+EMILY_SMS_TO = f"{EMILY_PHONE}@vtext.com"
+
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = 465
 
 STATE_FILE = HERE / "seen.json"
 LOG_FILE = HERE / "watcher.log"
@@ -117,21 +123,28 @@ def extract_products(html: str, base_url: str) -> list[tuple[str, str]]:
     return list(found.items())
 
 
-def send_sms(client: Client, body: str) -> None:
-    msg = client.messages.create(body=body, from_=TWILIO_FROM, to=EMILY_TO)
-    log(f"SMS sent sid={msg.sid}")
+def send_email_sms(body: str) -> None:
+    msg = EmailMessage()
+    msg["From"] = GMAIL_ADDRESS
+    msg["To"] = EMILY_SMS_TO
+    msg["Subject"] = ""
+    msg.set_content(body)
+    ctx = ssl.create_default_context()
+    with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=ctx) as s:
+        s.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
+        s.send_message(msg)
+    log(f"SMS sent to {EMILY_SMS_TO}")
 
 
 def main() -> int:
     state, first_run = load_state()
-    client = Client(TWILIO_SID, TWILIO_TOKEN)
 
     if first_run:
         log("first run — cataloging current findings silently, no product alerts this run")
 
     if not state["startup_sent"]:
         try:
-            send_sms(client, STARTUP_MSG)
+            send_email_sms(STARTUP_MSG)
             state["startup_sent"] = True
             save_state(state)
         except Exception as e:
@@ -166,7 +179,7 @@ def main() -> int:
             else:
                 body = f"\U0001F7E2 Needoh alert! {name} spotted at {site} — {link}"
             try:
-                send_sms(client, body)
+                send_email_sms(body)
                 seen[key] = datetime.now().isoformat(timespec="seconds")
                 new_alerts += 1
             except Exception as e:
