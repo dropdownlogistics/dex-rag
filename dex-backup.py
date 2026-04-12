@@ -47,6 +47,20 @@ RETAIN_MONTHLY = 3
 BACKUP_TOOL_VERSION = "dex-backup-001"
 
 
+class RestoreTestFailedError(Exception):
+    """
+    Raised by restore_test() when a backup fails post-creation verification.
+
+    Trigger 6 of STD-DDL-BACKUP-001 (pending formalization). The backup
+    directory that failed the restore test is NOT automatically renamed
+    or deleted — the operator inspects it manually. The exception message
+    contains the full diff (collection counts, missing collections, etc.).
+    """
+    def __init__(self, message: str, result: dict | None = None):
+        super().__init__(message)
+        self.result = result
+
+
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -362,6 +376,191 @@ def validate_backup(backup_dir: Path, manifest: dict) -> tuple[bool, list[str]]:
     return (len(failures) == 0, failures)
 
 
+def restore_test(backup_path: "Path | None" = None) -> dict:
+    """
+    Trigger 6 — post-backup restore verification.
+
+    Copies a backup to a scratch location outside the repo and outside
+    OneDrive, opens it as a fresh ChromaDB PersistentClient, enumerates
+    all collections, counts each one, and compares the result to the
+    manifest's recorded counts. Any mismatch raises
+    RestoreTestFailedError with full diff detail.
+
+    The original backup directory is never opened or modified — only
+    the scratch copy is touched. Scratch is always cleaned up via a
+    try/finally, even on failure. On Windows, a GC hint + one retry
+    with a small delay handles the SQLite file-lock case.
+
+    Args:
+        backup_path: path to a backup directory. If None, uses the
+            most recent backup from find_existing_backups().
+
+    Returns:
+        dict with test result:
+            backup_tested: backup dir name
+            scratch_path: scratch location (deleted by the time this returns)
+            collections_verified: {name: count} from the restored DB
+            manifest_counts: {name: count} from the manifest
+            match: bool — True if all counts match
+            duration_seconds: float
+            status: "PASS" or "FAIL"
+
+    Raises:
+        RestoreTestFailedError: on missing backup, invalid manifest,
+            open failure, or any count mismatch. The exception carries
+            the partial result dict on `.result` for the caller to log.
+    """
+    started_at = datetime.now(timezone.utc)
+
+    # Resolve backup path
+    if backup_path is None:
+        backups = find_existing_backups()
+        if not backups:
+            raise RestoreTestFailedError("restore_test: no backups found")
+        backup_path = backups[0]
+
+    backup_path = Path(backup_path)
+    if not backup_path.exists():
+        raise RestoreTestFailedError(
+            f"restore_test: backup path does not exist: {backup_path}"
+        )
+
+    manifest = read_manifest(backup_path)
+    if manifest is None:
+        raise RestoreTestFailedError(
+            f"restore_test: manifest missing or invalid at {backup_path}"
+        )
+
+    raw_counts = dict(manifest.get("collections", {}))
+    # Filter out -1 fallback values from schema-mismatch cases
+    manifest_counts = {k: v for k, v in raw_counts.items() if v >= 0}
+    if not manifest_counts:
+        raise RestoreTestFailedError(
+            f"restore_test: manifest has no valid collection counts "
+            f"(all -1 or empty): {raw_counts}"
+        )
+
+    # Scratch path: outside repo, outside OneDrive, outside live .dex-jr
+    scratch_root = Path(__file__).parent.parent / "dex-rag-scratch"
+    scratch_root.mkdir(parents=True, exist_ok=True)
+    scratch_dir = scratch_root / f"restore_test_{utc_now_compact()}"
+
+    print(f"Restore test: {backup_path.name}")
+    print(f"  Scratch: {scratch_dir}")
+    total_size_gb = manifest.get("total_size_bytes", 0) / 1e9
+    print(f"  Copying backup (~{total_size_gb:.1f} GB) to scratch...")
+
+    result = {
+        "backup_tested": backup_path.name,
+        "scratch_path": str(scratch_dir),
+        "collections_verified": {},
+        "manifest_counts": manifest_counts,
+        "match": False,
+        "duration_seconds": None,
+        "status": "FAIL",
+    }
+
+    failures: list[str] = []
+    client = None
+    try:
+        copy_start = datetime.now(timezone.utc)
+        shutil.copytree(backup_path, scratch_dir)
+        copy_duration = (datetime.now(timezone.utc) - copy_start).total_seconds()
+        print(f"  Copy complete ({copy_duration:.1f}s)")
+
+        # Local import to keep chromadb out of the module-load path
+        import chromadb
+        try:
+            from chromadb.config import Settings
+            client = chromadb.PersistentClient(
+                path=str(scratch_dir),
+                settings=Settings(anonymized_telemetry=False),
+            )
+        except Exception:
+            # Fallback if chromadb version differs on the Settings API
+            client = chromadb.PersistentClient(path=str(scratch_dir))
+
+        verified: dict[str, int] = {}
+        for col in client.list_collections():
+            name = col.name
+            collection = client.get_collection(name)
+            count = collection.count()
+            verified[name] = count
+            expected = manifest_counts.get(name)
+            if expected is None:
+                tag = "EXTRA"
+                exp_str = "—"
+            elif expected == count:
+                tag = "OK"
+                exp_str = f"{expected:,}"
+            else:
+                tag = "MISMATCH"
+                exp_str = f"{expected:,}"
+            print(f"  {name:<15} restored={count:>10,}  manifest={exp_str:>11}  [{tag}]")
+
+        result["collections_verified"] = verified
+
+        # Compare: every manifest collection must appear with matching count
+        for name, manifest_count in manifest_counts.items():
+            if name not in verified:
+                failures.append(f"missing collection in restore: {name}")
+                continue
+            if verified[name] != manifest_count:
+                failures.append(
+                    f"count mismatch for {name}: "
+                    f"restored={verified[name]} manifest={manifest_count}"
+                )
+        extra_cols = set(verified.keys()) - set(manifest_counts.keys())
+        if extra_cols:
+            failures.append(
+                f"extra collections in restore not in manifest: {sorted(extra_cols)}"
+            )
+
+        if not failures:
+            result["match"] = True
+            result["status"] = "PASS"
+        else:
+            result["status"] = "FAIL"
+    finally:
+        # Release client before tearing down scratch (Windows file locks)
+        if client is not None:
+            try:
+                del client
+            except Exception:
+                pass
+        import gc
+        gc.collect()
+
+        completed_at = datetime.now(timezone.utc)
+        result["duration_seconds"] = round(
+            (completed_at - started_at).total_seconds(), 2
+        )
+
+        # Clean up scratch (retry once on Windows SQLite lock edge case)
+        if scratch_dir.exists():
+            for attempt in range(2):
+                try:
+                    shutil.rmtree(scratch_dir)
+                    print(f"  Scratch cleaned up")
+                    break
+                except Exception as e:
+                    if attempt == 0:
+                        import time as _time
+                        _time.sleep(1)
+                        gc.collect()
+                        continue
+                    print(f"  WARNING: scratch cleanup failed: {e}")
+
+    if failures:
+        raise RestoreTestFailedError(
+            f"restore_test FAILED for {backup_path.name}:\n  " +
+            "\n  ".join(failures),
+            result=result,
+        )
+
+    return result
+
+
 def rotate_backups() -> tuple[bool, list[str]]:
     """Apply retention policy. Returns (success, list_of_pruned_paths)."""
     backups = find_existing_backups()
@@ -420,6 +619,8 @@ def main():
     parser.add_argument("--rotate-only", action="store_true", help="Skip backup, just rotate")
     parser.add_argument("--check-only", action="store_true", help="Validate most recent backup")
     parser.add_argument("--json", action="store_true", help="Output structured JSON (only with --check-only)")
+    parser.add_argument("--restore-test", action="store_true", help="Run Trigger 6 restore test on most recent backup")
+    parser.add_argument("--skip-restore-test", action="store_true", help="Skip Trigger 6 restore test after backup creation")
     parser.add_argument("--expected-chunks", type=int, default=0, help="For pre-batch trigger")
     args = parser.parse_args()
 
@@ -473,6 +674,42 @@ def main():
         print(f"Rotation: {'OK' if ok else 'FAILED'}, pruned {len(pruned)} backups")
         sys.exit(0 if ok else 3)
 
+    if args.restore_test:
+        try:
+            rt = restore_test()
+            print()
+            print(f"Restore test: {rt['status']}")
+            print(f"  Backup: {rt['backup_tested']}")
+            print(f"  Duration: {rt['duration_seconds']:.1f}s")
+            print(f"  Collections:")
+            for name in sorted(rt['collections_verified'].keys()):
+                restored = rt['collections_verified'][name]
+                manifest_count = rt['manifest_counts'].get(name, None)
+                tag = "OK" if restored == manifest_count else "MISMATCH"
+                exp = f"{manifest_count:,}" if manifest_count is not None else "—"
+                print(f"    {name:<15} restored={restored:>10,}  manifest={exp:>11}  [{tag}]")
+            append_log({
+                "timestamp": utc_now_iso(),
+                "result": "success",
+                "stage": "restore_test_standalone",
+                "backup_path": rt.get("scratch_path"),
+                "backup_tested": rt.get("backup_tested"),
+                "duration_seconds": rt.get("duration_seconds"),
+                "collections_verified": rt.get("collections_verified"),
+            })
+            sys.exit(0)
+        except RestoreTestFailedError as e:
+            print()
+            print(f"RESTORE TEST FAILED:")
+            print(str(e))
+            append_log({
+                "timestamp": utc_now_iso(),
+                "result": "failed",
+                "stage": "restore_test_standalone",
+                "error": str(e),
+            })
+            sys.exit(1)
+
     # Trigger check
     if args.force:
         should_backup = True
@@ -513,6 +750,28 @@ def main():
         sys.exit(1)
 
     print("Validation: OK")
+
+    # Trigger 6 — restore test (post-creation verification)
+    if not args.skip_restore_test:
+        try:
+            rt = restore_test(backup_dir)
+            print(f"Restore test: PASS ({rt['duration_seconds']:.1f}s)")
+        except RestoreTestFailedError as e:
+            print()
+            print(f"TRIGGER 6 RESTORE TEST FAILED for {backup_dir.name}:")
+            print(str(e))
+            print(f"Backup directory NOT renamed or rotated. Inspect manually:")
+            print(f"  {backup_dir}")
+            append_log({
+                "timestamp": utc_now_iso(),
+                "result": "failed",
+                "stage": "restore_test",
+                "backup_path": str(backup_dir),
+                "error": str(e),
+            })
+            sys.exit(1)
+    else:
+        print("Restore test: SKIPPED (--skip-restore-test)")
 
     # Rotate
     rot_ok, pruned = rotate_backups()
