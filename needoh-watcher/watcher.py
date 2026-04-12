@@ -68,6 +68,18 @@ SKIP_EXACT = {
     "needoh toys", "all needoh", "view all", "see more",
 }
 
+OUT_OF_STOCK_PHRASES = (
+    "sold out",
+    "out of stock",
+    "unavailable",
+    "notify me when available",
+    "back in stock",
+    "currently unavailable",
+    "temporarily out of stock",
+    "not available",
+    "pre-order",
+)
+
 
 def log(msg: str) -> None:
     line = f"[{datetime.now().isoformat(timespec='seconds')}] {msg}"
@@ -123,6 +135,23 @@ def extract_products(html: str, base_url: str) -> list[tuple[str, str]]:
     return list(found.items())
 
 
+def is_available(link: str) -> tuple[bool, str]:
+    """Return (available, reason). Fail open: if fetch/parse fails, treat as available."""
+    try:
+        html = fetch(link)
+    except Exception as e:
+        return True, f"fetch failed ({e}) — failing open"
+    try:
+        soup = BeautifulSoup(html, "html.parser")
+        text = soup.get_text(" ", strip=True).lower()
+    except Exception as e:
+        return True, f"parse failed ({e}) — failing open"
+    for phrase in OUT_OF_STOCK_PHRASES:
+        if phrase in text:
+            return False, phrase
+    return True, ""
+
+
 def send_email_sms(body: str) -> None:
     msg = EmailMessage()
     msg["From"] = GMAIL_ADDRESS
@@ -173,6 +202,10 @@ def main() -> int:
             if first_run:
                 seen[key] = datetime.now().isoformat(timespec="seconds")
                 cataloged += 1
+                continue
+            available, reason = is_available(link)
+            if not available:
+                log(f"{site}: skipped '{name}' — out-of-stock signal found ('{reason}')")
                 continue
             if "sugar skull cat" in name.lower():
                 body = f"\U0001F6A8 SUGAR SKULL CAT ALERT \U0001F6A8 — {site} — GO GO GO! {link}"
