@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -33,6 +34,14 @@ DEFAULT_COLLECTIONS = ["dex_canon", "ddl_archive", "dex_code", "ext_creator"]
 DEFAULT_TOP_K = 3
 DEFAULT_MERGE_N = 5
 CHUNK_PREVIEW_CHARS = 300
+
+# B3: governance-identifier pattern. All-caps by convention. Matches e.g.
+# STD-DDL-SWEEPREPORT-001, CR-INGEST-PIPELINE-001, ADR-CORPUS-001,
+# PRO-BACKUP-001, OBS-DJ-004, SYS-BRIDGE-001. Case-sensitive.
+IDENTIFIER_PATTERN = re.compile(
+    r"\b(?:STD|CR|ADR|PRO|OBS|SYS)(?:-[A-Z0-9]+){2,}\b"
+)
+PREFILTER_PER_ID = 5  # max chunks returned per detected identifier per collection
 
 
 def eprint(*args: Any, **kwargs: Any) -> None:
@@ -59,6 +68,69 @@ def generate(prompt: str) -> str:
     return r.json()["response"]
 
 
+def extract_identifiers(query_text: str) -> list[str]:
+    """Return deduplicated, order-preserved list of identifier-like tokens."""
+    seen: list[str] = []
+    for m in IDENTIFIER_PATTERN.finditer(query_text or ""):
+        tok = m.group(0)
+        if tok not in seen:
+            seen.append(tok)
+    return seen
+
+
+def prefilter_by_source_file(
+    client: chromadb.api.ClientAPI,
+    identifiers: list[str],
+    collection_names: list[str],
+    per_id: int = PREFILTER_PER_ID,
+) -> list[dict]:
+    """For each identifier, look up chunks whose source_file matches common
+    filename variants. Returns chunks in identifier-order, collection-order."""
+    hits: list[dict] = []
+    seen_keys: set[tuple[str, str]] = set()
+    for ident in identifiers:
+        variants = [f"{ident}.txt", f"{ident}.md", f"{ident} Draft.txt"]
+        for name in collection_names:
+            try:
+                col = client.get_collection(name)
+            except Exception:
+                continue
+            try:
+                got = col.get(
+                    where={"source_file": {"$in": variants}},
+                    limit=per_id,
+                    include=["documents", "metadatas"],
+                )
+            except Exception as e:
+                eprint(f"  [warn] prefilter get failed on {name}: {e}")
+                continue
+            ids = got.get("ids", []) or []
+            docs = got.get("documents", []) or []
+            metas = got.get("metadatas", []) or []
+            for cid, doc, md in zip(ids, docs, metas):
+                md = md or {}
+                key = (name, cid)
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                src = md.get("source_file") or md.get("filename") or "<unknown>"
+                tag = (
+                    "prefilter_filename_match_draft"
+                    if src.endswith(" Draft.txt")
+                    else "prefilter_filename_match"
+                )
+                hits.append({
+                    "collection": name,
+                    "source_file": src,
+                    "ingest_run_id": md.get("ingest_run_id", ""),
+                    "distance": 0.0,
+                    "text": doc or "",
+                    "retrieval_source": tag,
+                    "matched_identifier": ident,
+                })
+    return hits
+
+
 def search_collections(
     client: chromadb.api.ClientAPI,
     embedding: list[float],
@@ -80,14 +152,20 @@ def search_collections(
         docs = res.get("documents", [[]])[0]
         metas = res.get("metadatas", [[]])[0]
         dists = res.get("distances", [[]])[0]
-        for doc, md, dist in zip(docs, metas, dists):
+        # chroma includes ids by default, outside `include`
+        res_ids_raw = res.get("ids") or [[]]
+        res.setdefault("ids", res_ids_raw)
+        ids = res.get("ids", [[]])[0]
+        for cid, doc, md, dist in zip(ids, docs, metas, dists):
             md = md or {}
             hits.append({
+                "id": cid,
                 "collection": name,
                 "source_file": md.get("source_file") or md.get("filename") or "<unknown>",
                 "ingest_run_id": md.get("ingest_run_id", ""),
                 "distance": float(dist),
                 "text": doc or "",
+                "retrieval_source": "vector",
             })
     hits.sort(key=lambda h: h["distance"])
     return hits
@@ -118,9 +196,12 @@ def fmt_markdown(question: str, chunks: list[dict], answer: str | None) -> str:
         preview = c["text"][:CHUNK_PREVIEW_CHARS]
         if len(c["text"]) > CHUNK_PREVIEW_CHARS:
             preview += "..."
+        is_prefilter = c.get("retrieval_source", "vector").startswith("prefilter_")
+        tag = " [PREFILTER MATCH]" if is_prefilter else ""
+        dist_str = "n/a (prefilter)" if is_prefilter else f"{c['distance']:.4f}"
         lines.append(
-            f"### {i}. {c['source_file']} (collection: {c['collection']}, "
-            f"distance: {c['distance']:.4f})"
+            f"### {i}. {c['source_file']}{tag} (collection: {c['collection']}, "
+            f"distance: {dist_str})"
         )
         lines.append(preview)
         lines.append("")
@@ -159,6 +240,23 @@ def fmt_plain(answer: str | None) -> str:
 def run_query(args: argparse.Namespace) -> int:
     collections = [args.collection] if args.collection else DEFAULT_COLLECTIONS
     skip_answer = args.raw or args.no_answer
+    use_prefilter = not getattr(args, "no_prefilter", False)
+
+    try:
+        client = chromadb.PersistentClient(path=CHROMA_DIR)
+    except Exception as e:
+        eprint(f"ERROR: ChromaDB open failed: {e}")
+        return 2
+
+    prefilter_hits: list[dict] = []
+    if use_prefilter:
+        idents = extract_identifiers(args.question)
+        if idents:
+            try:
+                prefilter_hits = prefilter_by_source_file(client, idents, collections)
+            except Exception as e:
+                eprint(f"  [warn] prefilter step failed, falling through: {e}")
+                prefilter_hits = []
 
     try:
         embedding = embed(args.question)
@@ -167,13 +265,21 @@ def run_query(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        client = chromadb.PersistentClient(path=CHROMA_DIR)
-        hits = search_collections(client, embedding, collections, args.top_k)
+        vector_hits = search_collections(client, embedding, collections, args.top_k)
     except Exception as e:
         eprint(f"ERROR: ChromaDB query failed: {e}")
         return 2
 
-    merged = hits[:DEFAULT_MERGE_N]
+    # Merge: prefilter first, then vector; dedupe by (collection, id)
+    seen: set[tuple[str, str]] = set()
+    merged_all: list[dict] = []
+    for c in prefilter_hits + vector_hits:
+        key = (c["collection"], c.get("id", c["source_file"] + c["text"][:32]))
+        if key in seen:
+            continue
+        seen.add(key)
+        merged_all.append(c)
+    merged = merged_all[:DEFAULT_MERGE_N]
 
     answer: str | None = None
     if not skip_answer:
@@ -235,12 +341,32 @@ def run_self_test() -> int:
     try:
         ns = argparse.Namespace(
             question=test_q, top_k=2, collection=None, raw=False,
-            no_answer=False, format="plain",
+            no_answer=False, format="plain", no_prefilter=False,
         )
         rc = run_query(ns)
         steps.append(("Canonical test query", rc == 0, f"rc={rc}"))
     except Exception as e:
         steps.append(("Canonical test query", False, str(e)))
+
+    # 5. B3 canary: identifier prefilter must surface its own document
+    try:
+        client = chromadb.PersistentClient(path=CHROMA_DIR)
+        idents = extract_identifiers("What is STD-DDL-SWEEPREPORT-001?")
+        prefilter_ok = False
+        note = ""
+        if idents == ["STD-DDL-SWEEPREPORT-001"]:
+            hits = prefilter_by_source_file(client, idents, DEFAULT_COLLECTIONS)
+            match = any(
+                h["source_file"].startswith("STD-DDL-SWEEPREPORT-001")
+                for h in hits
+            )
+            prefilter_ok = match
+            note = f"{len(hits)} prefilter hits" if match else "no matching chunks"
+        else:
+            note = f"regex miss: {idents}"
+        steps.append(("B3 canary: STD-DDL-SWEEPREPORT-001 prefilter", prefilter_ok, note))
+    except Exception as e:
+        steps.append(("B3 canary: STD-DDL-SWEEPREPORT-001 prefilter", False, str(e)))
 
     print("\nSELF-TEST RESULTS")
     print("=" * 60)
@@ -272,6 +398,8 @@ def main() -> int:
                    default="markdown", help="Output format")
     p.add_argument("--self-test", action="store_true",
                    help="Verify Ollama + ChromaDB connectivity and exit")
+    p.add_argument("--no-prefilter", action="store_true",
+                   help="Disable B3 identifier pre-filter (compare against pure vector retrieval)")
     args = p.parse_args()
 
     if args.self_test:
