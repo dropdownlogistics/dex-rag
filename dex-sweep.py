@@ -366,9 +366,12 @@ def run_ingestion(ingest_path, dry_run=False):
     try:
         print(f"  Running ingestion against {ingest_path}...")
         ingest_env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+        # Step 24: no timeout. Real operator content can exceed any reasonable
+        # wall-time cap. Ingest runs to completion. Dex-ingest.py has its own
+        # progress indicators via stdout.
         result = subprocess.run(
             cmd_args,
-            capture_output=True, text=True, timeout=300,
+            capture_output=True, text=True,
             env=ingest_env,
         )
 
