@@ -69,6 +69,42 @@ def utc_now_compact() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M")
 
 
+def cleanup_stale_scratch(max_age_hours: float = 1.0) -> int:
+    """
+    Reclaim orphan restore_test_* directories in dex-rag-scratch/ that
+    are older than max_age_hours.
+
+    Exists because restore_test()'s in-process cleanup can fail on
+    Windows when ChromaDB's HNSW data_level0.bin is still memory-mapped
+    after `del client` + `gc.collect()`. The mmap is released when the
+    Python process exits, so the *next* dex-backup.py run can safely
+    remove what the previous run left behind.
+
+    Tolerates file-lock errors by logging a WARN and continuing.
+    Returns the count of directories actually removed.
+    """
+    scratch_root = Path(__file__).parent.parent / "dex-rag-scratch"
+    if not scratch_root.exists():
+        return 0
+
+    removed = 0
+    cutoff = datetime.now(timezone.utc).timestamp() - (max_age_hours * 3600)
+    for child in scratch_root.iterdir():
+        if not child.is_dir():
+            continue
+        if not child.name.startswith("restore_test_"):
+            continue
+        try:
+            mtime = child.stat().st_mtime
+            if mtime < cutoff:
+                shutil.rmtree(child)
+                removed += 1
+                print(f"  Reclaimed stale scratch: {child.name}")
+        except Exception as e:
+            print(f"  WARN: could not reclaim {child.name}: {e}")
+    return removed
+
+
 def find_existing_backups() -> list[Path]:
     """Return sorted list of existing backup directories (newest first)."""
     if not BACKUP_ROOT.exists():
@@ -365,9 +401,26 @@ def validate_backup(backup_dir: Path, manifest: dict) -> tuple[bool, list[str]]:
 
     src_uuids = {p.name for p in LIVE_CHROMADB.iterdir() if p.is_dir() and not p.name.startswith(".")}
     dst_uuids = {p.name for p in backup_dir.iterdir() if p.is_dir()}
-    missing = src_uuids - dst_uuids
-    if missing:
-        failures.append(f"missing UUID directories in backup: {missing}")
+
+    # Backup contains UUIDs that live no longer has = live-side deletion
+    # or segment loss. This is a corruption/loss signal — FATAL.
+    missing_in_live = dst_uuids - src_uuids
+    if missing_in_live:
+        failures.append(
+            f"UUIDs in backup but missing from live (possible data loss): "
+            f"{sorted(missing_in_live)}"
+        )
+
+    # Live has UUIDs the backup doesn't = orphan segments from dropped
+    # collections (Chroma doesn't GC segment dirs on collection drop).
+    # Informational only — does NOT make the backup invalid.
+    extra_in_live = src_uuids - dst_uuids
+    if extra_in_live:
+        sample = sorted(extra_in_live)[:3]
+        print(
+            f"  WARN: {len(extra_in_live)} orphan segment(s) in live not in backup "
+            f"(likely dropped-collection residue): {sample}"
+        )
 
     actual_sha = sha256_file(sqlite_path)
     if actual_sha != manifest["sqlite_sha256"]:
@@ -631,6 +684,11 @@ def main():
         print(f"Live: {LIVE_CHROMADB}")
         print(f"Backup root: {BACKUP_ROOT}")
         print()
+
+        # Reclaim any orphan restore_test_* scratch dirs left by a prior
+        # run that hit the Windows HNSW mmap lock on in-process cleanup.
+        # Skipped in JSON mode to keep stdout a single clean JSON line.
+        cleanup_stale_scratch()
 
     # Pre-flight
     if not LIVE_CHROMADB.exists():
