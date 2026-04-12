@@ -27,11 +27,20 @@ Changes from v4.1:
 import os
 import sys
 import time
+import json
 import argparse
 import hashlib
+from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 
 import requests
+
+from dex_pipeline import (
+    build_chunk_metadata,
+    ensure_backup_current,
+    BackupNotFoundError,
+    BackupFailedError,
+)
 
 
 # -----------------------------
@@ -49,6 +58,22 @@ EMBED_MODEL = "nomic-embed-text"
 CHUNK_SIZE_TOKENS = 500
 CHUNK_OVERLAP_TOKENS = 50
 CHARS_PER_TOKEN = 4
+
+# Any value >100 fires Trigger 5 (pre-batch) per STD-DDL-BACKUP-001.
+# Bulk runs almost always exceed 100 chunks; we use a large estimate
+# to guarantee the trigger regardless of actual file count.
+BULK_CHUNK_ESTIMATE = 10_000
+
+# Forensic audit log for --reset operations. Append-only JSONL.
+RESET_LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".reset_log")
+
+# Extension-based source_type inference subset (STD-DDL-METADATA-001 enum: "code")
+CODE_EXTENSIONS = {
+    ".py", ".cs", ".js", ".mjs", ".ts", ".tsx", ".jsx",
+    ".css", ".sql", ".sh", ".bat", ".ps1", ".bas",
+    ".prisma", ".ipynb",
+    ".yml", ".yaml", ".toml", ".json",
+}
 
 # File scan
 PHASE1_EXTENSIONS = {
@@ -97,6 +122,49 @@ def classify_tier(rel_path: str, filename: str, folder: str) -> Tuple[str, str]:
     if any(m in s for m in ARCHIVE_PATH_MARKERS):
         return ("archive", "historical")
     return ("unknown", "unknown")
+
+
+def infer_source_type(filename: str, extension: str) -> str:
+    """
+    Infer STD-DDL-METADATA-001 source_type enum value from filename + extension.
+
+    Extension-first for code/data/web. Filename-prefix override for text
+    files that are classifiable by naming convention (council reviews,
+    governance docs, synthesis, system telemetry). Fallback: "unknown".
+    """
+    ext = (extension or "").lower()
+    if ext in CODE_EXTENSIONS:
+        return "code"
+    if ext == ".csv":
+        return "spreadsheet"
+    if ext in (".html", ".mhtml"):
+        return "web_archive"
+    # Text-file filename-prefix rules (.md / .txt)
+    name = filename or ""
+    if name.startswith("DDLCouncilReview_"):
+        return "council_review"
+    if name.startswith("SYNTH-") or "_SYNTH." in name:
+        return "council_synthesis"
+    if any(name.startswith(p) for p in ("ADR-", "STD-", "PRO-", "CR-")):
+        return "governance"
+    if name.startswith("sweep_") and name.endswith(".md"):
+        return "system_telemetry"
+    if name.startswith("audit_") and name.endswith(".md"):
+        return "system_telemetry"
+    return "unknown"
+
+
+def append_reset_log(entry: dict) -> None:
+    """
+    Append one JSON line to .reset_log at the repo root. Forensic-only;
+    failures log to stderr but do NOT block the reset (the backup is
+    the real recovery path, the log is a paper trail).
+    """
+    try:
+        with open(RESET_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception as e:
+        print(f"    WARN: reset log write failed (non-blocking): {e}", file=sys.stderr)
 
 
 # -----------------------------
@@ -224,7 +292,7 @@ def scan_archive(root: str, extensions: Optional[set] = None) -> List[dict]:
 # -----------------------------
 def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fast: bool = False,
            collection: Optional[str] = None, ext_filter: Optional[set] = None,
-           nominated_by: Optional[str] = None) -> None:
+           nominated_by: Optional[str] = None, skip_backup_check: bool = False) -> None:
     import chromadb
 
     ext_list = ", ".join(sorted(ext_filter if ext_filter else PHASE1_EXTENSIONS))
@@ -241,6 +309,28 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
         print(f"  Nominated by: {nominated_by}")
     print("=" * 60)
 
+    # Generate ingest run id (HHMMSS precision to avoid same-minute collisions)
+    ingest_run_id = f"manual_{datetime.now(timezone.utc).strftime('%Y-%m-%d_%H%M%S')}"
+    print(f"  Ingest run id: {ingest_run_id}")
+
+    # Backup pre-flight (Trigger 3 of STD-DDL-BACKUP-001)
+    if not skip_backup_check:
+        try:
+            backup_status = ensure_backup_current(expected_write_chunks=BULK_CHUNK_ESTIMATE)
+            if backup_status["backup_ran"]:
+                print(f"  Backup refreshed: {backup_status['backup_path']}")
+            else:
+                print(f"  Backup current: age={backup_status['backup_age_hours']}h")
+        except BackupNotFoundError as e:
+            print(f"FATAL: no backup exists. Run 'python dex-backup.py --force' first.")
+            print(f"  ({e})")
+            sys.exit(1)
+        except BackupFailedError as e:
+            print(f"FATAL: backup pre-flight failed: {e}")
+            sys.exit(1)
+    else:
+        print(f"  Backup pre-flight SKIPPED (--skip-backup-check)")
+
     os.makedirs(CHROMA_DIR, exist_ok=True)
     client = chromadb.PersistentClient(path=CHROMA_DIR)
 
@@ -248,11 +338,32 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
         # NOTE: On Windows this can occasionally hang if the DB is locked.
         # If that happens, delete the folder manually:
         #   C:\\Users\\dexjr\\.dex-jr\\chromadb
+        # Rule 15 fix: explicit per-collection logging + forensic audit log.
+        # Gated upstream by ensure_backup_current() — backup must exist first.
+        pre_drop_counts: dict = {}
+        dropped: List[str] = []
+        drop_failures: List[dict] = []
+        for cname in (RAW_COLLECTION, CANON_COLLECTION):
+            try:
+                pre_drop_counts[cname] = client.get_collection(cname).count()
+            except Exception:
+                pre_drop_counts[cname] = 0  # didn't exist pre-reset
         for cname in (RAW_COLLECTION, CANON_COLLECTION):
             try:
                 client.delete_collection(cname)
-            except Exception:
-                pass
+                dropped.append(cname)
+                print(f"  Reset: dropped {cname} (had {pre_drop_counts[cname]:,} chunks)")
+            except Exception as e:
+                drop_failures.append({"collection": cname, "error": str(e)})
+                print(f"  Reset: WARN — {cname} drop failed: {e}")
+        append_reset_log({
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "source": "dex-ingest.py",
+            "dropped": dropped,
+            "drop_failures": drop_failures,
+            "pre_drop_counts": pre_drop_counts,
+            "ingest_run_id": ingest_run_id,
+        })
 
     raw_col = client.get_or_create_collection(
         RAW_COLLECTION, metadata={"description": "DDL Archive RAW"}
@@ -412,22 +523,32 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
                 errors += 1
                 continue
 
+            # Legacy metadata (preserved for read-side back-compat with dex_weights.py)
             md = {
-                "source_file": f["rel_path"],
                 "filename": f["filename"],
                 "folder": f["folder"],
-                "file_type": f["extension"],
-                "chunk_index": ci,
-                "total_chunks": len(chunks),
+                "file_type": f["extension"],   # extension string, legacy — dex_weights reads this
                 "file_hash": f["hash"][:16],
                 "char_count": len(chunk),
                 "tier": tier,
                 "status": status,
+                "rel_path": f["rel_path"],     # was legacy "source_file"; renamed for STD slot
             }
             if nominated_by:
                 md["nominated_by"] = nominated_by
             if collection:
                 md["collection_tag"] = collection
+
+            # STD-DDL-METADATA-001 mandatory fields — validates on construction
+            std_md = build_chunk_metadata(
+                source_file=f["filename"],
+                source_path=os.path.abspath(f["path"]),
+                source_type=infer_source_type(f["filename"], f["extension"]),
+                ingest_run_id=ingest_run_id,
+                chunk_index=ci,
+                chunk_total=len(chunks),
+            )
+            md.update(std_md)
 
             if store_to_raw:
                 if chunk_id not in raw_existing_ids:
@@ -538,6 +659,11 @@ def main() -> None:
         action="store_true",
         help="Skip existing ID load — use upsert directly. Faster for auto-ingest. Delta reporting approximate.",
     )
+    p.add_argument(
+        "--skip-backup-check",
+        action="store_true",
+        help="Skip Trigger 3 backup pre-flight. Use only when caller (e.g. dex-sweep.py) has already gated upstream.",
+    )
     args = p.parse_args()
 
     archive = args.path
@@ -555,6 +681,7 @@ def main() -> None:
         collection=args.collection,
         ext_filter=ext_filter,
         nominated_by=args.nominated_by,
+        skip_backup_check=args.skip_backup_check,
     )
 
 
