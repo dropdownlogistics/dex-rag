@@ -1,5 +1,7 @@
 .env
 ingest-single/
+needoh-watcher/seen.json
+needoh-watcher/watcher.log
 *.tsv
 *.vtt
 *.srt
