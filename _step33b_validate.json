@@ -1,0 +1,136 @@
+{
+  "parity": [
+    {
+      "src": "ext_creator",
+      "src_count": 922,
+      "dst": "ext_creator_v2",
+      "dst_count": 922,
+      "delta": 0,
+      "ok": true
+    },
+    {
+      "src": "dex_code",
+      "src_count": 20384,
+      "dst": "dex_code_v2",
+      "dst_count": 20384,
+      "delta": 0,
+      "ok": true
+    },
+    {
+      "src": "dex_canon",
+      "src_count": 245633,
+      "dst": "dex_canon_v2",
+      "dst_count": 245633,
+      "delta": 0,
+      "ok": true
+    },
+    {
+      "src": "ddl_archive",
+      "src_count": 291520,
+      "dst": "ddl_archive_v2",
+      "dst_count": 291520,
+      "delta": 0,
+      "ok": true
+    }
+  ],
+  "metadata": [
+    {
+      "col": "ext_creator",
+      "sampled": 100,
+      "missing_in_dst": 0,
+      "meta_mismatches": 0,
+      "ok": true
+    },
+    {
+      "col": "dex_code",
+      "sampled": 100,
+      "missing_in_dst": 0,
+      "meta_mismatches": 0,
+      "ok": true
+    },
+    {
+      "col": "dex_canon",
+      "sampled": 100,
+      "missing_in_dst": 0,
+      "meta_mismatches": 0,
+      "ok": true
+    },
+    {
+      "col": "ddl_archive",
+      "sampled": 100,
+      "missing_in_dst": 0,
+      "meta_mismatches": 0,
+      "ok": true
+    }
+  ],
+  "step32_queries": [
+    {
+      "label": "id_sweep",
+      "recall": true,
+      "top1_dist": 0.5895
+    },
+    {
+      "label": "id_cap",
+      "recall": true,
+      "top1_dist": 0.568
+    },
+    {
+      "label": "accidental",
+      "recall": true,
+      "top1_dist": 0.5891
+    },
+    {
+      "label": "emergence",
+      "recall": true,
+      "top1_dist": 0.4897
+    },
+    {
+      "label": "cottage",
+      "recall": false,
+      "top1_dist": 0.8914
+    },
+    {
+      "label": "charlie",
+      "recall": false,
+      "top1_dist": 0.8144
+    },
+    {
+      "label": "beth",
+      "recall": true,
+      "top1_dist": 0.7472
+    },
+    {
+      "label": "mithril",
+      "recall": true,
+      "top1_dist": 0.588
+    }
+  ],
+  "ident_queries": [
+    {
+      "label": "sweep_repo",
+      "recall": true,
+      "top1_dist": 0.4361
+    },
+    {
+      "label": "cap",
+      "recall": true,
+      "top1_dist": 0.6012
+    },
+    {
+      "label": "adr",
+      "recall": true,
+      "top1_dist": 0.3712
+    },
+    {
+      "label": "spiral",
+      "recall": false,
+      "top1_dist": 0.7099
+    },
+    {
+      "label": "backup",
+      "recall": true,
+      "top1_dist": 0.4276
+    }
+  ],
+  "overall_pass": false
+}

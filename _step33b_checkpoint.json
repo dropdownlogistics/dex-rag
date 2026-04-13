@@ -1,0 +1,43 @@
+{
+  "collections": {
+    "ext_creator": {
+      "dst": "ext_creator_v2",
+      "offset": 922,
+      "migrated": 922,
+      "skipped": 0,
+      "started": "2026-04-12T22:49:04.153811+00:00",
+      "completed": "2026-04-12T22:49:31.324369+00:00",
+      "elapsed_sec": 27.2
+    },
+    "dex_code": {
+      "dst": "dex_code_v2",
+      "offset": 20384,
+      "migrated": 20384,
+      "skipped": 0,
+      "started": "2026-04-12T22:49:31.470374+00:00",
+      "completed": "2026-04-12T22:59:15.967786+00:00",
+      "elapsed_sec": 584.5
+    },
+    "dex_canon": {
+      "dst": "dex_canon_v2",
+      "offset": 245633,
+      "migrated": 245633,
+      "skipped": 0,
+      "started": "2026-04-12T22:59:17.070086+00:00",
+      "completed": "2026-04-13T01:22:15.085042+00:00",
+      "elapsed_sec": 8578.0
+    },
+    "ddl_archive": {
+      "dst": "ddl_archive_v2",
+      "offset": 291520,
+      "migrated": 291520,
+      "skipped": 0,
+      "started": "2026-04-13T01:22:16.739943+00:00",
+      "completed": "2026-04-13T04:07:25.034718+00:00",
+      "elapsed_sec": 9908.3
+    }
+  },
+  "start": "2026-04-12T22:49:04.067167+00:00",
+  "completed": "2026-04-13T04:07:25.036720+00:00",
+  "total_elapsed_sec": 19101.0
+}
