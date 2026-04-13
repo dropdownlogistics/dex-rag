@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -28,12 +29,22 @@ if hasattr(sys.stdout, "reconfigure"):
 
 CHROMA_DIR = r"C:\Users\dkitc\.dex-jr\chromadb"
 OLLAMA_HOST = "http://localhost:11434"
-EMBED_MODEL = "nomic-embed-text"
+
+# Step 33b: env-gated migration switch. Defaults move to mxbai + _v2.
+# Override via env to fall back to nomic + originals during soak.
+EMBED_MODEL = os.environ.get("DEXJR_EMBED_MODEL", "mxbai-embed-large")
+COLLECTION_SUFFIX = os.environ.get("DEXJR_COLLECTION_SUFFIX", "_v2")
+
 GEN_MODEL = "qwen2.5-coder:7b"
-DEFAULT_COLLECTIONS = ["dex_canon", "ddl_archive", "dex_code", "ext_creator"]
+_BASE_COLLECTIONS = ["dex_canon", "ddl_archive", "dex_code", "ext_creator"]
+DEFAULT_COLLECTIONS = [c + COLLECTION_SUFFIX for c in _BASE_COLLECTIONS]
 DEFAULT_TOP_K = 3
 DEFAULT_MERGE_N = 5
 CHUNK_PREVIEW_CHARS = 300
+
+# mxbai-embed-large has a 512-token context window. Adaptive truncation
+# back-off: try progressively smaller text on 5xx until one fits.
+EMBED_TRUNC_LEVELS = (1200, 900, 600, 300)
 
 # B3: governance-identifier pattern. All-caps by convention. Matches e.g.
 # STD-DDL-SWEEPREPORT-001, CR-INGEST-PIPELINE-001, ADR-CORPUS-001,
@@ -50,13 +61,25 @@ def eprint(*args: Any, **kwargs: Any) -> None:
 
 
 def embed(question: str) -> list[float]:
-    r = requests.post(
-        f"{OLLAMA_HOST}/api/embeddings",
-        json={"model": EMBED_MODEL, "prompt": question},
-        timeout=60,
-    )
-    r.raise_for_status()
-    return r.json()["embedding"]
+    last_err: Exception | None = None
+    for lim in EMBED_TRUNC_LEVELS:
+        text = (question or "")[:lim]
+        try:
+            r = requests.post(
+                f"{OLLAMA_HOST}/api/embeddings",
+                json={"model": EMBED_MODEL, "prompt": text},
+                timeout=60,
+            )
+            if r.status_code == 200:
+                return r.json()["embedding"]
+            last_err = requests.HTTPError(
+                f"{r.status_code} at trunc={lim}: {r.text[:200]}"
+            )
+        except requests.RequestException as e:
+            last_err = e
+    if last_err:
+        raise last_err
+    raise RuntimeError("embed: unreachable")
 
 
 def generate(prompt: str) -> str:
