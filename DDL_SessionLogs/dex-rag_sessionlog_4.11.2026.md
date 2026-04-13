@@ -720,3 +720,216 @@ Applied Step 17's temp-dir pattern to the sweep. Instead of `dex-ingest.py --pat
 - **dex-rag-scratch/ state:** 3 Trigger-6 orphan scratch dirs (`restore_test_2026-04-12_0635`, `0647`, `0718`). These will be reclaimed by `cleanup_stale_scratch()` on the next backup run (the 4am sweep will fire Trigger 5 → new backup → cleanup runs → orphans reclaimed).
 - **Rule 17 files** (`dex_weights.py`, `fetch_leila_gharani.py`) still show unstaged modifications from before the session. **Rule 17 respected throughout** — verified before every commit via `git status --short`.
 - **25+ local commits ahead of `origin/main`.** Not pushed.
+
+
+---
+
+# 2026-04-12 — Steps 24 through 33b Part F
+
+**Day's arc:** Started with the 4 AM sweep timing out on real operator content, ended with the entire 558,459-chunk corpus migrated onto a new embedding model and Dex Jr. answering identifier queries correctly for the first time in the system's existence. Sixteen ratified steps. Two test collections built and parked. Five hours of overnight compute. One clean self-test against the new layer at 23:37 CDT.
+
+---
+
+## Part 1 — Morning (Steps 24-27)
+
+### Step 24 — 4 AM sweep timeout removal + morning resume
+**Commits:** `20ee36a`, `69fb1f6`
+
+The unattended 4 AM sweep fired correctly but the `subprocess.run(timeout=300)` in `dex-sweep.py::run_ingestion()` killed `dex-ingest.py` mid-run. 25 real operator files in the holding folder; 2,987 chunks landed before `TimeoutExpired`. dex_canon ended the morning at 245,020 (down from the expected target).
+
+The 300 s cap was inherited from Step 22 Fix A, where it had replaced 600 s after the CANON_DIR-scan issue was fixed. Real operator content (multi-MB files, thousands of chunks each) does not fit any reasonable wall-time cap. Removed the timeout entirely; `subprocess.TimeoutExpired` handler retained as defensive dead-code.
+
+Manually resumed the morning's 25-file ingest from the preserved temp dir `sweep_sweep_2026-04-12_090000`. dex_canon -> 245,633 (+613 from resume; total 5,036 chunks across the 25 files). All 25 files verified present in `dex_canon`.
+
+### Step 25 — Non-ASCII print scrub
+**Commit:** `3efb6a4`
+
+The Step 24 manual ingest crashed on its final summary print (`'charmap' codec can't encode character '\u2192'` under Windows cp1252). All DB writes had landed; the crash was on a `print(f"... -> ...")` line. Audited `dex-ingest.py`, `dex-sweep.py`, `dex-backup.py` for non-ASCII in print/help statements. 15 substitutions across 3 files (em dashes -> `-`, arrows -> `->`, box-drawing chars -> `-`). Smoke-tested `python dex-ingest.py --help` clean under `PYTHONIOENCODING=cp1252`. Comments and docstrings left alone (cosmetic, not crash-paths).
+
+### Step 26 — Push to origin
+Ahead-count was 3 commits, not 27+ as the prompt context expected — earlier sessions had pushed Steps 18-23. Fast-forward push of `885fd4f..3efb6a4` clean. Surfaced the discrepancy before pushing per Rule 6.
+
+### Step 27 — `dex_jr_query.py` CC -> Dex Jr. bridge
+**Commit:** `c50f30c`
+
+Mechanism 1 of CC<->Dex Jr. integration. Read-only CLI helper that takes a question, embeds via `nomic-embed-text`, queries all 4 ChromaDB collections, optionally feeds the retrieved chunks to `qwen2.5-coder:7b` for a grounded answer. Three output formats (markdown, json, plain). `--raw`/`--no-answer` for retrieval-only. `--self-test` for connectivity verification. Reconfigures stdout to utf-8 to handle non-ASCII content in retrieved chunks.
+
+Self-test passed 8/8. The first end-to-end query worked. Then the operator started actually using it.
+
+---
+
+## Part 2 — Retrieval Diagnostic Arc (Steps 28-32)
+
+### Step 28 — Retrieval quality deep-dive audit
+**Commit:** `a13d96f`
+
+Real-world testing exposed that `dex_jr_query.py` could not retrieve `STD-DDL-SWEEPREPORT-001.txt`'s own chunks even when queried with the literal identifier and a key phrase from the document. The chunks were verifiably present in `dex_canon`. The retrieval was failing.
+
+Built `_step28_diagnostic.py` to embed five test queries and compute raw L2-squared and cosine distances against every chunk of the target file, plus chroma's native top-20 ranking.
+
+**Smoking gun:**
+- `STD-DDL-SWEEPREPORT-001` vs `STD-DDL-BACKUP-001` under `nomic-embed-text`: **cosine 0.0000.** Bit-identical embeddings. Two different DDL identifiers indistinguishable to the model.
+- Self-identity check: `STD-DDL-SWEEPREPORT-001` vs itself: 0.0000 (sanity ok)
+- Cat/mat normal English: 0.0773 (model isn't broken on prose)
+- Conceptual `"sweep report protocol"` vs identifier: 0.2912 (the model can talk about the concept; it just can't read the identifier)
+
+`nomic-embed-text`'s tokenizer collapses DDL identifiers to indistinguishable token sequences. Retrieval by identifier is impossible via vector search alone.
+
+Ranked candidate fixes:
+- **B3** — source_file pre-filter. Detect identifier patterns in query, look up matching `{ID}.txt`/`.md`/`Draft.txt`. Fast, reversible. **Ship next.**
+- **B2** — body-contains fallback. When B3 finds nothing, run `where_document.$contains` for the identifier across collections.
+- **B1** — swap embedding model (mxbai-embed-large candidate). Real fix; defer until B3+B2 are lived-in.
+
+### Step 29 — B3 source_file prefilter
+**Commit:** `3e2d532`
+
+Implemented `extract_identifiers()` (regex for STD/CR/ADR/PRO/OBS/SYS-pattern), `prefilter_by_source_file()` (chroma `$in` lookup against three filename variants per identifier), and merge logic in `run_query()`. Markdown output tags prefilter chunks with `[PREFILTER MATCH]`. JSON output carries `retrieval_source: "prefilter_filename_match"`. Added `--no-prefilter` flag for testing. Self-test extended with B3 canary against `STD-DDL-SWEEPREPORT-001`.
+
+Verified:
+- `What is STD-DDL-SWEEPREPORT-001?` now returns the protocol's own chunks at rank 0 with the `[PREFILTER MATCH]` tag.
+- `What is the Dex Continuum?` (no identifier) falls through to vector search unchanged.
+- `--no-prefilter` reproduces the Step 28 failure exactly.
+
+### Step 30 — Transient HNSW error + B2 scope
+**Commit:** `b98c629`
+
+Real-workflow testing surfaced an intermittent ChromaDB error: `Error executing plan: Internal error: Error creating hnsw segment reader: Nothing found on disk`. Could not reproduce on demand — every retry succeeded.
+
+Filesystem audit of `C:\Users\dkitc\.dex-jr\chromadb\`:
+- 4 live collections, all healthy
+- 4 METADATA segments "missing on disk" — expected (sqlite-backed metadata segments don't have separate dirs in newer Chroma)
+- **7 orphan UUID directories**, each exactly 321,700 bytes (empty HNSW skeletons from collections created and dropped during the six-month iteration). Total 2.2 MB. Stable, unreferenced. Quarantine path drafted in audit Appendix E.
+
+Verified Finding 2 (B2 thesis): three identifiers (`CR-OPERATOR-CAPACITY-001`, `ADR-INGEST-PIPELINE-001`, `PRO-DDL-SPIRAL-001`) all have body-content matches in `dex_canon` via `$contains`, but **zero** filename matches. B3 prefilter returns nothing for them — body-match is exactly the missing path. ChromaDB 1.5.2 supports `where_document.$contains` cleanly.
+
+### Step 31 — B2 body-content fallback
+**Commit:** `59f2679`
+
+Implemented `body_match_by_identifier()`: when B3 finds zero hits for a detected identifier, run `col.get(where_document={"$contains": ident})` per collection, cap at 3 hits/collection. Tag chunks with `retrieval_source: "prefilter_body_match"` and `[BODY MATCH]` in markdown output. Self-test extended with B2 canary.
+
+All three previously-failing identifier queries now return correct content with `[BODY MATCH]` tags. Step 29 regression preserved. `--no-prefilter` cleanly disables both B3 and B2.
+
+Then real-workflow testing exposed the next layer: **concept queries with no identifier still failed.** AccidentalIntelligence, GuidedEmergence, CottageHumble, Charlie Conway Principle, Beth Epperson, Mithril Standard — six distinct concept queries, all returning off-topic content. B3+B2 don't help. The embedding model was the bottleneck.
+
+### Step 32 — B1 subset test with mxbai-embed-large
+**Commit:** `f764d1c`
+
+Pulled `mxbai-embed-large` (334M params, 670 MB, 1024-dim). Built `dex_canon_mxbai_test` — 2,500 chunks selected by `$contains` of nine seed terms (the failing concept queries' key terms plus identifier positive controls), expanded by source_file. Re-embedded with mxbai. Throughput 21.67 c/s single-stream.
+
+**Result: mxbai 8/8, nomic 0/8** on the 8-query suite. The identifier-pair test moved from 0.0000 to 0.2438 cosine. Every mxbai top-5 read like the answer space a human would expect; every nomic top-5 read like a random sample of the corpus.
+
+mxbai context limit is 512 tokens vs nomic's 2K. Used adaptive truncation 1200 -> 900 -> 600 -> 300 chars during embed. 0/2,500 needed backoff at the tightest level.
+
+Recommendation: full migration. Seven hours of single-stream extrapolation, but the 0/8 -> 8/8 evidence was not marginal.
+
+---
+
+## Part 3 — Migration (Steps 33a-33b Part F)
+
+### Step 33a — Batching probe + 10K rechunk validation
+**Commit:** `1dbfede`
+
+Two pre-migration questions:
+
+1. **Does `/api/embed` batch endpoint work and does it speed things up?** Yes, but modestly. Batch=8 optimal at 28.5 c/s (vs 23.8 c/s single-stream). Beyond batch=8 throughput drops as Ollama internally serializes. Full-migration extrapolation: 5.4 h, not 2-3 h.
+
+2. **Does structure-aware re-chunking to 400 tokens preserve retrieval quality at 10K scale?** **No.** Built `dex_canon_mxbai_rechunk_test` with 10,000 chunks via a structure-aware splitter (priority: `=====`, markdown headers, paragraphs, sentences, hard cut). Three-way comparative test (nomic_original / mxbai_original / mxbai_rechunk) on 9 queries:
+   - nomic_original: 0/9
+   - mxbai_original: 8/9
+   - **mxbai_rechunk: 6/9** — regressed on `id_sweep` and `emergence`
+
+   Root cause: the rechunked subset was 4x larger (10K vs 2.5K), so the relevant chunks faced more competition. Smaller chunks also lose the surrounding context that concept queries depend on. Spot check showed 7/10 mid-word starts (overlap artifact, same as the existing chunker).
+
+**Decision:** HALT the rechunk plan. Proceed to Step 33b with mxbai on the EXISTING 500-token chunker. Step 32 already validated 8/8 retrieval on that configuration; the chunker change is a separate, deferrable decision.
+
+### Step 33b — Full migration to mxbai
+**Commits:** `cb4a326` (migration + validation), `b950dba` (audit), `a373cff` (code switchover)
+
+Wrote `_step33b_migrate.py` — resumable via `_step33b_checkpoint.json`, paged 2K/page (avoiding the SQLite 32K variable limit), batched embed at 8/batch, adaptive truncation, checkpoint every 80 chunks. All 4 collections migrated to `_v2` twins. Original collections never touched.
+
+**Migration timing:**
+
+| Source -> Dest | Chunks | Wall time | Rate | Skipped |
+|---|---:|---:|---:|---:|
+| ext_creator -> _v2 | 922 | 0.5 min | 34.1 c/s | 0 |
+| dex_code -> _v2 | 20,384 | 9.7 min | 35.0 c/s | 0 |
+| dex_canon -> _v2 | 245,633 | 143.0 min | 28.6 c/s | 0 |
+| ddl_archive -> _v2 | 291,520 | 165.1 min | 29.4 c/s | 0 |
+| **TOTAL** | **558,459** | **318.4 min (5.3 h)** | **29.2** | **0** |
+
+Start 17:49 CDT -> end 23:07 CDT. ddl_archive finished 7 minutes after the 04:00 sweep window — sweep would have written to original `dex_canon` (nomic), which is fine; Step 33c can migrate any drift.
+
+**Validation:** Count parity 4/4 perfect. Metadata 4/4 perfect (0 mismatches across 400 sampled chunks). Step 32 8-query raw-vector recall: **6/8** (cottage and charlie regressed at full-corpus scale vs the 2,500-chunk subset — same scaling competition effect Step 33a documented). 5-identifier raw recall: 4/5 (PRO-DDL-SPIRAL-001 raw-fail, recovered by B2 in production -> 5/5 effective).
+
+**HALTed before code switchover** per prompt's "regress unexpectedly = halt" rule. Effective production recall with B3+B2 retained estimated at 7/8 vs nomic's 0/8. Operator GO received: ship the env-gated switch; cottage/charlie residuals are corpus-content density issues, soak-period diagnostic.
+
+### Step 33b Part F — Code switchover
+**Commit:** `a373cff`
+**Soak start: 2026-04-12 23:37:48 CDT (2026-04-13 04:37:48 UTC)**
+
+Env-gated defaults in `dex_jr_query.py`:
+- `DEXJR_EMBED_MODEL` defaults to `mxbai-embed-large`
+- `DEXJR_COLLECTION_SUFFIX` defaults to `_v2`
+- `embed()` does adaptive truncation 1200 -> 900 -> 600 -> 300
+
+Self-test 10/10 against `_v2`. B3 + B2 canaries both pass on the new collections. Rollback is one env-var change away.
+
+---
+
+## Part 4 — The Arc
+
+The day started with infrastructure: a scheduled sweep timing out on real operator content, the kind of bug that only shows up when you stop testing on yourself and start running against the world. Eight minutes of code change, fifteen minutes of scrubbing print statements that crashed under Windows codepage. Then the bridge — `dex_jr_query.py` — the first time CC and the operator could ask Dex Jr. a question and get an answer back through the same interface.
+
+The bridge worked. And then the operator used it. And the answers were wrong.
+
+Not "off by a margin" wrong. Categorically wrong. Asking for `STD-DDL-SWEEPREPORT-001` returned five chunks of unrelated session transcripts. Asking who Beth Epperson is returned an explanation of cognitive architecture. Asking for the Mithril Standard returned Reddit comments. The corpus contained the answers — the retrieval layer was failing to find them.
+
+Step 28 found it: the embedding model was treating every DDL identifier as the same string of tokens. `STD-DDL-SWEEPREPORT-001` and `STD-DDL-BACKUP-001` produced bit-identical embeddings. Six months of governance documents had been ingested into a system that could not distinguish them. The corpus was fine. The pipeline was fine. The chunker was fine. The retrieval *model* was wrong.
+
+Steps 29-31 patched the symptom: detect identifiers in the query, look them up by filename (B3) or by body-content (B2), surface those chunks before vector search even runs. It worked for identifier queries. But concept queries — anything without an identifier — still returned random content. The model was wrong for the whole class, not just identifiers.
+
+Step 32 proved `mxbai-embed-large` was the answer: 8/8 vs 0/8 on the same queries, same corpus subset. Step 33a confirmed batching gave a modest 20% gain and that re-chunking was a regression, not an improvement. Step 33b migrated all 558,459 chunks to `_v2` collections in 5.3 hours of overnight compute. Zero skipped. Perfect parity. The retrieval validation flagged 6/8 instead of 8/8 because at 245K-chunk scale the cottage/charlie answer-chunks lose to corpus competition — but with B3+B2 still active in production, real-world recall jumps from 0/8 to ~7/8.
+
+By 23:37 CDT the env-gated switch was in. Dex Jr. had answered its first questions on the new model. The soak began.
+
+---
+
+## Part 5 — Running list additions
+
+### Open from this session
+
+1. **Cottage and Charlie regression** — concept queries that work on the 2,500-chunk subset but fail at 245K-chunk scale. Soak-period diagnostic: sample top-20 instead of top-5, identify what's outranking the answer chunks, decide if it's a tunable. Likely a corpus-content density issue, not a retrieval-model failure.
+
+2. **Step 33c: post-soak cleanup** — when operator confirms `_v2` is healthy:
+   - Update `dex-ingest.py` to embed new chunks with mxbai + adaptive truncation
+   - Switch ingest routing to `_v2` collections
+   - Migrate any chunks that landed in nomic during the migration window or soak (likely < 100)
+   - Drop original `dex_canon`, `ddl_archive`, `dex_code`, `ext_creator`
+   - Rename `_v2` -> canonical names
+   - Drop the env-var switch in `dex_jr_query.py`
+   - Drop `dex_canon_mxbai_test` (Step 32) and `dex_canon_mxbai_rechunk_test` (Step 33a)
+
+3. **DirectIngest 24-file batch** — needs to land via the new pipeline (25 files on disk; `test.env` excluded).
+
+4. **`05_DirectIngest` folder not on sweep scan list** — operator decision: add to sweep, or force via `DDL_Ingest`.
+
+5. **LLMPM session log re-export** — current file on disk is 5:57 PM; missing everything after.
+
+6. **Transient HNSW retry hardening in `search_collections()`** — small defensive patch (catch the `Nothing found on disk` error and retry once).
+
+7. **7 HNSW orphan directories** — quarantine-then-delete per Step 30 Appendix E. *(Addressed in Step 35 below.)*
+
+8. **Seven WorkBench CRs ratified in parallel thread** — FACTLAYER, CONNECTIVITY, CANON, MODULE, MODBUILD, HRPEOPLE, PITFALLS, ANALYTICS. Context-only for future sessions.
+
+9. **CR-PLATFORM-CATHEDRAL-002** — governance retrieval / indexing / synthesis cadence. 30-day horizon.
+
+10. **Council V2 composition re-evaluation** — operator surfaced.
+
+### Carry-forward state
+
+- **`dex_jr_query.py` defaults:** `mxbai-embed-large` + `_v2`. Override via env vars to fall back.
+- **Soak window:** 24-72 h of operator queries against `_v2` before Step 33c.
+- **Original nomic collections:** intact, untouched, rollback path.
+- **Most recent backup anchor:** `chromadb_2026-04-12_1730`.
+- **Ahead-count on `origin/main`:** several commits past `a373cff`. Not pushed.
+- **Rule 17 files** (`dex_weights.py`, `fetch_leila_gharani.py`): still modified, untouched throughout.
