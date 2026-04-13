@@ -254,6 +254,13 @@ def build_prompt(question: str, chunks: list[dict]) -> str:
         "Answer the question using ONLY the provided context. If the context "
         "doesn't contain the answer, say so. Cite which source_file each claim "
         "comes from.\n\n"
+        "Critical: do not invent numbered items, protocols, triggers, standards, "
+        "or structural elements that are not explicitly listed with their numbers "
+        "or names in the context. If the context says '5 triggers,' do not "
+        "synthesize a sixth. If the context names specific items (Trigger 1, "
+        "Trigger 2, etc.), only reference those specific items by their stated "
+        "numbers. If the context does not specify a number or name, say 'the "
+        "context does not specify' rather than inferring one.\n\n"
         f"CONTEXT:\n{context}\n\n"
         f"QUESTION: {question}"
     )
