@@ -23,6 +23,7 @@ Authority: STD-DDL-BACKUP-001
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import sqlite3
 import sys
@@ -313,6 +314,14 @@ def perform_backup(dry_run: bool = False) -> tuple[bool, Path | None, dict]:
     if dry_run:
         print(f"[DRY RUN] Would create backup at: {backup_dir}")
         return (True, None, {})
+
+    # Step 36: footprint at start so killed processes are visible in the log.
+    append_log({
+        "timestamp": utc_now_iso(),
+        "stage": "started",
+        "pid": os.getpid(),
+        "backup_path": str(backup_dir),
+    })
 
     print(f"Creating backup at: {backup_dir}")
     BACKUP_ROOT.mkdir(parents=True, exist_ok=True)
@@ -810,10 +819,12 @@ def main():
     print("Validation: OK")
 
     # Trigger 6 — restore test (post-creation verification)
+    rt = None
     if not args.skip_restore_test:
         try:
             rt = restore_test(backup_dir)
             print(f"Restore test: PASS ({rt['duration_seconds']:.1f}s)")
+            print(f"restore_test elapsed: {rt['duration_seconds']:.1f}s")
         except RestoreTestFailedError as e:
             print()
             print(f"TRIGGER 6 RESTORE TEST FAILED for {backup_dir.name}:")
@@ -845,6 +856,7 @@ def main():
         "total_chunk_count": manifest["total_chunk_count"],
         "triggers": triggers,
         "rotation_pruned": len(pruned),
+        "restore_test_elapsed_seconds": (rt or {}).get("duration_seconds"),
     })
 
     print()

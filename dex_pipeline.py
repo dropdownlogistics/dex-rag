@@ -322,7 +322,8 @@ def ensure_backup_current(
         "--check-only", "--json",
         "--expected-chunks", str(expected_write_chunks),
     ]
-    cr = subprocess.run(check_cmd, capture_output=True, text=True, timeout=120)
+    # Step 36: bumped 120 -> 300 after 4/13 scale-induced timeout on 10-collection DB
+    cr = subprocess.run(check_cmd, capture_output=True, text=True, timeout=300)
 
     if cr.returncode == 2:
         raise BackupNotFoundError(
@@ -373,7 +374,9 @@ def ensure_backup_current(
     if dry_run:
         backup_cmd.append("--dry-run")
 
-    br = subprocess.run(backup_cmd, capture_output=True, text=True, timeout=900)
+    # Step 36: bumped 900 -> 2400 (40m) after 4/13 scale-induced timeout on
+    # 18GB backup + restore-test cycle. Observed actual runtime ~14m at new scale.
+    br = subprocess.run(backup_cmd, capture_output=True, text=True, timeout=2400)
     if br.returncode != 0:
         raise BackupFailedError(
             f"dex-backup.py --force exited {br.returncode}\n"
@@ -390,7 +393,7 @@ def ensure_backup_current(
     # Step 3: re-check to capture new backup metadata
     rc = subprocess.run(
         [sys.executable, str(script), "--check-only", "--json", "--expected-chunks", "0"],
-        capture_output=True, text=True, timeout=120,
+        capture_output=True, text=True, timeout=300,
     )
     if rc.returncode == 0:
         try:
