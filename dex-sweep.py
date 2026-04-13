@@ -15,6 +15,11 @@ Usage:
 
 Authority: ADR-INGEST-PIPELINE-001, STD-DDL-SWEEPREPORT-001 v1.0
 Auto-Sweep v2.0 | 2026-04-12
+
+Step 38 (2026-04-13): report-section pipeline_state now enumerates
+collections dynamically via client.list_collections() rather than a
+hardcoded 4-collection list. Ensures _v2 (and any future) collections
+appear in the daily report during soak.
 """
 
 import os
@@ -173,15 +178,17 @@ def write_sweep_report(
         path = os.path.join(SWEEP_REPORTS_DIR, fname)
 
         # Pipeline state (read-only ChromaDB query)
+        # Step 38: dynamic enumeration via list_collections so the report
+        # stays complete across the _v2 soak and any future collection set.
         pipeline_state = {}
         try:
             from dex_weights import get_client
             client = get_client()
-            for cname in ["dex_canon", "ddl_archive", "dex_code", "ext_creator"]:
+            for col in client.list_collections():
                 try:
-                    pipeline_state[cname] = client.get_collection(cname).count()
+                    pipeline_state[col.name] = col.count()
                 except Exception:
-                    pipeline_state[cname] = "unavailable"
+                    pipeline_state[col.name] = "unavailable"
         except Exception:
             pipeline_state["error"] = "ChromaDB unreachable"
 

@@ -91,8 +91,10 @@ PHASE1_EXTENSIONS = {
 }
 SKIP_FILENAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
 
-# Guardrail: skip huge files in NORMAL mode (5MB of text)
-MAX_TEXT_CHARS_NORMAL = 5_000_000  # ~5MB (roughly)
+# Guardrail: skip huge files in NORMAL mode (10MB of text)
+# Step 38: bumped 5MB -> 10MB after Mon sweep ingested 2.5-2.7MB files;
+# 6MB+ operator threads would silently drop at the old ceiling.
+MAX_TEXT_CHARS_NORMAL = 10_000_000  # ~10MB (roughly)
 
 # Canon classification markers (path-based)
 CANON_PATH_MARKERS = [
