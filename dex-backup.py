@@ -67,7 +67,11 @@ def utc_now_iso() -> str:
 
 
 def utc_now_compact() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M")
+    # Step 47: seconds added. Combined with the PID suffix appended at
+    # the call site, this gives collision-resistant backup directory
+    # names even when Windows Task Scheduler double-fires (the 4 AM
+    # race diagnosed in Step 46, fires observed 44-54 ms apart).
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M%S")
 
 
 def cleanup_stale_scratch(max_age_hours: float = 1.0) -> int:
@@ -112,10 +116,54 @@ def find_existing_backups() -> list[Path]:
         return []
     backups = [
         p for p in BACKUP_ROOT.iterdir()
-        if p.is_dir() and p.name.startswith("chromadb_") and not p.name.endswith("_FAILED")
+        if p.is_dir()
+        and p.name.startswith("chromadb_")
+        and not p.name.endswith("_FAILED")
+        and not p.name.endswith("_INCOMPLETE")
     ]
     backups.sort(key=lambda p: p.name, reverse=True)
     return backups
+
+
+def cleanup_dead_letter_backups(min_age_hours: float = 24.0) -> list[dict]:
+    """
+    Remove dead-letter backup directories older than min_age_hours.
+
+    Targets (per Step 47):
+      - *_INCOMPLETE  — crash residue from prior sweep failures
+      - *_FAILED      — validation-failure residue
+
+    Safety: anything newer than min_age_hours is left alone (could be
+    an in-flight sibling-PID run during the Step 46 concurrency race).
+    Returns a list of action records, which the caller logs.
+    """
+    actions: list[dict] = []
+    if not BACKUP_ROOT.exists():
+        return actions
+    cutoff = datetime.now(timezone.utc).timestamp() - (min_age_hours * 3600)
+    for child in BACKUP_ROOT.iterdir():
+        if not child.is_dir():
+            continue
+        if not (child.name.endswith("_INCOMPLETE") or child.name.endswith("_FAILED")):
+            continue
+        try:
+            mtime = child.stat().st_mtime
+            age_hours = round((datetime.now(timezone.utc).timestamp() - mtime) / 3600, 2)
+            if mtime >= cutoff:
+                print(f"  Dead-letter kept (too fresh): {child.name} age={age_hours}h")
+                continue
+            reason = "_INCOMPLETE" if child.name.endswith("_INCOMPLETE") else "_FAILED"
+            shutil.rmtree(child)
+            actions.append({
+                "action": "cleanup",
+                "path": str(child),
+                "reason": reason,
+                "age_hours": age_hours,
+            })
+            print(f"  Dead-letter removed: {child.name} ({reason}, age={age_hours}h)")
+        except Exception as e:
+            print(f"  WARN: could not clean {child.name}: {e}")
+    return actions
 
 
 def get_live_chunk_count() -> int:
@@ -303,28 +351,38 @@ def query_collection_state(sqlite_path: Path) -> dict[str, int]:
     return result
 
 
-def perform_backup(dry_run: bool = False) -> tuple[bool, Path | None, dict]:
+def perform_backup(dry_run: bool = False, skip_cleanup: bool = False) -> tuple[bool, Path | None, dict]:
     """
     Run the actual backup. Returns (success, backup_path, manifest).
     """
     started_at = datetime.now(timezone.utc)
     timestamp = utc_now_compact()
-    backup_dir = BACKUP_ROOT / f"chromadb_{timestamp}"
+    pid = os.getpid()
+    # Step 47: seconds + PID suffix. See utc_now_compact() note and the
+    # Step 46 audit on the 4 AM Task Scheduler double-fire race.
+    backup_dir = BACKUP_ROOT / f"chromadb_{timestamp}_{pid}"
 
     if dry_run:
         print(f"[DRY RUN] Would create backup at: {backup_dir}")
         return (True, None, {})
 
+    # Step 47: sweep dead-letter siblings before creating today's backup.
+    # Gated behind --skip-cleanup for manual debugging runs that want the
+    # filesystem left as-is.
+    BACKUP_ROOT.mkdir(parents=True, exist_ok=True)
+    if not skip_cleanup:
+        for entry in cleanup_dead_letter_backups():
+            append_log({"timestamp": utc_now_iso(), **entry})
+
     # Step 36: footprint at start so killed processes are visible in the log.
     append_log({
         "timestamp": utc_now_iso(),
         "stage": "started",
-        "pid": os.getpid(),
+        "pid": pid,
         "backup_path": str(backup_dir),
     })
 
     print(f"Creating backup at: {backup_dir}")
-    BACKUP_ROOT.mkdir(parents=True, exist_ok=True)
     backup_dir.mkdir(parents=True, exist_ok=False)
 
     # Step 1: SQLite backup API for chroma.sqlite3
@@ -683,6 +741,7 @@ def main():
     parser.add_argument("--json", action="store_true", help="Output structured JSON (only with --check-only)")
     parser.add_argument("--restore-test", action="store_true", help="Run Trigger 6 restore test on most recent backup")
     parser.add_argument("--skip-restore-test", action="store_true", help="Skip Trigger 6 restore test after backup creation")
+    parser.add_argument("--skip-cleanup", action="store_true", help="Skip Step 47 dead-letter cleanup (manual debug runs)")
     parser.add_argument("--expected-chunks", type=int, default=0, help="For pre-batch trigger")
     args = parser.parse_args()
 
@@ -794,7 +853,7 @@ def main():
         sys.exit(0)
 
     # Run backup
-    success, backup_dir, manifest = perform_backup(dry_run=False)
+    success, backup_dir, manifest = perform_backup(dry_run=False, skip_cleanup=args.skip_cleanup)
     if not success:
         append_log({"timestamp": utc_now_iso(), "result": "failed", "stage": "perform_backup"})
         sys.exit(1)
