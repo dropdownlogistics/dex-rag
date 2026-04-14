@@ -359,7 +359,7 @@ def run_ingestion(ingest_path, dry_run=False):
     Returns: (ok: bool, stderr_on_failure: str | None, stdout: str)
     """
     cmd_args = ["python", INGEST_SCRIPT, "--path", str(ingest_path),
-                "--collection", "dex_canon", "--fast", "--skip-backup-check"]
+                "--collection", "dex_canon_v2", "--fast", "--skip-backup-check"]
 
     if dry_run:
         print(f"  [DRY RUN] Would run: {' '.join(cmd_args)}")

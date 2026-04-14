@@ -48,11 +48,13 @@ from dex_pipeline import (
 # -----------------------------
 CHROMA_DIR = r"C:\Users\dkitc\.dex-jr\chromadb"
 
-RAW_COLLECTION = "ddl_archive"
-CANON_COLLECTION = "dex_canon"
+# Step 33c Part B: flipped to _v2 (mxbai-embed-large) collections.
+# Readers (dex_jr_query.py, dex-search-api.py) also target _v2.
+RAW_COLLECTION = "ddl_archive_v2"
+CANON_COLLECTION = "dex_canon_v2"
 
 OLLAMA_URL = "http://localhost:11434/api/embeddings"
-EMBED_MODEL = "nomic-embed-text"
+EMBED_MODEL = "mxbai-embed-large"
 
 # Chunking heuristic
 CHUNK_SIZE_TOKENS = 500
@@ -90,6 +92,11 @@ PHASE1_EXTENSIONS = {
     ".prisma",
 }
 SKIP_FILENAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
+
+# Step 33c Part B: exclude files whose names match these prefixes regardless
+# of extension. Prevents the sweep's own ingest_report_*.md artifacts from
+# being ingested into the corpus (feedback loop observed 2026-04-14).
+SKIP_FILENAME_PREFIXES = ("ingest_report_",)
 
 # Guardrail: skip huge files in NORMAL mode (10MB of text)
 # Step 38: bumped 5MB -> 10MB after Mon sweep ingested 2.5-2.7MB files;
@@ -271,6 +278,8 @@ def scan_archive(root: str, extensions: Optional[set] = None) -> List[dict]:
         dirs[:] = [d for d in dirs if not d.startswith(".")]
         for n in names:
             if n in SKIP_FILENAMES:
+                continue
+            if any(n.startswith(p) for p in SKIP_FILENAME_PREFIXES):
                 continue
             ext = os.path.splitext(n)[1].lower()
             if ext not in extensions:

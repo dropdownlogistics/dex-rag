@@ -17,7 +17,7 @@ except ImportError:
 CHROMA_DIR = r"C:\Users\dkitc\.dex-jr\chromadb"
 OLLAMA_URL = "http://localhost:11434/api/embeddings"
 OLLAMA_CHAT = "http://localhost:11434/api/chat"
-EMBED_MODEL = "nomic-embed-text"
+EMBED_MODEL = "mxbai-embed-large"
 CHAT_MODEL = "qwen2.5-coder:7b"
 PORT = 8787
 
@@ -90,17 +90,17 @@ def get_rag_context(query, collection, top_n=3):
 # ChromaDB
 client = chromadb.PersistentClient(path=CHROMA_DIR)
 try:
-    canon = client.get_collection("dex_canon")
-    print(f"  dex_canon: {canon.count()} chunks")
+    canon = client.get_collection("dex_canon_v2")
+    print(f"  dex_canon_v2: {canon.count()} chunks")
 except:
     canon = None
-    print("  dex_canon: not found")
+    print("  dex_canon_v2: not found")
 try:
-    archive = client.get_collection("ddl_archive")
-    print(f"  ddl_archive: {archive.count()} chunks")
+    archive = client.get_collection("ddl_archive_v2")
+    print(f"  ddl_archive_v2: {archive.count()} chunks")
 except:
     archive = None
-    print("  ddl_archive: not found")
+    print("  ddl_archive_v2: not found")
 
 # App
 app = FastAPI(title="DDL API", version="0.5.0")
