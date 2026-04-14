@@ -1,0 +1,199 @@
+{
+  "pairs": [
+    {
+      "nomic": "dex_canon",
+      "nomic_count": 253982,
+      "v2": "dex_canon_v2",
+      "v2_count": 245633,
+      "drift": 8349,
+      "drift_pct": 3.398973264992896
+    },
+    {
+      "nomic": "ddl_archive",
+      "nomic_count": 291520,
+      "v2": "ddl_archive_v2",
+      "v2_count": 291520,
+      "drift": 0,
+      "drift_pct": 0.0
+    },
+    {
+      "nomic": "dex_code",
+      "nomic_count": 20384,
+      "v2": "dex_code_v2",
+      "v2_count": 20384,
+      "drift": 0,
+      "drift_pct": 0.0
+    },
+    {
+      "nomic": "ext_creator",
+      "nomic_count": 922,
+      "v2": "ext_creator_v2",
+      "v2_count": 922,
+      "drift": 0,
+      "drift_pct": 0.0
+    }
+  ],
+  "tests": {
+    "dex_canon_mxbai_test": 2500,
+    "dex_canon_mxbai_rechunk_test": 10000
+  },
+  "drift_details": {
+    "dex_canon": {
+      "unique_source_files_in_drift": 44,
+      "total_drift_chunks": 8349,
+      "nomic_unique_files": 4640,
+      "v2_unique_files": 4596,
+      "top30": [
+        [
+          "11_Thread_Gemini_4.12.26.txt",
+          1488
+        ],
+        [
+          "10_Thread_Gemini.txt",
+          1385
+        ],
+        [
+          "83_MarcusCaldwell_4.12.26.txt",
+          1088
+        ],
+        [
+          "89_LLMPM Claude Code Session - 4.11.26_20260413_172530.txt",
+          756
+        ],
+        [
+          "LLMPM_Full Session Log - 4.12.26_20260414_041657.txt",
+          574
+        ],
+        [
+          "LLMPM_Full Session Log - 4.12.26.txt",
+          419
+        ],
+        [
+          "WorkBench_Full Session Log - 4.12.26(1).txt",
+          273
+        ],
+        [
+          "WorkBench_Full Session Log - 4.12.26 2.txt",
+          258
+        ],
+        [
+          "AuditForge_SideProject_Full Session Log_4.12.26.txt",
+          247
+        ],
+        [
+          "96_WorkBenchPM_4.12.26.txt",
+          213
+        ],
+        [
+          "WebsitePM Full Session Log - 4.13.26.txt",
+          182
+        ],
+        [
+          "DDLExtraction_DaveKitchens_SourceMaterial_4.13.26.md",
+          167
+        ],
+        [
+          "Workbench Full Session Log - 4.13.26.txt",
+          139
+        ],
+        [
+          "DDLExtraction_DexKit_LineageSourceMaterial_4.13.26.md",
+          121
+        ],
+        [
+          "DDLExtraction_DexFamilyOriginThreads_4.13.26.md",
+          106
+        ],
+        [
+          "DDLCouncilReview_StructuralRequirements.txt",
+          93
+        ],
+        [
+          "DDLCouncilReview_HR&People_Module.txt",
+          82
+        ],
+        [
+          "DDLCouncilReview_FactLayer.txt",
+          77
+        ],
+        [
+          "DDLCouncilReview_WorkBenchAnalytics.txt",
+          70
+        ],
+        [
+          "DDLCouncilReview_Bi-DirectionalIntegration.txt",
+          69
+        ],
+        [
+          "PositionBook_Full Session Log - 4.12.26.txt",
+          69
+        ],
+        [
+          "DDLCouncilReview_ModuleBuildProcess.txt",
+          61
+        ],
+        [
+          "DDLCouncilReview_PitfallsAndResearch.txt",
+          60
+        ],
+        [
+          "DDLCouncilReview_WeekendUpdate_4.12.26.txt",
+          55
+        ],
+        [
+          "DDLCouncilReview_CannonAdditions.txt",
+          54
+        ],
+        [
+          "LedgerPM_Full Session Log - 4.12.26.txt",
+          48
+        ],
+        [
+          "WorkBench-BrandKit-v1_0.html",
+          26
+        ],
+        [
+          "Comprehensive Update - Weekend of 4.11.26_20260413_172532.txt",
+          25
+        ],
+        [
+          "DDLExtraction_CottageHumble_SourceMaterial_4.13.26.md",
+          24
+        ],
+        [
+          "83_MarcusCaldwell Council Member Boot Prompt and Q and A.txt",
+          19
+        ]
+      ],
+      "ts_min": "manual_2026-04-13_222540",
+      "ts_max": "manual_2026-04-13_222540"
+    },
+    "ddl_archive": {
+      "unique_source_files_in_drift": 0,
+      "total_drift_chunks": 0,
+      "nomic_unique_files": 12574,
+      "v2_unique_files": 12574,
+      "top30": [],
+      "ts_min": null,
+      "ts_max": null
+    },
+    "dex_code": {
+      "unique_source_files_in_drift": 0,
+      "total_drift_chunks": 0,
+      "nomic_unique_files": 5272,
+      "v2_unique_files": 5272,
+      "top30": [],
+      "ts_min": null,
+      "ts_max": null
+    },
+    "ext_creator": {
+      "unique_source_files_in_drift": 0,
+      "total_drift_chunks": 0,
+      "nomic_unique_files": 179,
+      "v2_unique_files": 179,
+      "top30": [],
+      "ts_min": null,
+      "ts_max": null
+    }
+  }
+}
