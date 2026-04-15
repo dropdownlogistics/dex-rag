@@ -4,7 +4,7 @@ Standing instructions for any Claude Code session in this repo.
 Repo: dex-rag (Dex Jr. — Seat 1010 of the DDL council)
 Operator: Dave Kitchens
 Standard: DDL CLAUDE.md v1 + dex-rag extensions
-Last audit: 2026-04-12 (CR-DEXJR-AUDIT-001)
+Last audit: 2026-04-14 (post-Step-33c drift migration)
 Last cleanup: 2026-04-12 (6 commits, -589 lines, untracked)
 
 ---
@@ -13,7 +13,7 @@ Last cleanup: 2026-04-12 (6 commits, -589 lines, untracked)
 
 dex-rag is the local RAG infrastructure for Dex Jr., the 10th seat of the
 DDL council. It runs on Reborn (RTX 3070, 32GB RAM, Windows 11) and serves
-governed retrieval over a corpus of ~542K chunks across four live ChromaDB
+governed retrieval over a corpus of ~566K chunks across four live ChromaDB
 collections: dex_canon, ddl_archive, dex_code, ext_creator. (Three
 additional collections referenced in earlier governance docs are pending
 resolution per ADR-INGEST-PIPELINE-001.)
@@ -104,9 +104,9 @@ Report template (see below).
 ## dex-rag-specific rules
 
 ### 8. Corpus Integrity Is Sacred
-The four live corpus collections represent ~542K chunks of governed
+The four live corpus collections represent ~566K chunks of governed
 knowledge that took months to build:
-  - `dex_canon`    (230,082 chunks)
+  - `dex_canon`    (253,978 chunks)
   - `ddl_archive`  (291,520 chunks)
   - `dex_code`     ( 20,384 chunks)
   - `ext_creator`  (    922 chunks)
