@@ -34,6 +34,10 @@ from pathlib import Path
 LIVE_CHROMADB = Path(r"C:\Users\dkitc\.dex-jr\chromadb")
 BACKUP_ROOT = Path(r"D:\DDL_Backup\chromadb_backups")
 BACKUP_LOG = BACKUP_ROOT / "_backup_log.jsonl"
+# Step 47 revision: dead-letter dirs are MOVED here (not deleted) so a
+# crashed-midway backup stays inspectable, and then get deleted from
+# quarantine at a 30-day cadence (>> the active-backup cleanup rhythm).
+QUARANTINE_ROOT = Path(r"D:\DDL_Backup\chromadb_backups_quarantine")
 
 # Trigger thresholds per STD-DDL-BACKUP-001
 TRIGGER_DAYS = 3
@@ -125,44 +129,78 @@ def find_existing_backups() -> list[Path]:
     return backups
 
 
-def cleanup_dead_letter_backups(min_age_hours: float = 24.0) -> list[dict]:
+def quarantine_dead_letter_backups() -> list[dict]:
     """
-    Remove dead-letter backup directories older than min_age_hours.
+    Move dead-letter backup directories from BACKUP_ROOT into
+    QUARANTINE_ROOT so they stay inspectable after a failure without
+    cluttering the active-backup directory or confusing rotation math.
 
-    Targets (per Step 47):
+    Targets:
       - *_INCOMPLETE  — crash residue from prior sweep failures
       - *_FAILED      — validation-failure residue
 
-    Safety: anything newer than min_age_hours is left alone (could be
-    an in-flight sibling-PID run during the Step 46 concurrency race).
-    Returns a list of action records, which the caller logs.
+    No age threshold: shutil.move itself will fail on Windows if the
+    source is still held open by a concurrent sibling PID (the
+    Step 46 race), so a live sibling is protected by the OS lock,
+    not by a time window. Move failures are logged but non-fatal.
+
+    Returns a list of action records for the caller to append to the
+    backup log.
     """
     actions: list[dict] = []
     if not BACKUP_ROOT.exists():
         return actions
-    cutoff = datetime.now(timezone.utc).timestamp() - (min_age_hours * 3600)
+    QUARANTINE_ROOT.mkdir(parents=True, exist_ok=True)
     for child in BACKUP_ROOT.iterdir():
         if not child.is_dir():
             continue
         if not (child.name.endswith("_INCOMPLETE") or child.name.endswith("_FAILED")):
             continue
+        reason = "_INCOMPLETE" if child.name.endswith("_INCOMPLETE") else "_FAILED"
+        dest = QUARANTINE_ROOT / child.name
+        try:
+            shutil.move(str(child), str(dest))
+            actions.append({
+                "action": "quarantine",
+                "from": str(child),
+                "to": str(dest),
+                "reason": reason,
+            })
+            print(f"  Dead-letter quarantined: {child.name} ({reason})")
+        except Exception as e:
+            print(f"  WARN: could not quarantine {child.name}: {e}")
+    return actions
+
+
+def cleanup_quarantine(min_age_days: float = 30.0) -> list[dict]:
+    """
+    Delete quarantined dead-letter directories older than min_age_days.
+
+    Runs alongside quarantine_dead_letter_backups() each backup: the
+    move happens hot, deletion happens after a long cooloff so there
+    is time to inspect a post-mortem.
+    """
+    actions: list[dict] = []
+    if not QUARANTINE_ROOT.exists():
+        return actions
+    cutoff = datetime.now(timezone.utc).timestamp() - (min_age_days * 86400)
+    for child in QUARANTINE_ROOT.iterdir():
+        if not child.is_dir():
+            continue
         try:
             mtime = child.stat().st_mtime
-            age_hours = round((datetime.now(timezone.utc).timestamp() - mtime) / 3600, 2)
+            age_days = round((datetime.now(timezone.utc).timestamp() - mtime) / 86400, 2)
             if mtime >= cutoff:
-                print(f"  Dead-letter kept (too fresh): {child.name} age={age_hours}h")
                 continue
-            reason = "_INCOMPLETE" if child.name.endswith("_INCOMPLETE") else "_FAILED"
             shutil.rmtree(child)
             actions.append({
-                "action": "cleanup",
+                "action": "quarantine_gc",
                 "path": str(child),
-                "reason": reason,
-                "age_hours": age_hours,
+                "age_days": age_days,
             })
-            print(f"  Dead-letter removed: {child.name} ({reason}, age={age_hours}h)")
+            print(f"  Quarantine removed: {child.name} (age={age_days}d)")
         except Exception as e:
-            print(f"  WARN: could not clean {child.name}: {e}")
+            print(f"  WARN: could not GC quarantine {child.name}: {e}")
     return actions
 
 
@@ -366,12 +404,15 @@ def perform_backup(dry_run: bool = False, skip_cleanup: bool = False) -> tuple[b
         print(f"[DRY RUN] Would create backup at: {backup_dir}")
         return (True, None, {})
 
-    # Step 47: sweep dead-letter siblings before creating today's backup.
-    # Gated behind --skip-cleanup for manual debugging runs that want the
-    # filesystem left as-is.
+    # Step 47: quarantine dead-letter siblings (move to quarantine root,
+    # preserved for post-mortem) before creating today's backup, and GC
+    # quarantine entries older than 30 days. Gated behind --skip-cleanup
+    # for manual debugging runs that want the filesystem left as-is.
     BACKUP_ROOT.mkdir(parents=True, exist_ok=True)
     if not skip_cleanup:
-        for entry in cleanup_dead_letter_backups():
+        for entry in quarantine_dead_letter_backups():
+            append_log({"timestamp": utc_now_iso(), **entry})
+        for entry in cleanup_quarantine():
             append_log({"timestamp": utc_now_iso(), **entry})
 
     # Step 36: footprint at start so killed processes are visible in the log.
