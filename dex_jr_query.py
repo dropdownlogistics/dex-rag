@@ -23,6 +23,8 @@ from typing import Any
 import chromadb
 import requests
 
+from dex_weights import calculate_weight, score_result
+
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
@@ -284,9 +286,10 @@ def fmt_markdown(question: str, chunks: list[dict], answer: str | None) -> str:
         else:
             tag = ""
         dist_str = "n/a (prefilter)" if is_prefilter else f"{c['distance']:.4f}"
+        w_str = f", weight: {c['weight']:.3f}, score: {c['weighted_score']:.4f}" if "weight" in c else ""
         lines.append(
             f"### {i}. {c['source_file']}{tag} (collection: {c['collection']}, "
-            f"distance: {dist_str})"
+            f"distance: {dist_str}{w_str})"
         )
         lines.append(preview)
         lines.append("")
@@ -374,6 +377,24 @@ def run_query(args: argparse.Namespace) -> int:
             continue
         seen.add(key)
         merged_all.append(c)
+
+    # Step 49: apply source weighting from dex_weights.py
+    for c in merged_all:
+        md = c.get("metadata") or {}
+        # Build metadata dict from hit fields for weight calculation
+        if not md:
+            md = {
+                "file_type": c.get("file_type", ""),
+                "filename": c.get("filename", c.get("source_file", "")),
+                "source_file": c.get("source_file", ""),
+                "status": c.get("status", ""),
+            }
+        w = calculate_weight(c["collection"], md)
+        c["weight"] = round(w, 4)
+        c["weighted_score"] = score_result(c.get("distance", 0.0), w)
+
+    # Rank by weighted_score descending (prefilter hits with distance=0 still rank highest)
+    merged_all.sort(key=lambda x: x["weighted_score"], reverse=True)
     merged = merged_all[:DEFAULT_MERGE_N]
 
     answer: str | None = None
