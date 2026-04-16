@@ -194,8 +194,11 @@ def write_sweep_report(
 
         previous = find_previous_report()
 
-        # Extract chunks-written from subprocess output
+        # Extract chunks-written and per-file statuses from subprocess output
         chunks_written = "unknown"
+        file_ingest_statuses = []  # Step 48: per-file cache-aware statuses
+        cache_summary = {}  # Step 48: cache-aware summary counts
+        in_per_file = False
         for line in (subprocess_output or "").split("\n"):
             if "New chunks added SCOPED:" in line:
                 chunks_written = line.strip().split(":")[1].strip().split()[0]
@@ -203,6 +206,25 @@ def write_sweep_report(
                 val = line.strip().split(":")[1].strip().split()[0]
                 if val != "0":
                     chunks_written = val
+            # Step 48: parse per-file status lines
+            elif "Per-file status:" in line:
+                in_per_file = True
+            elif in_per_file and line.strip():
+                # Lines like: "    NEW                                      filename.txt"
+                parts = line.strip().split(None, 1)
+                if len(parts) >= 2:
+                    # Status may be multi-word like "SKIPPED (unchanged)"
+                    # Re-parse: status is everything before the last token (filename)
+                    stripped = line.strip()
+                    # Find the filename — it's the last whitespace-separated token
+                    tokens = stripped.rsplit(None, 1)
+                    if len(tokens) == 2:
+                        file_ingest_statuses.append({"status": tokens[0].strip(), "filename": tokens[1]})
+            # Step 48: parse cache-aware summary counts
+            for key in ("Files NEW:", "Files RE-CHUNKED (modified):", "Files SKIPPED (unchanged):", "Files SKIPPED (no cache/upsert):"):
+                if key in line:
+                    val = line.strip().split(":")[-1].strip().split()[0] if ":" in line else "0"
+                    cache_summary[key.rstrip(":")] = val
 
         lines = []
         lines.append("---")
@@ -253,6 +275,20 @@ def write_sweep_report(
         for f in files_ingested:
             lines.append(f"| {f['filename']} | {f['size']:,} | {os.path.basename(f['folder'])} |")
         lines.append("")
+
+        # Section 3b: Per-file ingest status (Step 48)
+        if file_ingest_statuses:
+            lines.append("## File ingest status")
+            lines.append("")
+            lines.append("| File | Status |")
+            lines.append("|---|---|")
+            for fs in file_ingest_statuses:
+                lines.append(f"| {fs['filename']} | {fs['status']} |")
+            lines.append("")
+            if cache_summary:
+                for label, val in cache_summary.items():
+                    lines.append(f"- {label}: {val}")
+                lines.append("")
 
         # Section 4: Previous report
         lines.append("## Previous report")
@@ -384,7 +420,8 @@ def run_ingestion(ingest_path, dry_run=False):
 
         # Show key stats
         for line in result.stdout.split("\n"):
-            if any(k in line for k in ["Found:", "New chunks", "INGESTION COMPLETE", "Errors:", "Time:"]):
+            if any(k in line for k in ["Found:", "New chunks", "INGESTION COMPLETE", "Errors:", "Time:",
+                                        "Files NEW:", "Files RE-CHUNKED", "Files SKIPPED", "Per-file status:"]):
                 print(f"    {line.strip()}")
 
         ok = "INGESTION COMPLETE" in result.stdout
