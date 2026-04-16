@@ -237,6 +237,10 @@ def print_weight_stats():
 if __name__ == "__main__":
     import argparse, sys
 
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
     parser = argparse.ArgumentParser(description="Weighted query against Dex Jr. corpus")
     parser.add_argument("query",      nargs="?", help="Search query")
     parser.add_argument("--n",        type=int, default=5, help="Number of results")
