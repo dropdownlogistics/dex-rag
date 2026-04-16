@@ -41,6 +41,7 @@ from dex_pipeline import (
     BackupNotFoundError,
     BackupFailedError,
 )
+from ingest_cache import IngestCache, hash_file
 
 
 # -----------------------------
@@ -303,7 +304,8 @@ def scan_archive(root: str, extensions: Optional[set] = None) -> List[dict]:
 # -----------------------------
 def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fast: bool = False,
            collection: Optional[str] = None, ext_filter: Optional[set] = None,
-           nominated_by: Optional[str] = None, skip_backup_check: bool = False) -> None:
+           nominated_by: Optional[str] = None, skip_backup_check: bool = False,
+           force_rechunk: bool = False, no_ingest_cache: bool = False) -> None:
     import chromadb
 
     ext_list = ", ".join(sorted(ext_filter if ext_filter else PHASE1_EXTENSIONS))
@@ -318,6 +320,10 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
     print(f"  Extensions: {ext_list}")
     if nominated_by:
         print(f"  Nominated by: {nominated_by}")
+    if force_rechunk:
+        print(f"  ** --force-rechunk: cache bypassed, all files will be re-chunked **")
+    if no_ingest_cache:
+        print(f"  ** --no-ingest-cache: pre-Step-48 behavior (no cache reads/writes) **")
     print("=" * 60)
 
     # Generate ingest run id (HHMMSS precision to avoid same-minute collisions)
@@ -461,10 +467,30 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
 
     seen_chunk_ids: set = set()  # run-scoped de-dupe
 
+    # Step 48: initialize ingest cache for file-level dedup
+    cache = None
+    use_cache = not no_ingest_cache
+    if use_cache:
+        cache = IngestCache()
+        # Determine which collection to cache against
+        cache_collection_name = collection if collection else CANON_COLLECTION
+        cache_target_col = scoped_col if scoped_col else canon_col
+        # Lazy-build: on first run with no cache file, build from collection metadata
+        cache_data = cache.load(cache_collection_name)
+        if not cache_data and cache_target_col and cache_target_col.count() > 0:
+            cache.build_from_collection(cache_target_col, cache_collection_name)
+        print(f"\n  Ingest cache: {len(cache.load(cache_collection_name))} entries for {cache_collection_name}")
+    else:
+        print("\n  Ingest cache: disabled (--no-ingest-cache)")
+
     print("\n  Ingesting...")
     start_time = time.time()
 
     files_skipped = 0
+    files_skipped_unchanged = 0
+    files_skipped_no_cache = 0
+    files_rechunked = 0
+    files_new = 0
     errors = 0
     add_raw = 0
     add_canon = 0
@@ -472,6 +498,9 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
     skip_raw_existing = 0
     skip_canon_existing = 0
     skip_scoped_existing = 0
+
+    # Per-file status tracking (for sweep report consumption)
+    file_statuses: List[dict] = []
 
     total_files = len(unique_files)
 
@@ -488,12 +517,43 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
         tier, status = classify_tier(f["rel_path"], f["filename"], f["folder"])
         file_id_prefix = f"f_{f['hash'][:16]}"
 
-        # NORMAL mode skip: if RAW has any chunk for this file, skip file
-        if (not build_canon) and any(
-            eid.startswith(file_id_prefix) for eid in raw_existing_ids
-        ):
-            files_skipped += 1
-            continue
+        # Step 48: cache-aware file-level skip decision
+        cache_collection_name = collection if collection else CANON_COLLECTION
+        file_content_hash = f["hash"]  # full SHA-256 from dedup pass
+
+        if use_cache and not force_rechunk:
+            decision = cache.decide(f["path"], file_content_hash, cache_collection_name)
+
+            if decision == "SKIPPED (unchanged)":
+                files_skipped += 1
+                files_skipped_unchanged += 1
+                file_statuses.append({"filename": f["filename"], "status": decision})
+                continue
+            elif decision == "RE-CHUNKED (modified)":
+                files_rechunked += 1
+                file_statuses.append({"filename": f["filename"], "status": decision})
+                # Fall through to re-chunk and ingest
+            elif decision == "SKIPPED (no cache, upsert expected)":
+                files_skipped_no_cache += 1
+                file_statuses.append({"filename": f["filename"], "status": decision})
+                # Fall through — ingest via upsert, then update cache
+            else:
+                # "NEW"
+                files_new += 1
+                file_statuses.append({"filename": f["filename"], "status": "NEW"})
+                # Fall through to chunk and ingest
+        elif force_rechunk:
+            file_statuses.append({"filename": f["filename"], "status": "FORCE-RECHUNK"})
+            files_new += 1
+        else:
+            # Pre-Step-48 behavior: NORMAL mode skip by RAW ID prefix
+            if (not build_canon) and any(
+                eid.startswith(file_id_prefix) for eid in raw_existing_ids
+            ):
+                files_skipped += 1
+                file_statuses.append({"filename": f["filename"], "status": "SKIPPED (legacy)"})
+                continue
+            file_statuses.append({"filename": f["filename"], "status": "NEW (no cache)"})
 
         text = read_text_file(f["path"])
         if not text or len(text.strip()) < 50:
@@ -612,6 +672,11 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
                 else:
                     skip_scoped_existing += 1
 
+        # Step 48: update cache after successful file ingest
+        if use_cache and len(chunks) > 0:
+            source_type = infer_source_type(f["filename"], f["extension"])
+            cache.update(f["path"], cache_collection_name, file_content_hash, len(chunks), source_type)
+
     elapsed = time.time() - start_time
 
     raw_count_end = raw_col.count()
@@ -620,7 +685,13 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
     print("\n" + "=" * 60)
     print("  INGESTION COMPLETE")
     print("=" * 60)
-    print(f"  Files skipped (already in RAW): {files_skipped}")
+    if use_cache:
+        print(f"  Files NEW:                      {files_new}")
+        print(f"  Files RE-CHUNKED (modified):    {files_rechunked}")
+        print(f"  Files SKIPPED (unchanged):      {files_skipped_unchanged}")
+        print(f"  Files SKIPPED (no cache/upsert):{files_skipped_no_cache}")
+    else:
+        print(f"  Files skipped (already in RAW): {files_skipped}")
     print(f"  New chunks added RAW:           {add_raw}")
     print(f"  New chunks added CANON:         {add_canon}")
     if scoped_col:
@@ -636,6 +707,12 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
         scoped_end = scoped_col.count()
         print(f"  DB total chunks {collection}: {scoped_end}")
     print(f"  DB location: {CHROMA_DIR}")
+
+    # Step 48: per-file status summary for sweep report
+    if file_statuses:
+        print(f"\n  Per-file status:")
+        for fs in file_statuses:
+            print(f"    {fs['status']:40s} {fs['filename']}")
 
 
 def main() -> None:
@@ -675,6 +752,16 @@ def main() -> None:
         action="store_true",
         help="Skip Trigger 3 backup pre-flight. Use only when caller (e.g. dex-sweep.py) has already gated upstream.",
     )
+    p.add_argument(
+        "--force-rechunk",
+        action="store_true",
+        help="Bypass ingest cache. Re-chunk and upsert all files regardless of cache state.",
+    )
+    p.add_argument(
+        "--no-ingest-cache",
+        action="store_true",
+        help="Disable ingest cache reads AND writes. Behaves like pre-Step-48 code.",
+    )
     args = p.parse_args()
 
     archive = args.path
@@ -693,6 +780,8 @@ def main() -> None:
         ext_filter=ext_filter,
         nominated_by=args.nominated_by,
         skip_backup_check=args.skip_backup_check,
+        force_rechunk=args.force_rechunk,
+        no_ingest_cache=args.no_ingest_cache,
     )
 
 
