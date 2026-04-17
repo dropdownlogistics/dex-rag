@@ -30,9 +30,10 @@ import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-# Canonical paths
-LIVE_CHROMADB = Path(r"C:\Users\dkitc\.dex-jr\chromadb")
-BACKUP_ROOT = Path(r"D:\DDL_Backup\chromadb_backups")
+# Canonical paths (Step 54: derived from dex_core)
+from dex_core import CHROMA_DIR as _CHROMA_DIR, BACKUP_DIR as _BACKUP_DIR
+LIVE_CHROMADB = Path(_CHROMA_DIR)
+BACKUP_ROOT = Path(_BACKUP_DIR)
 BACKUP_LOG = BACKUP_ROOT / "_backup_log.jsonl"
 # Step 47 revision: dead-letter dirs are MOVED here (not deleted) so a
 # crashed-midway backup stays inspectable, and then get deleted from
