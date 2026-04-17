@@ -19,8 +19,8 @@ from datetime import datetime, timezone
 from typing import Optional, Dict
 
 
-# Default cache directory — alongside ChromaDB data
-CACHE_DIR = r"C:\Users\dkitc\.dex-jr\ingest_cache"
+# Default cache directory (Step 54: from dex_core)
+from dex_core import INGEST_CACHE_DIR as CACHE_DIR
 
 
 def hash_file(filepath: str) -> Optional[str]:
