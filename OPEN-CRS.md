@@ -62,21 +62,17 @@ passes, standalone query works.
 
 ## CR-DDL-DEXDAVE-GATE-001
 
-**Status:** OPEN
+**Status:** CLOSED
 **Opened:** 2026-04-16
+**Closed:** 2026-04-16
+**Resolution:** Step 50.2 (commit a11d661). Hard gate added at top of
+`ingest()` in `dex-ingest.py`. Blocks any `--collection dex_dave*`
+(covers `dex_dave`, `dex_dave_v2`, any future suffix). Fires before
+backup check, collection access, or chunking. `sys.exit(1)` with clear
+error. No bypass flags. `router_config.json` does not exist in the repo
+— gate is enforced in code only.
 **Source:** ADR-CORPUS-001 Rule 3
 
 ### Problem
 `dex_dave` collection is HARD-GATED per ADR-CORPUS-001 Rule 3: "Never
-ingest to dex_dave under any circumstance." Currently unenforced in code.
-Nothing prevents `python dex-ingest.py --collection dex_dave_v2 --path ...`
-from writing to a collection that should never receive automated ingest.
-
-### Required fix
-Add a hard gate at the top of the `ingest()` function in `dex-ingest.py`
-that checks the `--collection` argument against `dex_dave*` patterns and
-exits with `sys.exit(1)` before any DB access occurs.
-
-### Notes
-- `router_config.json` does not exist in the repo. The gate must be
-  enforced in code, not configuration.
+ingest to dex_dave under any circumstance." Was unenforced in code.
