@@ -399,7 +399,11 @@ def query_cloud(model, prompt, api_keys, timeout=120):
 # GOVERNED PROMPT BUILDER
 # -----------------------------
 def build_governed_prompt(prompt, rag_context="", seat_id=None):
+    from dex_core import load_primer
     parts = [GOVERNANCE]
+    primer = load_primer()
+    if primer:
+        parts.append(f"\nDDL SYSTEM KNOWLEDGE:\n{primer}")
     if seat_id and seat_id in SEAT_PERSONAS:
         persona = SEAT_PERSONAS[seat_id]
         parts.append(f"\nYOUR ROLE: {persona['name']}\n{persona['lens']}")

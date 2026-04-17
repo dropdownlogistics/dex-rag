@@ -39,7 +39,7 @@ import shutil
 from dex_weights import weighted_query_with_provenance
 from dex_core import (
     CHROMA_DIR, OLLAMA_HOST, EMBED_MODEL, suffixed,
-    get_chroma_client, embed as core_embed, get_ollama_url,
+    get_chroma_client, embed as core_embed, get_ollama_url, load_primer,
 )
 
 # -----------------------------
@@ -153,15 +153,15 @@ def build_context(chunks, provenance, max_chars=MAX_CONTEXT_CHARS):
 # GENERATION
 # -----------------------------
 def generate(query, context, model=DEFAULT_MODEL, chat_url=OLLAMA_CHAT_URL):
-    prompt = f"""The following context was retrieved from the DDL knowledge base to help answer the question. Use this context to inform your answer. If the context does not contain relevant information, say so.
-
+    primer = load_primer()
+    primer_block = f"\nDDL SYSTEM KNOWLEDGE:\n{primer}\n" if primer else ""
+    prompt = f"""Answer based on your system knowledge and the retrieved context. Cite sources by number when referencing specific retrieved documents.
+{primer_block}
 RETRIEVED CONTEXT:
 {context}
 
 QUESTION:
-{query}
-
-Answer based on the retrieved context and your governance training. Cite sources by number when referencing specific retrieved documents."""
+{query}"""
 
     try:
         r = requests.post(

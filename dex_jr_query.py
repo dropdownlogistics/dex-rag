@@ -25,7 +25,7 @@ import requests
 
 from dex_core import (
     CHROMA_DIR, OLLAMA_HOST, EMBED_MODEL, GEN_MODEL,
-    EMBED_TRUNC_LEVELS, get_live_collections,
+    EMBED_TRUNC_LEVELS, get_live_collections, load_primer,
 )
 from dex_weights import calculate_weight, score_result
 
@@ -220,26 +220,30 @@ def search_collections(
 
 
 def build_prompt(question: str, chunks: list[dict]) -> str:
+    primer = load_primer()
     context_blocks = []
     for i, c in enumerate(chunks, 1):
         context_blocks.append(
             f"[source {i}: {c['source_file']} (collection={c['collection']})]\n{c['text']}"
         )
     context = "\n\n".join(context_blocks) if context_blocks else "(no context retrieved)"
-    return (
-        "Answer the question using ONLY the provided context. If the context "
-        "doesn't contain the answer, say so. Cite which source_file each claim "
-        "comes from.\n\n"
+    parts = []
+    parts.append(
+        "Answer the question using your system knowledge and the provided context. "
+        "Cite which source_file each claim comes from when referencing retrieved documents.\n\n"
         "Critical: do not invent numbered items, protocols, triggers, standards, "
         "or structural elements that are not explicitly listed with their numbers "
         "or names in the context. If the context says '5 triggers,' do not "
         "synthesize a sixth. If the context names specific items (Trigger 1, "
         "Trigger 2, etc.), only reference those specific items by their stated "
         "numbers. If the context does not specify a number or name, say 'the "
-        "context does not specify' rather than inferring one.\n\n"
-        f"CONTEXT:\n{context}\n\n"
-        f"QUESTION: {question}"
+        "context does not specify' rather than inferring one."
     )
+    if primer:
+        parts.append(f"\nDDL SYSTEM KNOWLEDGE:\n{primer}")
+    parts.append(f"\nRETRIEVED CONTEXT:\n{context}")
+    parts.append(f"\nQUESTION: {question}")
+    return "\n".join(parts)
 
 
 def fmt_markdown(question: str, chunks: list[dict], answer: str | None) -> str:
