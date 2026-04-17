@@ -377,6 +377,18 @@ Time elapsed: ~Nm
 
 Next logical step: [One sentence. What CC would do next if given the green light.]
 
+### Template 5 — Progress Tracking
+
+For multi-phase tasks (3+ phases), maintain a visible task list:
+
+  ■ Phase 1: Complete description
+  ■ Phase 2: Complete description
+  □ Phase 3: Pending description
+  □ Phase 4: Pending description
+
+Update after each phase completes. The operator checks status
+from his phone — the task list is his at-a-glance view.
+
 ---
 
 ## Open Items (current state, 2026-04-16)
