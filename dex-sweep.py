@@ -38,6 +38,7 @@ from dex_pipeline import (
     BackupNotFoundError,
     BackupFailedError,
 )
+from dex_core import suffixed
 
 # -----------------------------
 # CONFIG — EDIT THESE PATHS
@@ -248,7 +249,7 @@ def write_sweep_report(
         if outcome == "success":
             lines.append(
                 f"Sweep completed successfully. {len(files_ingested)} file(s) "
-                f"ingested into dex_canon_v2, producing {chunks_written} chunk(s). "
+                f"ingested into {suffixed('dex_canon')}, producing {chunks_written} chunk(s). "
                 f"Backup {'refreshed' if backup_ran else 'was current'}. "
                 f"Zero errors."
             )
@@ -395,7 +396,7 @@ def run_ingestion(ingest_path, dry_run=False):
     Returns: (ok: bool, stderr_on_failure: str | None, stdout: str)
     """
     cmd_args = ["python", INGEST_SCRIPT, "--path", str(ingest_path),
-                "--collection", "dex_canon_v2", "--fast", "--skip-backup-check"]
+                "--collection", suffixed("dex_canon"), "--fast", "--skip-backup-check"]
 
     if dry_run:
         print(f"  [DRY RUN] Would run: {' '.join(cmd_args)}")
