@@ -14,11 +14,13 @@ except ImportError:
     print("pip install fastapi uvicorn requests chromadb pydantic")
     sys.exit(1)
 
-CHROMA_DIR = r"C:\Users\dkitc\.dex-jr\chromadb"
-OLLAMA_URL = "http://localhost:11434/api/embeddings"
-OLLAMA_CHAT = "http://localhost:11434/api/chat"
-EMBED_MODEL = "mxbai-embed-large"
-CHAT_MODEL = "qwen2.5-coder:7b"
+from dex_core import (
+    CHROMA_DIR, OLLAMA_HOST, EMBED_MODEL, GEN_MODEL,
+    get_live_collections, suffixed,
+)
+OLLAMA_URL = f"{OLLAMA_HOST}/api/embeddings"
+OLLAMA_CHAT = f"{OLLAMA_HOST}/api/chat"
+CHAT_MODEL = GEN_MODEL
 PORT = 8787
 
 MINDFRAME_SYSTEM = """You are running a MindFrame calibration session for Dropdown Logistics.
@@ -87,20 +89,20 @@ def get_rag_context(query, collection, top_n=3):
     except:
         return ""
 
-# ChromaDB
+# ChromaDB — Step 54: load all 4 live collections (fixes 2-of-4 bug)
 client = chromadb.PersistentClient(path=CHROMA_DIR)
-try:
-    canon = client.get_collection("dex_canon_v2")
-    print(f"  dex_canon_v2: {canon.count()} chunks")
-except:
-    canon = None
-    print("  dex_canon_v2: not found")
-try:
-    archive = client.get_collection("ddl_archive_v2")
-    print(f"  ddl_archive_v2: {archive.count()} chunks")
-except:
-    archive = None
-    print("  ddl_archive_v2: not found")
+collections = {}
+for col_name in get_live_collections():
+    try:
+        col = client.get_collection(col_name)
+        collections[col_name] = col
+        print(f"  {col_name}: {col.count()} chunks")
+    except Exception:
+        print(f"  {col_name}: not found")
+
+# Backward compat aliases
+canon = collections.get(suffixed("dex_canon"))
+archive = collections.get(suffixed("ddl_archive"))
 
 # App
 app = FastAPI(title="DDL API", version="0.5.0")
@@ -115,13 +117,19 @@ class ChatRequest(BaseModel):
 
 @app.get("/")
 def root():
-    return {"service": "DDL API", "status": "online", "version": "0.5.0",
-            "canon": canon.count() if canon else 0,
-            "archive": archive.count() if archive else 0}
+    counts = {name: col.count() for name, col in collections.items()}
+    return {"service": "DDL API", "status": "online", "version": "0.6.0",
+            "collections": counts}
 
 @app.get("/search")
 def search(q: str = Query(..., min_length=2), top: int = Query(5, ge=1, le=20), corpus: str = Query("canon")):
-    collection = canon if corpus == "canon" else archive
+    # Accept short names (canon, archive, code, ext_creator) or full suffixed names
+    name_map = {
+        "canon": suffixed("dex_canon"), "archive": suffixed("ddl_archive"),
+        "code": suffixed("dex_code"), "ext_creator": suffixed("ext_creator"),
+    }
+    resolved = name_map.get(corpus, corpus)
+    collection = collections.get(resolved)
     if not collection:
         return {"error": f"'{corpus}' not found", "results": []}
     embedding = get_embedding(q)
@@ -174,7 +182,9 @@ def mindframe_chat(request: ChatRequest):
 
 @app.get("/stats")
 def stats():
-    return {"canon": canon.count() if canon else 0, "archive": archive.count() if archive else 0, "path": CHROMA_DIR}
+    counts = {name: col.count() for name, col in collections.items()}
+    counts["path"] = CHROMA_DIR
+    return counts
 
 if __name__ == "__main__":
     print(f"\n  DDL API v0.5 — Dex Jr.")
