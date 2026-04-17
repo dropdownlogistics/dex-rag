@@ -1,7 +1,7 @@
 """
 DEX JR RAG BRIDGE - v1.2
 Connects ChromaDB retrieval to Ollama generation.
-v1.1: Source weighting via dex-weights.py
+v1.1: Source weighting via dex_weights.py
 v1.2: Auto-ingest query+response to corpus after every run
       Fixed stray chat_url arg in get_embedding() (latent crash on --raw path)
 
