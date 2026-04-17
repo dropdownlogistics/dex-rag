@@ -4,11 +4,11 @@ Multi-host dispatch + Weighted RAG + Persona injection + Governance v4.2
 
 Usage:
   python dex-council.py "your prompt here"
-  python dex-council.py "your prompt here" --all --rag
-  python dex-council.py "your prompt here" --all --rag --save council-runs/my-review
-  python dex-council.py "your prompt here" --all --rag --save council-runs/my-review --ingest
+  python dex-council.py "your prompt here" --all
+  python dex-council.py "your prompt here" --all --save council-runs/my-review
+  python dex-council.py "your prompt here" --all --save council-runs/my-review --ingest
   python dex-council.py --synthesize council-runs/my-review
-  python dex-council.py --from-file prompt.txt --all --rag
+  python dex-council.py --from-file prompt.txt --all --no-rag
   python dex-council.py --host-status
 
 Tiers:
@@ -749,7 +749,7 @@ def main():
     parser.add_argument("--cloud-only", action="store_true", help="Cloud only")
     parser.add_argument("--all", action="store_true", help="Local + Cloud")
     parser.add_argument("--synthesizer", default=DEFAULT_SYNTHESIZER)
-    parser.add_argument("--rag", action="store_true", help="Enable RAG")
+    parser.add_argument("--no-rag", action="store_true", help="Disable RAG (on by default)")
     parser.add_argument("--raw", action="store_true", help="Archive RAG")
     parser.add_argument("--from-file", default=None, help="Prompt from file")
     parser.add_argument("--top", type=int, default=TOP_K)
@@ -806,11 +806,11 @@ def main():
     governed = not args.no_governance
 
     # Header
-    display_header(prompt, use_local, use_cloud, synthesizer, args.rag, args.save, args.ingest)
+    display_header(prompt, use_local, use_cloud, synthesizer, not args.no_rag, args.save, args.ingest)
 
     # RAG
     rag_context = ""
-    if args.rag:
+    if not args.no_rag:
         print("  Retrieving RAG context...")
         rag_context = retrieve_context(prompt, top_k=args.top, use_raw=args.raw)
         if rag_context:
@@ -913,7 +913,7 @@ def main():
         auto_ingest(args.save)
 
     # Log
-    log_council(prompt, responses, synthesis, synthesizer, args.rag)
+    log_council(prompt, responses, synthesis, synthesizer, not args.no_rag)
 
     # Summary
     ok = sum(1 for r in responses if r["result"]["response"])
