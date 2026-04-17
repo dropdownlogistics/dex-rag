@@ -1,0 +1,293 @@
+=====================================================================
+CR-DDL-SOAK-RENAME-001
+Collection Rename Ceremony — _v2 Suffix Retirement
+Operator:       Dave Kitchens · Dropdown Logistics
+Date:           2026-04-16
+Classification: Infrastructure CR — Collection Lifecycle
+Distribution:   Council Seats 1001–1010
+Mode:           Standard Ratification
+Format:         Q1–Q12
+Authored by:    Seat 1002 (Marcus Caldwell · LLMPM)
+=====================================================================
+
+CONTEXT
+
+On 2026-04-14 (Step 33c), the Dex Jr. corpus migrated from
+nomic-embed-text (768-dim) to mxbai-embed-large (1024-dim). Because
+the embedding dimensions are incompatible, new collections were created
+with a _v2 suffix:
+
+  dex_canon_v2     253,978 chunks
+  ddl_archive_v2   291,520 chunks
+  dex_code_v2       20,384 chunks
+  ext_creator_v2       922 chunks
+  TOTAL            566,804 chunks
+
+The original nomic collections (dex_canon, ddl_archive, dex_code,
+ext_creator) were frozen at their pre-migration counts and are
+scheduled for retirement ~2026-04-28 after a 14-day soak period.
+
+The soak period exists to:
+  1. Confirm mxbai retrieval quality matches or exceeds nomic
+  2. Allow rollback to nomic if mxbai degrades retrieval
+  3. Give the operator time to observe Dex Jr. behavior under the
+     new embedding model
+
+As of tonight (2026-04-16), the soak period is 2 days old. Steps 48
+and 49 both shipped against _v2 collections successfully. The ingest
+cache (Step 48), weighted retrieval (Step 49), and hard gate (Step 50)
+all operate on _v2 collections. No retrieval quality complaints.
+
+This CR governs what happens on ~2026-04-28 when the soak ends.
+
+-----
+
+=====================================================================
+Q1. WHAT IS BEING PROPOSED?
+=====================================================================
+
+A governed ceremony to retire the _v2 collection suffix and the
+legacy nomic collections. Three possible paths:
+
+PATH A — RENAME IN PLACE
+  ChromaDB's modify() API supports renaming collections. If available
+  and safe:
+  1. Rename dex_canon_v2 -> dex_canon
+  2. Rename ddl_archive_v2 -> ddl_archive
+  3. Rename dex_code_v2 -> dex_code
+  4. Rename ext_creator_v2 -> ext_creator
+  5. Delete legacy nomic collections (the originals now freed by rename)
+  6. Set DEXJR_COLLECTION_SUFFIX="" in all env configs
+  7. Update all code references
+
+  Risk: if ChromaDB rename is destructive or lossy. Requires
+  pre-ceremony backup.
+
+PATH B — SUFFIX FLIP (NO RENAME)
+  Keep collections named _v2 forever. Change the default suffix in
+  code from "_v2" to "" and hardcode "_v2" into the base names in
+  the COLLECTIONS dict.
+
+  Effectively: the _v2 becomes part of the canonical name. The
+  suffix concept retires, not the suffix itself.
+
+  1. Update COLLECTIONS in dex_weights.py: keys become dex_canon_v2, etc.
+  2. Set COLLECTION_SUFFIX = "" as default
+  3. Delete legacy nomic collections
+  4. Update CLAUDE.md, OPEN-CRS.md, knowledge-vault docs
+
+  Risk: minimal. No data movement. Cosmetic inconsistency (collections
+  named _v2 with no _v1 counterpart). But the code already works this
+  way during soak.
+
+PATH C — FULL REBUILD
+  Create new collections with base names (dex_canon, ddl_archive, etc.)
+  using mxbai embeddings, copy all 566,804 chunks, verify counts match,
+  delete _v2 collections, delete legacy nomic collections.
+
+  Risk: highest. 566K chunk copy is expensive (~30-60 min on RTX 3070).
+  Data integrity verification required. Rollback requires keeping _v2
+  until verification passes.
+
+  Benefit: cleanest end state. Collection names match logical names.
+
+RECOMMENDATION: Path A if ChromaDB supports safe rename. Path B if
+not. Path C only if neither works.
+
+=====================================================================
+Q2. WHAT DOES IT AFFECT?
+=====================================================================
+
+Code files with _v2 references (will need updating):
+  - dex_jr_query.py (COLLECTION_SUFFIX default)
+  - dex_weights.py (COLLECTION_SUFFIX default)
+  - dex-ingest.py (--collection defaults, CANON_COLLECTION constant)
+  - dex-sweep.py (collection arguments passed to dex-ingest.py)
+  - dex-backup.py (collection names in backup/restore)
+  - dex-search-api.py (collection names in search endpoints)
+  - ingest_cache.py (cache file names: dex_canon_v2.json, etc.)
+  - CLAUDE.md (collection references, chunk counts)
+  - OPEN-CRS.md (references)
+
+Infrastructure:
+  - ChromaDB on-disk data at C:\Users\dkitc\.dex-jr\chromadb
+  - Ingest cache at C:\Users\dkitc\.dex-jr\ingest_cache\
+  - Task Scheduler (sweep passes collection names)
+  - Knowledge Vault site (collection names displayed)
+  - DDL site (any corpus references)
+
+=====================================================================
+Q3. WHAT IS THE PRE-CEREMONY CHECKLIST?
+=====================================================================
+
+Before executing on ceremony day:
+
+  [ ] Soak period passed without retrieval quality complaints
+  [ ] Full backup confirmed current (dex-backup.py, verify in
+      D:\DDL_Backup\chromadb_backups\)
+  [ ] Determine Path A viability: test ChromaDB collection.modify(name=)
+      on a throwaway collection
+  [ ] git grep "_v2" across dex-rag to get full reference list
+  [ ] git grep "_v2" across knowledge-vault for site references
+  [ ] Operator confirms ceremony GO
+  [ ] No other dex-rag work in flight (clean working tree)
+
+=====================================================================
+Q4. WHAT IS THE CEREMONY PROCEDURE (PATH A)?
+=====================================================================
+
+If ChromaDB rename is confirmed safe:
+
+  Phase 1 — Backup
+    1. Run dex-backup.py manually. Verify backup completes.
+    2. Note backup directory name for rollback reference.
+
+  Phase 2 — Delete legacy nomic collections FIRST
+    3. Delete the original nomic collections (dex_canon, ddl_archive,
+       dex_code, ext_creator) to free the base names.
+    4. Verify deletion (list_collections shows only _v2 + ext_reference_v2).
+
+  Phase 3 — Rename _v2 collections to base names
+    5. Rename dex_canon_v2 -> dex_canon, etc.
+    6. Verify counts match pre-rename counts exactly.
+
+  Phase 4 — Code updates
+    7. Set COLLECTION_SUFFIX = "" in dex_jr_query.py, dex_weights.py
+    8. Update CANON_COLLECTION in dex-ingest.py if hardcoded
+    9. Update dex-sweep.py collection arguments
+    10. Update dex-backup.py collection references
+    11. Rename ingest cache files (dex_canon_v2.json -> dex_canon.json)
+        and update collection name strings inside
+    12. Update CLAUDE.md
+    13. Run full grep: git grep "_v2" — zero hits expected
+
+  Phase 5 — Verify
+    14. python dex_jr_query.py --self-test (ALL PASS)
+    15. python dex_weights.py "test query" --n 3 (returns results)
+    16. python dex-ingest.py --path [test] --collection dex_canon --fast
+        (test file ingests to renamed collection)
+    17. Verify 4 AM sweep fires cleanly next morning
+
+  Phase 6 — Commit and push
+    18. Atomic commit: "Rename ceremony: _v2 suffix retired, legacy
+        nomic collections deleted"
+    19. Push to origin
+    20. Update knowledge-vault site references
+    21. Update DDL site references if any
+
+=====================================================================
+Q5. WHAT IS THE ROLLBACK PLAN?
+=====================================================================
+
+If anything goes wrong during the ceremony:
+
+  1. Restore from pre-ceremony backup (Phase 1, step 2)
+  2. git checkout . to revert all code changes
+  3. _v2 collections are restored from backup, legacy collections
+     are restored from backup
+  4. Set COLLECTION_SUFFIX back to "_v2"
+  5. Resume soak period. Diagnose failure before reattempting.
+
+Rollback window: until the 4 AM sweep fires against renamed
+collections. After a successful sweep, the rename is locked.
+
+=====================================================================
+Q6. WHAT IS THE TIMELINE?
+=====================================================================
+
+  2026-04-16: CR filed (today)
+  2026-04-21: Council verdicts due
+  2026-04-21-27: Path A viability test (ChromaDB rename on throwaway)
+  2026-04-28: Ceremony execution (if soak passes + council LOCK)
+  2026-04-29: First 4 AM sweep on renamed collections = ceremony LOCK
+
+  If soak period reveals any retrieval quality issues before 4/28,
+  ceremony is deferred and a diagnostic CR is filed instead.
+
+=====================================================================
+Q7. WHAT ABOUT ext_reference?
+=====================================================================
+
+ext_reference_v2 is provisioned but empty (0 chunks, awaiting
+curation policy). It should be included in the rename ceremony —
+rename ext_reference_v2 -> ext_reference if Path A, or rename the
+key if Path B. The collection exists and should have a clean name
+regardless of whether it has data.
+
+=====================================================================
+Q8. WHAT ABOUT THE INGEST CACHE?
+=====================================================================
+
+Step 48 created per-collection cache files named by collection:
+  C:\Users\dkitc\.dex-jr\ingest_cache\dex_canon_v2.json
+
+If collections are renamed, the cache files need to be renamed too:
+  dex_canon_v2.json -> dex_canon.json
+
+The IngestCache class loads by collection name, so the rename must
+match. This is a file rename, not a content change — the cache
+entries inside reference the collection by name and those strings
+need updating too.
+
+This should be a sub-step of Phase 4 in the ceremony procedure.
+
+=====================================================================
+Q9. COUNCIL QUESTIONS
+=====================================================================
+
+  Q9a. Path A vs Path B vs Path C — which path does the council
+       recommend?
+
+  Q9b. Should the ceremony be operator-executed (manual Python script)
+       or CC-executed (CC prompt with verification)?
+
+  Q9c. Is 14 days sufficient soak time, or should it extend?
+
+  Q9d. Should the ceremony be a single atomic commit or broken into
+       phases (backup -> rename -> code -> verify)?
+
+  Q9e. After rename, should COLLECTION_SUFFIX be removed from the
+       codebase entirely, or kept as dead code for future migrations?
+
+=====================================================================
+Q10. WHAT STANDARDS APPLY?
+=====================================================================
+
+  - ADR-CORPUS-001 (collection authority)
+  - STD-DDL-BACKUP-001 (pre-ceremony backup required)
+  - CLAUDE.md Rule 1 (Corpus Integrity Is Sacred)
+  - CLAUDE.md Rule 8 (collection operations require verification)
+
+=====================================================================
+Q11. WHAT IS THE RISK IF WE DO NOTHING?
+=====================================================================
+
+The _v2 suffix stays forever. The code works — it's cosmetic, not
+functional. The env-gated suffix pattern means the code already
+handles the suffix transparently.
+
+Cost of inaction: slight cognitive overhead on new developers/seats
+seeing "_v2" with no "_v1". Legacy nomic collections sit on disk
+consuming ~11 GB indefinitely. No operational risk.
+
+Cost of action: ceremony execution risk (mitigated by backup +
+rollback plan). One-time effort, then clean names forever.
+
+=====================================================================
+Q12. OPERATOR SIGNAL
+=====================================================================
+
+The operator scheduled this CR for ~4/21 filing. This is early
+delivery (4/16). The soak period is healthy. The ceremony is not
+urgent but is calendar-driven — if we miss the 4/28 window, the
+legacy collections continue consuming disk space and the _v2 suffix
+becomes permanent by inertia.
+
+Forward motion is the resting state.
+
+=====================================================================
+COUNCIL: Your verdicts on the ceremony plan, path recommendation,
+and Q9a-Q9e responses.
+
+— Seat 1002 (Marcus Caldwell · LLMPM), 2026-04-16
+=====================================================================

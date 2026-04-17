@@ -76,3 +76,41 @@ error. No bypass flags. `router_config.json` does not exist in the repo
 ### Problem
 `dex_dave` collection is HARD-GATED per ADR-CORPUS-001 Rule 3: "Never
 ingest to dex_dave under any circumstance." Was unenforced in code.
+
+---
+
+## CR-DDL-SOAK-RENAME-001
+
+**Status:** OPEN — Council review filed, verdicts due 2026-04-21
+**Opened:** 2026-04-16
+**Author:** Seat 1002 (Marcus Caldwell, LLMPM)
+**Source:** Step 33c soak period governance
+**Full document:** `prompts/CR-DDL-SOAK-RENAME-001.txt`
+
+### Summary
+Governs the retirement of the `_v2` collection suffix and deletion of
+the legacy nomic-embed-text collections after the 14-day soak period
+(target: 2026-04-28). Three paths evaluated: Path A (ChromaDB rename
+in place), Path B (suffix flip, no rename), Path C (full rebuild).
+Recommendation: Path A if ChromaDB `modify(name=)` is safe, Path B
+otherwise.
+
+### Scope
+- ChromaDB collection rename or key update (4 live + 1 provisioned)
+- Code updates across 8 files (suffix references)
+- Ingest cache file rename
+- Legacy nomic collection deletion (~11 GB disk recovery)
+- CLAUDE.md, knowledge-vault, DDL site references
+
+### Blocking prerequisites
+- Soak period passes without retrieval quality complaints (14 days from 2026-04-14)
+- Council verdicts on path selection (Q9a-Q9e)
+- Pre-ceremony backup verified
+- Path A viability confirmed (ChromaDB rename test on throwaway collection)
+- Operator ceremony GO
+
+### Timeline
+- 2026-04-21: Council verdicts due
+- 2026-04-21-27: Path A viability test
+- 2026-04-28: Ceremony execution (if soak passes + council LOCK)
+- 2026-04-29: First sweep on renamed collections = ceremony LOCK
