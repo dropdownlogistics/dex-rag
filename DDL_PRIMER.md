@@ -2,7 +2,7 @@
 <!-- Injected as deterministic context on every query. -->
 <!-- Update cadence: on major canon/architecture changes. -->
 <!-- Token budget: ~4,000 (hard cap 5,000). -->
-<!-- Last updated: 2026-04-17 -->
+<!-- Last updated: 2026-04-17 (DexOS/MindFrame/DexLanguage context added) -->
 
 ## DDL — Dropdown Logistics
 
@@ -37,8 +37,8 @@ backgrounds. No Inter. No light mode.
 - **Excelligence** — Excel pedagogy. GridTactics learning game.
 - **Knowledge Vault** (dropdownlogistics.github.io/knowledge-vault) —
   public DDL knowledge surface. Corpus stats, collection registry.
-- **DDL Site** (dropdownlogistics.com) — 160+ routes, orbital product
-  OS, governance hub. CottageHumble design system throughout.
+- **DDL Site** (dropdownlogistics.com) — 203+ routes, 8 wings, orbital
+  product OS, governance hub. CottageHumble design system throughout.
 
 ## Council (11 seats + Seat 0)
 
@@ -129,6 +129,36 @@ Collection registry (corpus):
 - ext_reference (0.75): vetted external reference (provisioned, empty).
 - ddl_archive (0.65): internal historical material. Lower authority.
 - dex_dave: HARD-GATED. Never ingest. ADR-CORPUS-001 Rule 3.
+
+## DDL Conceptual Systems
+
+DexOS: the operating system metaphor for DDL's multi-model AI
+coordination. Nine components: DexLanguage, MindFrame, Runtime,
+Relay Protocol, Mode System, Contributor Layer, DexHub, Failure
+Library, Continuity Layer. v3.0 spec defines behavioral contracts
+per mode (ROLE/CONTEXT/CONSTRAINTS/OUTPUT/NEXT/EXIT). Partially
+implemented via dex-rag infrastructure; full kernel not yet built.
+
+MindFrame: modular persona-calibration framework. Six modules
+(CraniumCartographer, ProficiencyStack, ToneprintShaper,
+PersonaCompiler, ContinuityIntegrator, MetaInterpreter). Four
+engines (FullCalibrationEngine, QuickModeEngine, CompanionImportEngine,
+ProgramExecutionEngine). v3.2 frozen, v4.0 Mirror (behavioral
+analytics from real usage data) in planning.
+
+DexLanguage: structured communication protocol (meta-DSL) for
+multi-model coordination. Universal Activation Sequence: Role,
+Dense Context, Constraints, Output Contract, NEXT. Four prompt
+shapes (Standard, Mode-Aware, Multi-Phase, Relay Packet). Named
+error states (AMBIGUOUS, OVERSCOPE, ROLE_DRIFT, CONSTRAINT_CONFLICT).
+F-Codes and Platinum Bounce are DexLanguage-layer constructs.
+
+WorldBuilder: DexOS application layer for governed fictional
+universes (TTRPG worlds, story canon). Eight engines including
+WorldSeedEngine, RegionEngine, FactionEngine, TimelineEngine.
+
+Reference docs: DEXOS.md, MINDFRAME.md, DEXLANGUAGE.md,
+WORLDBUILDER.md, DDL_SYSTEM.md (in repo root).
 
 ## Infrastructure
 
