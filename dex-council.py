@@ -1,6 +1,6 @@
 """
-DEX JR HYBRID AUTO-COUNCIL — v3.0 (Definitive)
-Local models + Free cloud APIs + Governance + RAG + Save + Ingest
+DEX JR HYBRID AUTO-COUNCIL — v4.0 (Multi-Host)
+Multi-host dispatch + Weighted RAG + Persona injection + Governance v4.2
 
 Usage:
   python dex-council.py "your prompt here"
@@ -9,11 +9,13 @@ Usage:
   python dex-council.py "your prompt here" --all --rag --save council-runs/my-review --ingest
   python dex-council.py --synthesize council-runs/my-review
   python dex-council.py --from-file prompt.txt --all --rag
+  python dex-council.py --host-status
 
 Tiers:
-  LOCAL:  qwen2.5-coder:7b, llama3.1:8b, deepseek-r1:8b (gaming rig)
-  CLOUD:  Gemini 2.5 Flash, Mistral Small (free APIs)
-  SYNTH:  Dexcell (governed local model)
+  LOCAL (Reborn):   qwen2.5-coder:7b, llama3.1:8b
+  LOCAL (Gaming):   deepseek-r1:8b (offloaded via Tailscale)
+  CLOUD:            Gemini 2.5 Flash, Mistral Small (free APIs)
+  SYNTH:            Dexcell (governed local model)
 
 Features:
   --save PATH        Save all responses + synthesis to folder
@@ -22,9 +24,13 @@ Features:
   --retry            Retry failed models once
   --timeout N        Custom timeout per model (default 180s)
   --verbose          Show full responses instead of previews
+  --host-status      Show host connectivity + model availability
+
+Step 53: Multi-host dispatch (Reborn + Gaming Laptop via Tailscale),
+         weighted RAG (dex_weights.py), seat-specific persona injection.
 
 Dropdown Logistics — Chaos -> Structured -> Automated
-Hybrid AutoCouncil v3.0 | 2026-03-06
+Hybrid AutoCouncil v4.0 | 2026-04-16
 """
 
 import os
@@ -35,6 +41,7 @@ import argparse
 import datetime
 import requests
 import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # -----------------------------
 # CONFIG
@@ -43,23 +50,51 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ENV_FILE = os.path.join(SCRIPT_DIR, ".env")
 LOG_FILE = os.path.join(SCRIPT_DIR, "dex-council-log.jsonl")
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
-
-CHROMA_DIR = r"C:\Users\dkitc\.dex-jr\chromadb"
-CANON_COLLECTION = "dex_canon"
-RAW_COLLECTION = "ddl_archive"
-EMBED_MODEL = "nomic-embed-text"
+# Step 53: env-gated, matching dex_jr_query.py
+EMBED_MODEL = os.environ.get("DEXJR_EMBED_MODEL", "mxbai-embed-large")
+COLLECTION_SUFFIX = os.environ.get("DEXJR_COLLECTION_SUFFIX", "_v2")
 
 DEFAULT_SYNTHESIZER = "dexjr"
 DEFAULT_TIMEOUT = 180
 TOP_K = 5
 
-# Local models (gaming rig via Ollama)
+# ── Multi-host config (Tailscale MagicDNS) ───────────────────────────────────
+
+HOSTS = {
+    "reborn": {
+        "url": "http://reborn:11434",
+        "fallback_url": "http://localhost:11434",
+        "gpu": "RTX 3070",
+    },
+    "gaminglaptop": {
+        "url": "http://gaminglaptop:11434",
+        "gpu": "RTX 3060",
+    },
+}
+
+# Local models with host assignment and seat IDs
 LOCAL_MODELS = [
-    {"id": "qwen2.5-coder:7b", "name": "Qwen (Code Specialist)", "provider": "local"},
-    {"id": "llama3.1:8b", "name": "Llama (General Reasoning)", "provider": "local"},
-    {"id": "deepseek-r1:8b", "name": "DeepSeek-Local (Chain-of-Thought)", "provider": "local"},
+    {
+        "id": "qwen2.5-coder:7b",
+        "name": "Qwen (Code Specialist)",
+        "provider": "local",
+        "host": "reborn",
+        "seat": "1010a",
+    },
+    {
+        "id": "llama3.1:8b",
+        "name": "Llama (General Reasoning)",
+        "provider": "local",
+        "host": "reborn",
+        "seat": "1010b",
+    },
+    {
+        "id": "deepseek-r1:8b",
+        "name": "DeepSeek-Local (Chain-of-Thought)",
+        "provider": "local",
+        "host": "gaminglaptop",
+        "seat": "1010c",
+    },
 ]
 
 # Cloud models (FREE TIER ONLY — tested and working)
@@ -69,6 +104,7 @@ CLOUD_MODELS = [
         "name": "Gemini (Google)",
         "provider": "gemini",
         "env_key": "GEMINI_API_KEY",
+        "seat": "gemini",
     },
     {
         "id": "mistral-small-latest",
@@ -76,6 +112,7 @@ CLOUD_MODELS = [
         "provider": "mistral",
         "env_key": "MISTRAL_API_KEY",
         "url": "https://api.mistral.ai/v1/chat/completions",
+        "seat": "mistral",
     },
 ]
 
@@ -116,6 +153,113 @@ def load_env():
                     keys[k.strip()] = v.strip()
     return keys
 
+# ── Seat-specific personas (Step 53) ─────────────────────────────────────────
+
+SEAT_PERSONAS = {
+    "1010a": {
+        "name": "Qwen — Code Specialist",
+        "lens": "You evaluate from a code architecture and implementation perspective. "
+                "Focus on: feasibility, technical debt, schema design, API surface, "
+                "and whether the proposal can be built cleanly.",
+    },
+    "1010b": {
+        "name": "Llama — General Reasoning",
+        "lens": "You evaluate from a general reasoning and strategic perspective. "
+                "Focus on: logical coherence, trade-offs, second-order effects, "
+                "and whether the proposal makes sense as a whole.",
+    },
+    "1010c": {
+        "name": "DeepSeek — Chain-of-Thought",
+        "lens": "You evaluate by thinking step by step through the implications. "
+                "Focus on: edge cases, failure modes, what happens when assumptions "
+                "break, and whether the proposal survives adversarial scrutiny.",
+    },
+    "gemini": {
+        "name": "Gemini — Tactical Crystallizer",
+        "lens": "You evaluate from a tactical and operational perspective. "
+                "Focus on: execution path, resource requirements, timeline, "
+                "and what the operator should do first.",
+    },
+    "mistral": {
+        "name": "Mistral — European Precision",
+        "lens": "You evaluate with precision and structured rigor. "
+                "Focus on: standard compliance, governance alignment, "
+                "terminology discipline, and formal correctness.",
+    },
+}
+
+# ── Host resolution (Step 53: multi-host dispatch) ───────────────────────────
+
+def get_ollama_url(host_name):
+    """Resolve the Ollama URL for a host. Try primary, then fallback."""
+    host = HOSTS.get(host_name, HOSTS["reborn"])
+    try:
+        r = requests.get(f"{host['url']}/api/tags", timeout=5)
+        if r.status_code == 200:
+            return host["url"]
+    except Exception:
+        pass
+    fallback = host.get("fallback_url")
+    if fallback:
+        try:
+            r = requests.get(f"{fallback}/api/tags", timeout=5)
+            if r.status_code == 200:
+                return fallback
+        except Exception:
+            pass
+    return None
+
+
+def check_host(host_name, required_model):
+    """Verify host is reachable and has the required model loaded."""
+    url = get_ollama_url(host_name)
+    if not url:
+        return False, f"{host_name} unreachable", None
+    try:
+        r = requests.get(f"{url}/api/tags", timeout=5)
+        models = [m["name"] for m in r.json().get("models", [])]
+        if any(required_model in m for m in models):
+            return True, "OK", url
+        return False, f"{required_model} not loaded on {host_name}", url
+    except Exception as e:
+        return False, str(e), None
+
+
+def print_host_status():
+    """Print host connectivity and model availability, then exit."""
+    print(f"\n{'=' * 60}")
+    print(f"  DEX JR. AUTO-COUNCIL — HOST STATUS")
+    print(f"{'=' * 60}\n")
+
+    for host_name, host_conf in HOSTS.items():
+        url = get_ollama_url(host_name)
+        if url:
+            try:
+                r = requests.get(f"{url}/api/tags", timeout=5)
+                models = [m["name"] for m in r.json().get("models", [])]
+                print(f"  [{host_name}] ONLINE at {url} ({host_conf.get('gpu', '?')})")
+                print(f"    Models: {', '.join(models) if models else 'none loaded'}")
+            except Exception as e:
+                print(f"  [{host_name}] ERROR: {e}")
+        else:
+            print(f"  [{host_name}] OFFLINE")
+        print()
+
+    print(f"  Local model assignments:")
+    for m in LOCAL_MODELS:
+        ok, msg, _ = check_host(m["host"], m["id"])
+        status = "READY" if ok else f"SKIP ({msg})"
+        print(f"    {m['name']:35s} -> {m['host']:15s} [{status}]")
+
+    print(f"\n  Cloud models:")
+    keys = load_env()
+    for m in CLOUD_MODELS:
+        has_key = bool(keys.get(m["env_key"]))
+        print(f"    {m['name']:35s} -> key={'OK' if has_key else 'MISSING'}")
+
+    print(f"\n{'=' * 60}\n")
+
+
 # -----------------------------
 # GOVERNANCE
 # -----------------------------
@@ -145,14 +289,14 @@ def load_env():
 # on identity/hierarchy is acceptable — contradiction is not.
 # =====================================================
 
-GOVERNANCE = """GOVERNANCE CONTEXT — DDL AutoCouncil
+GOVERNANCE = """GOVERNANCE CONTEXT — DDL AutoCouncil v4.2
 You are reviewing documents and producing structured assessments as part of a Dropdown Logistics (DDL) council review.
-DDL is a one-person governance and analytics operation run by D.K. Hale (CPA, 10+ years audit).
+DDL is a one-person governance and analytics operation run by Dave Kitchens (CPA, 10+ years audit).
 Methodology: Chaos -> Structured -> Automated.
 
 CORE SYSTEMS:
 - DDL: Operational methodology. Star schema dimensional modeling. If it generates data, DDL builds the system.
-- DexOS: AI behavior governance. Manifest (llms.txt), council (10 seats), behavioral contracts.
+- DexOS: AI behavior governance. Manifest (llms.txt), council (11 seats), behavioral contracts.
 - MindFrame: Persona calibration. Per-model cognitive tuning.
 - DDL is NOT "Data Definition Language." DexOS is NOT "Distributed Execution Operating System."
 
@@ -167,9 +311,13 @@ GOVERNANCE HIERARCHY (highest to lowest):
 When governance and heuristic conflict: governance wins. Always.
 
 COUNCIL STRUCTURE:
-- 9 cloud models (seats 1001-1009) + 1 local model (seat 1010, Dexcell/Dex Jr.)
+- 11 seats (1001-1011) across cloud and local models
+- Seat 0: Emily (verification authority)
+- Seat 1002: Marcus Caldwell (LLMPM, architecture/strategy)
+- Seat 1010: Dexcell/Dex Jr. (local governed model)
+- Seat 1011: Connor (Audit Architect)
 - Reviews use LOCK/REVISE/REJECT verdicts
-- Artifact types: CR- (review), PRO- (protocol), STD- (standard), SYS- (system), REC- (recommendation), OBS- (observation)
+- Artifact types: CR- (review), PRO- (protocol), STD- (standard), SYS- (system), REC- (recommendation), OBS- (observation), ADR- (architecture decision), GLOSS- (glossary)
 - Divergence before convergence — respond independently, then synthesize
 
 BOUNDARIES:
@@ -180,34 +328,18 @@ BOUNDARIES:
 Respond with structured reasoning. Be direct. Be specific."""
 
 # -----------------------------
-# RAG
+# RAG (Step 53: weighted retrieval via dex_weights.py)
 # -----------------------------
 def retrieve_context(query, top_k=TOP_K, use_raw=False):
     try:
-        import chromadb
-        client = chromadb.PersistentClient(path=CHROMA_DIR)
-        col_name = RAW_COLLECTION if use_raw else CANON_COLLECTION
-        collection = client.get_collection(col_name)
-        r = requests.post(
-            OLLAMA_EMBED_URL,
-            json={"model": EMBED_MODEL, "prompt": query},
-            timeout=60,
-        )
-        r.raise_for_status()
-        embedding = r.json().get("embedding")
-        if not embedding:
-            return ""
-        results = collection.query(
-            query_embeddings=[embedding],
-            n_results=top_k,
-            include=["documents", "metadatas"],
-        )
+        from dex_weights import weighted_query
+        results = weighted_query(query, n_results=top_k)
         chunks = []
-        if results and results["documents"]:
-            for i, doc in enumerate(results["documents"][0]):
-                meta = results["metadatas"][0][i] if results["metadatas"] else {}
-                source = meta.get("source_file", "unknown")
-                chunks.append(f"[Source: {source}]\n{doc[:500]}")
+        for r in results:
+            source = r.get("source", r.get("filename", "unknown"))
+            score = r.get("weighted_score", 0)
+            label = r.get("label", r.get("collection", ""))
+            chunks.append(f"[Source: {source} | {label} | Score: {score:.3f}]\n{r['document'][:500]}")
         return "\n\n".join(chunks)
     except Exception as e:
         print(f"  [WARN] RAG retrieval failed: {e}")
@@ -216,11 +348,14 @@ def retrieve_context(query, top_k=TOP_K, use_raw=False):
 # -----------------------------
 # MODEL QUERIES
 # -----------------------------
-def query_local(model_id, prompt, timeout=DEFAULT_TIMEOUT):
+def query_local(model_id, prompt, timeout=DEFAULT_TIMEOUT, ollama_url=None):
+    """Query a local Ollama model. Uses provided URL or falls back to reborn."""
+    if ollama_url is None:
+        ollama_url = get_ollama_url("reborn") or "http://localhost:11434"
     try:
         start = time.time()
         r = requests.post(
-            OLLAMA_URL,
+            f"{ollama_url}/api/generate",
             json={
                 "model": model_id,
                 "prompt": prompt,
@@ -294,8 +429,11 @@ def query_cloud(model, prompt, api_keys, timeout=120):
 # -----------------------------
 # GOVERNED PROMPT BUILDER
 # -----------------------------
-def build_governed_prompt(prompt, rag_context=""):
+def build_governed_prompt(prompt, rag_context="", seat_id=None):
     parts = [GOVERNANCE]
+    if seat_id and seat_id in SEAT_PERSONAS:
+        persona = SEAT_PERSONAS[seat_id]
+        parts.append(f"\nYOUR ROLE: {persona['name']}\n{persona['lens']}")
     if rag_context:
         parts.append(f"\nRETRIEVED CONTEXT (from DDL knowledge base):\n{rag_context}")
     parts.append(f"\nPROMPT:\n{prompt}")
@@ -406,7 +544,7 @@ def save_to_folder(folder, prompt, responses, synthesis, rag_context=""):
     # Metadata
     meta = {
         "timestamp": datetime.datetime.now().isoformat(),
-        "version": "3.0",
+        "version": "4.0",
         "prompt": prompt,
         "model_count": len(responses),
         "successful": sum(1 for r in responses if r["result"]["response"]),
@@ -558,16 +696,18 @@ def display_header(prompt, local_models, cloud_models, synthesizer, use_rag, sav
     total = len(local_models) + len(cloud_models)
     print()
     print("=" * 70)
-    print("  DDL HYBRID AUTO-COUNCIL v3.0")
+    print("  DDL HYBRID AUTO-COUNCIL v4.0")
     print("=" * 70)
     print(f"  Prompt: {prompt[:80]}{'...' if len(prompt) > 80 else ''}")
     if local_models:
+        hosts_used = sorted({m.get('host', 'reborn') for m in local_models})
         print(f"  Local: {len(local_models)} ({', '.join(m['name'] for m in local_models)})")
+        print(f"  Hosts: {', '.join(hosts_used)}")
     if cloud_models:
         print(f"  Cloud: {len(cloud_models)} ({', '.join(m['name'] for m in cloud_models)})")
-    print(f"  Total: {total} models")
+    print(f"  Total: {total} models (parallel dispatch)")
     print(f"  Synth: {synthesizer}")
-    print(f"  RAG: {'Active' if use_rag else 'Off'}")
+    print(f"  RAG: {'Weighted' if use_rag else 'Off'}")
     if save_path:
         print(f"  Save: {save_path}")
     if ingest:
@@ -610,7 +750,7 @@ def display_synthesis(result, verbose=False):
 def log_council(prompt, responses, synthesis, synthesizer, use_rag):
     entry = {
         "timestamp": datetime.datetime.now().isoformat(),
-        "version": "3.0",
+        "version": "4.0",
         "prompt": prompt[:500],
         "synthesizer": synthesizer,
         "rag_active": use_rag,
@@ -630,7 +770,7 @@ def log_council(prompt, responses, synthesis, synthesizer, use_rag):
 # MAIN
 # -----------------------------
 def main():
-    parser = argparse.ArgumentParser(description="DDL Hybrid AutoCouncil v3.0")
+    parser = argparse.ArgumentParser(description="DDL Hybrid AutoCouncil v4.0")
     parser.add_argument("prompt", nargs="?", default=None, help="Prompt to send")
     parser.add_argument("--local-only", action="store_true", help="Local only")
     parser.add_argument("--cloud-only", action="store_true", help="Cloud only")
@@ -647,8 +787,18 @@ def main():
     parser.add_argument("--retry", action="store_true", help="Retry failed models")
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT)
     parser.add_argument("--verbose", action="store_true", help="Full responses")
+    parser.add_argument("--host-status", action="store_true", help="Show host connectivity + model availability")
 
     args = parser.parse_args()
+
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+    # Host status mode
+    if args.host_status:
+        print_host_status()
+        return
 
     # Re-synthesize mode
     if args.synthesize:
@@ -695,40 +845,86 @@ def main():
         else:
             print("  No relevant context found.\n")
 
-    # Build prompt
-    full_prompt = build_governed_prompt(prompt, rag_context) if governed else prompt
-
-    # Query models
-    responses = []
-    total = len(use_local) + len(use_cloud)
-    idx = 0
-
+    # Step 53: host pre-check for local models — skip unreachable hosts
+    active_local = []
+    host_urls = {}  # host_name -> resolved URL
     for model in use_local:
-        idx += 1
-        print(f"  Querying {idx}/{total}: [LOCAL] {model['name']}...")
-        result = query_local(model["id"], full_prompt, timeout=args.timeout)
-        responses.append({
-            "name": model["name"], "provider": "local",
-            "model_id": model["id"], "result": result,
-        })
-        display_response(idx - 1, model["name"], "local", result, args.verbose)
+        host = model.get("host", "reborn")
+        if host not in host_urls:
+            ok, msg, url = check_host(host, model["id"])
+            if ok:
+                host_urls[host] = url
+            else:
+                print(f"  [WARN] Skipping {model['name']}: {msg}")
+                continue
+        else:
+            # Host already resolved — just check model
+            url = host_urls[host]
+            try:
+                r = requests.get(f"{url}/api/tags", timeout=5)
+                models_on_host = [m["name"] for m in r.json().get("models", [])]
+                if not any(model["id"] in m for m in models_on_host):
+                    print(f"  [WARN] Skipping {model['name']}: {model['id']} not on {host}")
+                    continue
+            except Exception:
+                print(f"  [WARN] Skipping {model['name']}: {host} check failed")
+                continue
+        active_local.append(model)
 
-    for model in use_cloud:
-        idx += 1
-        print(f"  Querying {idx}/{total}: [CLOUD] {model['name']}...")
-        result = query_cloud(model, full_prompt, api_keys, timeout=args.timeout)
+    all_models = active_local + use_cloud
+    total = len(all_models)
 
-        # Retry once on failure
+    # Build per-model governed prompts with persona injection
+    model_prompts = {}
+    for model in all_models:
+        seat = model.get("seat")
+        if governed:
+            model_prompts[model["id"]] = build_governed_prompt(prompt, rag_context, seat_id=seat)
+        else:
+            model_prompts[model["id"]] = prompt
+
+    # Step 53: parallel dispatch via ThreadPoolExecutor
+    print(f"  Dispatching {total} models in parallel...")
+    responses = []
+
+    def _dispatch_local(model):
+        host = model.get("host", "reborn")
+        url = host_urls.get(host)
+        return query_local(model["id"], model_prompts[model["id"]], timeout=args.timeout, ollama_url=url)
+
+    def _dispatch_cloud(model):
+        result = query_cloud(model, model_prompts[model["id"]], api_keys, timeout=args.timeout)
         if result["error"] and args.retry:
-            print(f"      Retrying {model['name']}...")
             time.sleep(2)
-            result = query_cloud(model, full_prompt, api_keys, timeout=args.timeout)
+            result = query_cloud(model, model_prompts[model["id"]], api_keys, timeout=args.timeout)
+        return result
 
-        responses.append({
-            "name": model["name"], "provider": model["provider"],
-            "model_id": model["id"], "result": result,
-        })
-        display_response(idx - 1, model["name"], model["provider"], result, args.verbose)
+    with ThreadPoolExecutor(max_workers=max(total, 1)) as pool:
+        futures = {}
+        for model in all_models:
+            if model["provider"] == "local":
+                futures[pool.submit(_dispatch_local, model)] = model
+            else:
+                futures[pool.submit(_dispatch_cloud, model)] = model
+
+        for future in as_completed(futures):
+            model = futures[future]
+            try:
+                result = future.result()
+            except Exception as e:
+                result = {"response": None, "elapsed": 0, "error": str(e)}
+            responses.append({
+                "name": model["name"], "provider": model.get("provider", "local"),
+                "model_id": model["id"], "result": result,
+                "seat": model.get("seat", ""),
+                "host": model.get("host", ""),
+            })
+
+    # Display in original model order
+    model_order = {m["id"]: i for i, m in enumerate(all_models)}
+    responses.sort(key=lambda r: model_order.get(r["model_id"], 99))
+    for idx, r in enumerate(responses):
+        display_response(idx, r["name"], r["provider"], r["result"], args.verbose)
 
     # Synthesize
     print("  Running synthesis...")
