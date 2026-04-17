@@ -162,3 +162,26 @@ def load_primer() -> str:
         except Exception:
             return ""
     return ""
+
+
+# ── Council roster ───────────────────────────────────────────────────────────
+
+COUNCIL_SEATS = {
+    0:    {"name": "Emily",             "role": "verification authority"},
+    1001: {"name": "Archer Hawthorne",  "role": "structural cartography"},
+    1002: {"name": "Marcus Caldwell",   "role": "LLMPM, architecture"},
+    1003: {"name": "Elias Mercer",      "role": "contradiction detection"},
+    1004: {"name": "Max Sullivan",      "role": "sourced, decisive"},
+    1005: {"name": "Rowan Bennett",     "role": "operational rigor"},
+    1006: {"name": "Ava Sinclair",      "role": "big-picture framing"},
+    1007: {"name": "Leo Prescott",      "role": "tactical crystallizer"},
+    1008: {"name": "Marcus Grey",       "role": "synthesis, PM voice"},
+    1009: {"name": "Kai Langford",      "role": "systems architecture"},
+    1010: {"name": "Dex Jr.",           "role": "local governed model"},
+    1011: {"name": "Connor",            "role": "audit architect"},
+}
+
+# Default voting seats (Seat 0 excluded — verification authority, not a voter)
+DEFAULT_VOTING_SEATS = [s for s in COUNCIL_SEATS if s != 0]
+
+REVIEW_DIR = os.path.join(SCRIPT_DIR, "council-reviews")
