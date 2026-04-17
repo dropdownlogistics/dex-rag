@@ -44,33 +44,17 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # -----------------------------
-# CONFIG
+# CONFIG (Step 54: imports from dex_core)
 # -----------------------------
+from dex_core import HOSTS, get_ollama_url as _core_get_ollama_url
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ENV_FILE = os.path.join(SCRIPT_DIR, ".env")
 LOG_FILE = os.path.join(SCRIPT_DIR, "dex-council-log.jsonl")
 
-# Step 53: env-gated, matching dex_jr_query.py
-EMBED_MODEL = os.environ.get("DEXJR_EMBED_MODEL", "mxbai-embed-large")
-COLLECTION_SUFFIX = os.environ.get("DEXJR_COLLECTION_SUFFIX", "_v2")
-
 DEFAULT_SYNTHESIZER = "dexjr"
 DEFAULT_TIMEOUT = 180
 TOP_K = 5
-
-# ── Multi-host config (Tailscale MagicDNS) ───────────────────────────────────
-
-HOSTS = {
-    "reborn": {
-        "url": "http://reborn:11434",
-        "fallback_url": "http://localhost:11434",
-        "gpu": "RTX 3070",
-    },
-    "gaminglaptop": {
-        "url": "http://gaminglaptop:11434",
-        "gpu": "RTX 3060",
-    },
-}
 
 # Local models with host assignment and seat IDs
 LOCAL_MODELS = [
@@ -188,26 +172,11 @@ SEAT_PERSONAS = {
     },
 }
 
-# ── Host resolution (Step 53: multi-host dispatch) ───────────────────────────
+# ── Host resolution (Step 54: delegates to dex_core) ─────────────────────────
 
 def get_ollama_url(host_name):
-    """Resolve the Ollama URL for a host. Try primary, then fallback."""
-    host = HOSTS.get(host_name, HOSTS["reborn"])
-    try:
-        r = requests.get(f"{host['url']}/api/tags", timeout=5)
-        if r.status_code == 200:
-            return host["url"]
-    except Exception:
-        pass
-    fallback = host.get("fallback_url")
-    if fallback:
-        try:
-            r = requests.get(f"{fallback}/api/tags", timeout=5)
-            if r.status_code == 200:
-                return fallback
-        except Exception:
-            pass
-    return None
+    """Resolve the Ollama URL for a host. Delegates to dex_core."""
+    return _core_get_ollama_url(host_name)
 
 
 def check_host(host_name, required_model):
