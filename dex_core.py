@@ -46,11 +46,12 @@ COLLECTIONS = {
 # Hard-gated — never ingest under any circumstance (ADR-CORPUS-001 Rule 3)
 GATED_COLLECTIONS = ["dex_dave"]
 
-# Floor values for health checks (Step 33c baseline)
+# Post-rebuild floors (2026-04-17: corpus rebuild removed 200K
+# garbage/misrouted chunks from canon, moved 95K to archive)
 CHUNK_FLOORS = {
-    "dex_canon":   253_978,
-    "ddl_archive": 291_520,
-    "dex_code":     20_384,
+    "dex_canon":    58_919,
+    "ddl_archive": 316_109,
+    "dex_code":     20_416,
     "ext_creator":     922,
 }
 
@@ -196,10 +197,15 @@ FETCH_LOG = os.path.join(SCRIPT_DIR, "dex-fetch-log.jsonl")
 GIT_REPOS = {
     "dex-rag":         r"C:\Users\dexjr\dex-rag",
     "auditforge":      r"C:\Users\dexjr\auditforge",
+    "workbench":       r"C:\Users\dexjr\workbench",
     "ddl-site":        r"C:\Users\dexjr\dropdown-logistics",
-    "knowledge-vault": r"C:\Users\dexjr\knowledge-vault",
     "ledger":          r"C:\Users\dexjr\ledger",
+    "blindspot-bet":   r"C:\Users\dexjr\blindspot-bet",
     "positionbook":    r"C:\Users\dexjr\positionbook",
+    "admitone":        r"C:\Users\dexjr\admitone",
+    "knowledge-vault": r"C:\Users\dexjr\knowledge-vault",
+    "excelligence":    r"C:\Users\dexjr\excelligence",
+    "slopestat":       r"C:\Users\dexjr\slopestat",
 }
 
 GIT_STATS_LOG = os.path.join(SCRIPT_DIR, "dex-git-stats-log.jsonl")
