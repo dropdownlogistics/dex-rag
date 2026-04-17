@@ -145,3 +145,20 @@ def get_ollama_url(host_name: str) -> Optional[str]:
         except Exception:
             pass
     return None
+
+
+# ── Primer ───────────────────────────────────────────────────────────────────
+
+PRIMER_PATH = os.path.join(SCRIPT_DIR, "DDL_PRIMER.md")
+
+
+def load_primer() -> str:
+    """Load DDL_PRIMER.md for injection into query context.
+    Returns empty string if file not found (graceful degradation)."""
+    if os.path.exists(PRIMER_PATH):
+        try:
+            with open(PRIMER_PATH, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            return ""
+    return ""
