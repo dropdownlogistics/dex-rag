@@ -4,8 +4,8 @@ Standing instructions for any Claude Code session in this repo.
 Repo: dex-rag (Dex Jr. — Seat 1010 of the DDL council)
 Operator: Dave Kitchens
 Standard: DDL CLAUDE.md v1 + dex-rag extensions
-Last audit: 2026-04-14 (post-Step-33c drift migration)
-Last cleanup: 2026-04-12 (6 commits, -589 lines, untracked)
+Last audit: 2026-04-16 (post-Step-50, Steps 48-50 shipped)
+Last cleanup: 2026-04-16 (Step 50.3: dex-query.py deleted, dex.ps1 updated)
 
 ---
 
@@ -20,10 +20,12 @@ resolution per ADR-INGEST-PIPELINE-001.)
 
 The system is mid-retool. The 2026-04-12 audit identified ~600 lines of dead
 code (now removed), 14 independent ChromaDB connection sites, 8 duplicate
-embedding functions, and a known scoped+fast ingest bug. Treat the codebase
-as known-debt — it has accumulated bandaids over six months and is being
-deliberately refactored toward a unified `dex` CLI, a shared core library,
-a query router, and clean telemetry.
+embedding functions. The scoped+fast ingest bug was fixed in Step 48
+(ingest_cache.py). Weighted retrieval was wired in Step 49
+(dex_weights.py → dex_jr_query.py). Treat the codebase as known-debt — it
+has accumulated bandaids over six months and is being deliberately refactored
+toward a unified `dex` CLI, a shared core library, a query router, and clean
+telemetry.
 
 The corpus is the asset. The code is the substrate. Protect the corpus first.
 
@@ -377,7 +379,24 @@ Next logical step: [One sentence. What CC would do next if given the green light
 
 ---
 
-## Open Items (current state, 2026-04-12)
+## Open Items (current state, 2026-04-16)
+
+### ✅ Steps 48-50 — COMPLETE (2026-04-16)
+  - **Step 48:** `ingest_cache.py` — per-collection file ingest cache with
+    SHA-256 content hashing, lazy-build from collection metadata,
+    `--force-rechunk` and `--no-ingest-cache` CLI flags. Sweep report now
+    shows per-file status (NEW, SKIPPED unchanged, RE-CHUNKED modified).
+    CR-DDL-INGEST-FAST-SCOPED-001 CLOSED.
+  - **Step 49:** `dex_weights.py` modernized (mxbai-embed-large, `_v2`
+    suffix, phantom collections `ext_canon`/`ext_archive` removed). Wired
+    into `dex_jr_query.py` — retrieval ranked by `weighted_score`.
+    CR-DDL-WEIGHTS-SYNC-001 and CR-DDL-WEIGHTS-INTEGRATION-001 CLOSED.
+  - **Step 50:** `dex_dave` hard gate enforced in `dex-ingest.py`
+    (`sys.exit(1)` before any DB access per ADR-CORPUS-001 Rule 3). Legacy
+    `dex-query.py` deleted (-125 lines). `dex.ps1` updated to call
+    `dex_jr_query.py`. CR-DDL-DEXDAVE-GATE-001 CLOSED.
+  - **Step 50.5:** CR-DDL-SOAK-RENAME-001 filed — `_v2` suffix retirement
+    ceremony scheduled for ~2026-04-28 (council verdicts due 2026-04-21).
 
 ### ✅ Quick-win deletions — COMPLETE
 Six commits landed locally on 2026-04-12, 589 lines removed. Nothing pushed.
@@ -388,21 +407,19 @@ Six commits landed locally on 2026-04-12, 589 lines removed. Nothing pushed.
   - `b9eea15` chore: consolidate clean_staas variants
   - `71d9b0e` chore: consolidate transcribe_mania to single canonical file
 
-### Critical bugs (priority order, none fixed yet)
+### Critical bugs (priority order)
   1. **`dex-convert.py` silent data loss** — lines 252, 355, 360, 374, 419.
      `except Exception:` blocks silently drop records during conversion.
      No counter, no log. Operator does not know how many documents have
      been lost. Fix early — add counter and flag-on-failure mode.
-  2. **`dex-search-api.py` invisible to 5 of 7 collections** — only queries
-     `dex_canon` and `ddl_archive`. Anyone hitting the API expecting
-     `ext_creator`, `dex_code`, `ext_canon`, `ext_archive`, or `ext_reference`
-     content gets silently empty results. Surface-level fix.
-  3. **Scoped+fast file-level skip broken** — `dex-ingest.py:370-374`. When
-     `--fast` is used with a scoped collection (e.g., `dex-bridge`,
-     `dex-council`, `dex-sweep`, `fetch_ext_creators`), the file-level skip
-     becomes a no-op and entire files are re-chunked and re-embedded on
-     every run. Upsert prevents true duplicates but the work is wasted.
-     Proper fix: file-hash → chunk-id-prefix cache in collection metadata.
+  2. **`dex-search-api.py` invisible to 2 of 4 collections** — only queries
+     `dex_canon_v2` and `ddl_archive_v2`. Anyone hitting the API expecting
+     `ext_creator_v2` or `dex_code_v2` content gets silently empty results.
+     Surface-level fix.
+  3. ~~**Scoped+fast file-level skip broken**~~ — **FIXED in Step 48**
+     (CR-DDL-INGEST-FAST-SCOPED-001 CLOSED). `ingest_cache.py` provides
+     SHA-256 content-aware file dedup. `--force-rechunk` and
+     `--no-ingest-cache` flags for bypass/backward compat.
 
 ### Refactor targets (in order of leverage)
   1. **Build `dex_core` package** — single source for `get_chroma_client()`,
@@ -411,30 +428,27 @@ Six commits landed locally on 2026-04-12, 589 lines removed. Nothing pushed.
      5 logging setups, and the dual-protocol Ollama inconsistency
      (`requests` vs `ollama` library).
   2. **Migrate one entry point at a time** to use `dex_core`. Start with
-     `dex-query.py` (125 lines, two ChromaDB clients per run, smallest and
-     clearest test case).
+     `dex_jr_query.py` (smallest and clearest test case). Legacy
+     `dex-query.py` was deleted in Step 50.3.
   3. **Add `ingested_at` and `source_type` metadata fields** to all chunks
      at ingest time. Backfill existing chunks.
   4. **Build `dex health` command** that validates each entry point's view
      of the world and confirms they all agree on collections, models, paths,
      and config.
   5. **Build query router** as the single source for retrieval logic.
-     Absorbs `dex_weights.py` scoring as a layer. Reads collection list
-     from ADR-CORPUS-001.
+     `dex_weights.py` scoring is now wired into `dex_jr_query.py` (Step 49)
+     — router should absorb this as a layer. Reads collection list from
+     ADR-CORPUS-001.
 
 ### Pre-existing uncommitted modifications (per Rule 17)
-The following files had unstaged changes at the start of the 2026-04-12
-deletion session. CC correctly did not touch them. Operator should review
-and decide: commit, stash, or discard.
-  - `dex_weights.py` (live underscore version)
-  - `fetch_leila_gharani.py`
+  - `fetch_leila_gharani.py` — operator WIP, untouched across Steps 48-51.
+  - `dex_weights.py` — was uncommitted; operator authorized edit in Step 49
+    (modernized to mxbai, _v2 suffix, phantom collections removed). Now
+    committed and pushed.
 
 ### Cosmetic flags from 2026-04-12 deletions
-  - `dex-bridge.py:4` has a docstring comment
-    `v1.1: Source weighting via dex-weights.py` referencing the now-deleted
-    dash variant. The actual import on line 37 is correct
-    (`from dex_weights import ...`). Fix on next edit to that file, not its
-    own commit.
+  - ~~`dex-bridge.py:4` stale `dex-weights.py` reference~~ — **FIXED in
+    Step 51.2.** Updated to `dex_weights.py` (underscore).
   - During `clean_staas` consolidation, CC chose `fetch_clean_staas.py`'s
     content as canonical because it was the only variant that fetched from
     the web rather than requiring a pre-downloaded file. Substitution
