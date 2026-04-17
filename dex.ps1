@@ -14,6 +14,7 @@ $script_dir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 switch ($Command) {
     { $_ -in "q", "query" }   { python "$script_dir\dex_jr_query.py" @Rest }
+    { $_ -in "b", "bridge" }  { python "$script_dir\dex-bridge.py" @Rest }
     { $_ -in "c", "council" } { python "$script_dir\dex-council.py" @Rest }
     "health"                   { python "$script_dir\dex_health.py" @Rest }
     "status"                   { python "$script_dir\dex_health.py" --quick @Rest }
@@ -38,6 +39,7 @@ switch ($Command) {
         Write-Host "  dex <command> [args]"
         Write-Host ""
         Write-Host "  q, query    Query the corpus"
+        Write-Host "  b, bridge   RAG bridge (query + generate)"
         Write-Host "  c, council  Run AutoCouncil"
         Write-Host "  health      Full health check (--quick for fast)"
         Write-Host "  status      Quick corpus status"

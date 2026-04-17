@@ -1,9 +1,11 @@
 """
-DEX JR RAG BRIDGE - v1.2
+DEX JR RAG BRIDGE - v1.3
 Connects ChromaDB retrieval to Ollama generation.
 v1.1: Source weighting via dex_weights.py
 v1.2: Auto-ingest query+response to corpus after every run
       Fixed stray chat_url arg in get_embedding() (latent crash on --raw path)
+v1.3: Step 56 — rewired to dex_core, Tailscale MagicDNS for laptop,
+      mxbai embeddings, _v2 collections, num_ctx 16384
 
 Usage:  python dex-bridge.py "your question here"
         python dex-bridge.py "your question here" --raw
@@ -35,19 +37,20 @@ import subprocess
 import shutil
 
 from dex_weights import weighted_query_with_provenance
+from dex_core import (
+    CHROMA_DIR, OLLAMA_HOST, EMBED_MODEL, suffixed,
+    get_chroma_client, embed as core_embed, get_ollama_url,
+)
 
 # -----------------------------
-# CONFIG
+# CONFIG (Step 56: derived from dex_core)
 # -----------------------------
-CHROMA_DIR       = r"C:\Users\dkitc\.dex-jr\chromadb"
-CANON_COLLECTION = "dex_canon"
-RAW_COLLECTION   = "ddl_archive"
+CANON_COLLECTION = suffixed("dex_canon")
+RAW_COLLECTION   = suffixed("ddl_archive")
 
-OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
-OLLAMA_CHAT_URL  = "http://localhost:11434/api/generate"
-OLLAMA_CHAT_URL_LAPTOP = "http://192.168.0.210:11434/api/generate"
+OLLAMA_EMBED_URL = f"{OLLAMA_HOST}/api/embeddings"
+OLLAMA_CHAT_URL  = f"{OLLAMA_HOST}/api/generate"
 
-EMBED_MODEL      = "nomic-embed-text"
 DEFAULT_MODEL    = "dexjr"
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -61,25 +64,14 @@ TOP_K            = 5
 MAX_CONTEXT_CHARS = 6000
 
 # -----------------------------
-# CHROMADB SETUP (legacy raw path)
+# CHROMADB + EMBEDDING (Step 56: delegates to dex_core)
 # -----------------------------
-import chromadb
-
 def get_client():
-    return chromadb.PersistentClient(path=CHROMA_DIR)
+    return get_chroma_client()
 
-# -----------------------------
-# EMBEDDING (legacy, used by raw fallback)
-# -----------------------------
 def get_embedding(text):
     try:
-        r = requests.post(
-            OLLAMA_EMBED_URL,
-            json={"model": EMBED_MODEL, "prompt": text},
-            timeout=60,
-        )
-        r.raise_for_status()
-        return r.json().get("embedding")
+        return core_embed(text)
     except Exception as e:
         print(f"  [ERROR] Embedding failed: {e}")
         return None
@@ -180,7 +172,7 @@ Answer based on the retrieved context and your governance training. Cite sources
                 "stream": False,
                 "options": {
                     "temperature": 0.3,
-                    "num_ctx": 8192,
+                    "num_ctx": 16384,
                 },
             },
             timeout=120,
@@ -338,10 +330,10 @@ def interactive(model=DEFAULT_MODEL, use_raw=False, include_external=False,
 # MAIN
 # -----------------------------
 def main():
-    parser = argparse.ArgumentParser(description="Dex Jr RAG Bridge v1.2 - Weighted Query + Generate + Auto-Ingest")
+    parser = argparse.ArgumentParser(description="Dex Jr RAG Bridge v1.3 - Weighted Query + Generate + Auto-Ingest")
     parser.add_argument("query",         nargs="?", default=None, help="Question to ask")
     parser.add_argument("--raw",         action="store_true", help="Search archive instead of canon (unweighted)")
-    parser.add_argument("--external",    action="store_true", help="Include ext_canon and ext_archive in search")
+    parser.add_argument("--external",    action="store_true", help="Include ext_reference in search")
     parser.add_argument("--model",       default=DEFAULT_MODEL, help="Ollama model to use")
     parser.add_argument("--top",         type=int, default=TOP_K, help="Number of chunks to retrieve")
     parser.add_argument("--verbose",     action="store_true", help="Show retrieved chunks with scores")
@@ -351,7 +343,11 @@ def main():
 
     args = parser.parse_args()
 
-    chat_url = OLLAMA_CHAT_URL_LAPTOP if args.node == "laptop" else OLLAMA_CHAT_URL
+    if args.node == "laptop":
+        laptop_url = get_ollama_url("gaminglaptop")
+        chat_url = f"{laptop_url}/api/generate" if laptop_url else OLLAMA_CHAT_URL
+    else:
+        chat_url = OLLAMA_CHAT_URL
 
     if args.interactive:
         interactive(
