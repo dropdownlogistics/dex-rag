@@ -1,6 +1,7 @@
 """
-dex-convert.py v1.0
+dex-convert.py v1.1
 Converts external data formats to ingest-ready .txt files.
+v1.1: Step 62 — fix 5 bare except blocks (CLAUDE.md Critical Bug #1)
 
 Handles:
   - HTML → clean text (strip tags, preserve structure)
@@ -43,6 +44,20 @@ try:
     BS4_AVAILABLE = True
 except ImportError:
     BS4_AVAILABLE = False
+
+# ── Error tracking (Step 62: replace silent drops with counted errors) ───────
+
+_convert_errors: list[str] = []  # accumulated per run, reported in summary
+
+
+def _log_convert_error(context: str, error: Exception, record_id: str = ""):
+    """Log a conversion error instead of silently dropping the record."""
+    msg = f"[{context}] {type(error).__name__}: {error}"
+    if record_id:
+        msg = f"[{context}] record={record_id}: {type(error).__name__}: {error}"
+    _convert_errors.append(msg)
+    print(f"  [ERROR] {msg}", file=sys.stderr)
+
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -249,7 +264,8 @@ def convert_json(file_path: Path, out_dir: Path, chunk_size: int = 0) -> list[Pa
                 try:
                     dt = datetime.fromtimestamp(int(ts) / 1_000_000)
                     ts_str = dt.strftime("%Y-%m-%d %H:%M")
-                except Exception:
+                except (ValueError, OSError, OverflowError) as e:
+                    _log_convert_error("json-timestamp", e, f"entry-{title[:30]}")
                     ts_str = str(ts)
             else:
                 ts_str = ""
@@ -352,12 +368,13 @@ def convert_mbox(file_path: Path, out_dir: Path, max_emails: int = 0) -> list[Pa
                         try:
                             body = part.get_payload(decode=True).decode("utf-8", errors="replace")
                             break
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            _log_convert_error("mbox-multipart-decode", e, f"email-{i+1}")
             else:
                 try:
                     body = message.get_payload(decode=True).decode("utf-8", errors="replace")
-                except Exception:
+                except Exception as e:
+                    _log_convert_error("mbox-singlepart-decode", e, f"email-{i+1}")
                     body = str(message.get_payload())
 
             entry = (
@@ -371,7 +388,8 @@ def convert_mbox(file_path: Path, out_dir: Path, max_emails: int = 0) -> list[Pa
             batch.append(entry)
             count += 1
 
-        except Exception:
+        except Exception as e:
+            _log_convert_error("mbox-message", e, f"email-{i+1}")
             continue
 
         # Write batch
@@ -416,7 +434,8 @@ def convert_facebook_messages(fb_dir: Path, out_dir: Path) -> list[Path]:
         try:
             with open(jf, encoding="utf-8", errors="replace") as f:
                 data = json.load(f)
-        except Exception:
+        except Exception as e:
+            _log_convert_error("facebook-json", e, str(jf.name))
             continue
 
         participants = data.get("participants", [])
@@ -595,6 +614,14 @@ def main():
     total_size = sum(f.stat().st_size for f in all_outputs if f.exists())
     print(f"  Total size: {total_size/1024/1024:.1f} MB")
     print(f"  Output dir: {out_dir}")
+    if _convert_errors:
+        print(f"  ERRORS: {len(_convert_errors)} records had conversion issues")
+        for err in _convert_errors[:10]:
+            print(f"    {err}")
+        if len(_convert_errors) > 10:
+            print(f"    ... and {len(_convert_errors) - 10} more")
+    else:
+        print(f"  Errors: 0")
     print(f"{'='*60}\n")
 
     # Copy to canon
