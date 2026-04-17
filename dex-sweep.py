@@ -3,7 +3,7 @@ DEX JR AUTO-SWEEP — v2.0
 Airtight ingest sweep per ADR-INGEST-PIPELINE-001 and STD-DDL-SWEEPREPORT-001.
 
 Scans drop folders for new files, copies to corpus staging, triggers
-ingestion via dex-ingest.py --collection dex_canon, writes a human-
+ingestion via dex-ingest.py --collection dex_canon_v2, writes a human-
 readable sweep report to _sweep_reports/, and logs every run to JSONL.
 
 Usage:
@@ -248,7 +248,7 @@ def write_sweep_report(
         if outcome == "success":
             lines.append(
                 f"Sweep completed successfully. {len(files_ingested)} file(s) "
-                f"ingested into dex_canon, producing {chunks_written} chunk(s). "
+                f"ingested into dex_canon_v2, producing {chunks_written} chunk(s). "
                 f"Backup {'refreshed' if backup_ran else 'was current'}. "
                 f"Zero errors."
             )
