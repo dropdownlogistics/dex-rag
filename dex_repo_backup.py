@@ -1,7 +1,7 @@
 """
 dex_repo_backup.py — Back up all DDL repos to local storage.
 
-Weekly mirror of all 11 repos to D:\DDL_Backup\repos\
+Weekly mirror of all 11 repos to D:\\DDL_Backup\\repos\\
 
 Usage:
   python dex_repo_backup.py              # full backup
