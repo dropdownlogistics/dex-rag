@@ -23,30 +23,20 @@ from typing import Any
 import chromadb
 import requests
 
+from dex_core import (
+    CHROMA_DIR, OLLAMA_HOST, EMBED_MODEL, GEN_MODEL,
+    EMBED_TRUNC_LEVELS, get_live_collections,
+)
 from dex_weights import calculate_weight, score_result
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-CHROMA_DIR = r"C:\Users\dkitc\.dex-jr\chromadb"
-OLLAMA_HOST = "http://localhost:11434"
-
-# Step 33b: env-gated migration switch. Defaults move to mxbai + _v2.
-# Override via env to fall back to nomic + originals during soak.
-EMBED_MODEL = os.environ.get("DEXJR_EMBED_MODEL", "mxbai-embed-large")
-COLLECTION_SUFFIX = os.environ.get("DEXJR_COLLECTION_SUFFIX", "_v2")
-
-GEN_MODEL = "qwen2.5-coder:7b"
-_BASE_COLLECTIONS = ["dex_canon", "ddl_archive", "dex_code", "ext_creator"]
-DEFAULT_COLLECTIONS = [c + COLLECTION_SUFFIX for c in _BASE_COLLECTIONS]
+DEFAULT_COLLECTIONS = get_live_collections()
 DEFAULT_TOP_K = 3
 DEFAULT_MERGE_N = 5
 CHUNK_PREVIEW_CHARS = 300
-
-# mxbai-embed-large has a 512-token context window. Adaptive truncation
-# back-off: try progressively smaller text on 5xx until one fits.
-EMBED_TRUNC_LEVELS = (1200, 900, 600, 300)
 
 # B3: governance-identifier pattern. All-caps by convention. Matches e.g.
 # STD-DDL-SWEEPREPORT-001, CR-INGEST-PIPELINE-001, ADR-CORPUS-001,
@@ -63,25 +53,9 @@ def eprint(*args: Any, **kwargs: Any) -> None:
 
 
 def embed(question: str) -> list[float]:
-    last_err: Exception | None = None
-    for lim in EMBED_TRUNC_LEVELS:
-        text = (question or "")[:lim]
-        try:
-            r = requests.post(
-                f"{OLLAMA_HOST}/api/embeddings",
-                json={"model": EMBED_MODEL, "prompt": text},
-                timeout=60,
-            )
-            if r.status_code == 200:
-                return r.json()["embedding"]
-            last_err = requests.HTTPError(
-                f"{r.status_code} at trunc={lim}: {r.text[:200]}"
-            )
-        except requests.RequestException as e:
-            last_err = e
-    if last_err:
-        raise last_err
-    raise RuntimeError("embed: unreachable")
+    """Delegate to dex_core.embed() — adaptive truncation for mxbai."""
+    from dex_core import embed as _core_embed
+    return _core_embed(question)
 
 
 def generate(prompt: str) -> str:
