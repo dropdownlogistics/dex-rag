@@ -613,6 +613,21 @@ def sweep(dry_run=False):
             else:
                 print(f"  WARN: temp dir preserved for forensics: {temp_dir}")
 
+        # Step 59: auto-scan for new council reviews after successful ingest
+        if not dry_run and ingestion_ok:
+            try:
+                review_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dex_review.py")
+                if os.path.exists(review_script):
+                    scan_result = subprocess.run(
+                        ["python", review_script, "scan"],
+                        capture_output=True, text=True, timeout=60,
+                    )
+                    for line in scan_result.stdout.split("\n"):
+                        if line.strip():
+                            print(f"  [review] {line.strip()}")
+            except Exception as e:
+                print(f"  [WARN] Council review scan failed (non-blocking): {e}")
+
         # Summary
         print(f"\n  {'-'*50}")
         print(f"  Sweep complete: {len(copied)} file(s) processed, outcome={outcome}")
