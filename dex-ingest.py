@@ -308,6 +308,14 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
            force_rechunk: bool = False, no_ingest_cache: bool = False) -> None:
     import chromadb
 
+    # Step 50: dex_dave hard gate per ADR-CORPUS-001 Rule 3.
+    # Must fire before ANY collection access, backup check, or chunking.
+    if collection and collection.startswith("dex_dave"):
+        print("\n  ERROR: dex_dave is HARD-GATED per ADR-CORPUS-001 Rule 3.")
+        print("  Ingestion to dex_dave is prohibited under all circumstances.")
+        print("  No data was written. Exiting.")
+        sys.exit(1)
+
     ext_list = ", ".join(sorted(ext_filter if ext_filter else PHASE1_EXTENSIONS))
 
     print("\n" + "=" * 60)
