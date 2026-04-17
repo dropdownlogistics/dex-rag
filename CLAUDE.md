@@ -477,3 +477,25 @@ The operator decides. This file describes how to work in dex-rag, not what
 to work on. When in doubt, ask. When clear, ship — within the rules above.
 
 The architecture does not change. The data does.
+
+---
+
+## Git Hygiene — dex-rag
+
+This repo is active on multiple machines (Surface + Reborn).
+Before any work session, always:
+
+1. Check status: git status
+2. Pull latest: git pull origin main
+3. Confirm you are current before reading or
+   modifying any files
+
+After any changes:
+1. git add -A
+2. git commit -m "[description]"
+3. git push origin main
+
+Never assume the local copy is current.
+Never push without pulling first.
+If there are conflicts, stop and report —
+do not attempt to resolve without operator direction.
