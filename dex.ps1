@@ -17,6 +17,7 @@ switch ($Command) {
     { $_ -in "b", "bridge" }  { python "$script_dir\dex-bridge.py" @Rest }
     { $_ -in "c", "council" } { python "$script_dir\dex-council.py" @Rest }
     { $_ -in "r", "review" }  { python "$script_dir\dex_review.py" @Rest }
+    { $_ -in "f", "fetch" }   { python "$script_dir\dex_fetch_external.py" @Rest }
     "health"                   { python "$script_dir\dex_health.py" @Rest }
     "status"                   { python "$script_dir\dex_health.py" --quick @Rest }
     "sweep"                    { python "$script_dir\dex-sweep.py" @Rest }
@@ -43,6 +44,7 @@ switch ($Command) {
         Write-Host "  b, bridge   RAG bridge (query + generate)"
         Write-Host "  r, review   Council review parser + vote stats"
         Write-Host "  c, council  Run AutoCouncil"
+        Write-Host "  f, fetch    Fetch external content from CSV"
         Write-Host "  health      Full health check (--quick for fast)"
         Write-Host "  status      Quick corpus status"
         Write-Host "  hosts       Host connectivity check"
