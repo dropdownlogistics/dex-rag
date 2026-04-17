@@ -42,20 +42,18 @@ from dex_pipeline import (
     BackupFailedError,
 )
 from ingest_cache import IngestCache, hash_file
+from dex_core import (
+    CHROMA_DIR, OLLAMA_HOST, EMBED_MODEL, suffixed, is_gated,
+)
 
 
 # -----------------------------
-# CONFIG
+# CONFIG (Step 54: derived from dex_core)
 # -----------------------------
-CHROMA_DIR = r"C:\Users\dkitc\.dex-jr\chromadb"
+RAW_COLLECTION = suffixed("ddl_archive")
+CANON_COLLECTION = suffixed("dex_canon")
 
-# Step 33c Part B: flipped to _v2 (mxbai-embed-large) collections.
-# Readers (dex_jr_query.py, dex-search-api.py) also target _v2.
-RAW_COLLECTION = "ddl_archive_v2"
-CANON_COLLECTION = "dex_canon_v2"
-
-OLLAMA_URL = "http://localhost:11434/api/embeddings"
-EMBED_MODEL = "mxbai-embed-large"
+OLLAMA_URL = f"{OLLAMA_HOST}/api/embeddings"
 
 # Chunking heuristic
 CHUNK_SIZE_TOKENS = 500
@@ -308,11 +306,11 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
            force_rechunk: bool = False, no_ingest_cache: bool = False) -> None:
     import chromadb
 
-    # Step 50: dex_dave hard gate per ADR-CORPUS-001 Rule 3.
+    # Step 50: hard gate per ADR-CORPUS-001 Rule 3 (uses dex_core.is_gated).
     # Must fire before ANY collection access, backup check, or chunking.
-    if collection and collection.startswith("dex_dave"):
-        print("\n  ERROR: dex_dave is HARD-GATED per ADR-CORPUS-001 Rule 3.")
-        print("  Ingestion to dex_dave is prohibited under all circumstances.")
+    if collection and is_gated(collection):
+        print(f"\n  ERROR: '{collection}' is HARD-GATED per ADR-CORPUS-001 Rule 3.")
+        print(f"  Ingestion to this collection is prohibited under all circumstances.")
         print("  No data was written. Exiting.")
         sys.exit(1)
 
