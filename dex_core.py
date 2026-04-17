@@ -198,6 +198,8 @@ GIT_REPOS = {
     "auditforge":      r"C:\Users\dexjr\auditforge",
     "ddl-site":        r"C:\Users\dexjr\dropdown-logistics",
     "knowledge-vault": r"C:\Users\dexjr\knowledge-vault",
+    "ledger":          r"C:\Users\dexjr\ledger",
+    "positionbook":    r"C:\Users\dexjr\positionbook",
 }
 
 GIT_STATS_LOG = os.path.join(SCRIPT_DIR, "dex-git-stats-log.jsonl")
