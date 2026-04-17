@@ -185,3 +185,8 @@ COUNCIL_SEATS = {
 DEFAULT_VOTING_SEATS = [s for s in COUNCIL_SEATS if s != 0]
 
 REVIEW_DIR = os.path.join(SCRIPT_DIR, "council-reviews")
+
+# ── External fetch ──────────────────────────────────────────────────────────
+
+EXTERNAL_SOURCES_CSV = os.path.join(SCRIPT_DIR, "external-sources.csv")
+FETCH_LOG = os.path.join(SCRIPT_DIR, "dex-fetch-log.jsonl")
