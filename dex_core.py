@@ -17,6 +17,7 @@ from typing import Optional
 CHROMA_DIR = r"C:\Users\dkitc\.dex-jr\chromadb"
 INGEST_CACHE_DIR = r"C:\Users\dkitc\.dex-jr\ingest_cache"
 BACKUP_DIR = r"D:\DDL_Backup\chromadb_backups"
+REPO_BACKUP_DIR = r"D:\DDL_Backup\repos"
 INGEST_DIR = r"C:\Users\dkitc\OneDrive\DDL_Ingest"
 SWEEP_REPORTS_DIR = os.path.join(INGEST_DIR, "_sweep_reports")
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
