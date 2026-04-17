@@ -190,3 +190,14 @@ REVIEW_DIR = os.path.join(SCRIPT_DIR, "council-reviews")
 
 EXTERNAL_SOURCES_CSV = os.path.join(SCRIPT_DIR, "external-sources.csv")
 FETCH_LOG = os.path.join(SCRIPT_DIR, "dex-fetch-log.jsonl")
+
+# ── Git repos (verified on disk 2026-04-17) ────────────────────────────────
+
+GIT_REPOS = {
+    "dex-rag":         r"C:\Users\dexjr\dex-rag",
+    "auditforge":      r"C:\Users\dexjr\auditforge",
+    "ddl-site":        r"C:\Users\dexjr\dropdown-logistics",
+    "knowledge-vault": r"C:\Users\dexjr\knowledge-vault",
+}
+
+GIT_STATS_LOG = os.path.join(SCRIPT_DIR, "dex-git-stats-log.jsonl")

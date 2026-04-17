@@ -25,6 +25,7 @@ switch ($Command) {
     "ingest"                   { python "$script_dir\dex-ingest.py" --path @Rest }
     "hosts"                    { python "$script_dir\dex-council.py" --host-status @Rest }
     "weights"                  { python "$script_dir\dex_weights.py" --stats @Rest }
+    "stats"                    { python "$script_dir\dex_git_stats.py" @Rest }
     "api"                      { python "$script_dir\dex-search-api.py" @Rest }
     "log" {
         Get-Content "$script_dir\dex-council-log.jsonl" -Encoding UTF8 |
@@ -52,6 +53,7 @@ switch ($Command) {
         Write-Host "  backup      Run backup"
         Write-Host "  ingest      Ingest files from path"
         Write-Host "  weights     Show weight table"
+        Write-Host "  stats       Git stats across all repos"
         Write-Host "  api         Start search API server"
         Write-Host "  log         Last 5 council runs"
         Write-Host ""
