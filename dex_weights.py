@@ -18,31 +18,21 @@ import chromadb
 import requests
 from typing import Optional
 
-# ── Config ────────────────────────────────────────────────────────────────────
+from dex_core import (
+    CHROMA_DIR as CHROMA_PATH, OLLAMA_HOST, EMBED_MODEL,
+    COLLECTION_SUFFIX, EMBED_TRUNC_LEVELS,
+    COLLECTIONS as _CORE_COLLECTIONS, suffixed as _suffixed,
+)
 
-CHROMA_PATH      = r"C:\Users\dkitc\.dex-jr\chromadb"
-OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
+# ── Config (Step 54: derived from dex_core) ──────────────────────────────────
 
-# Step 49: env-gated, matching dex_jr_query.py pattern
-EMBED_MODEL = os.environ.get("DEXJR_EMBED_MODEL", "mxbai-embed-large")
-COLLECTION_SUFFIX = os.environ.get("DEXJR_COLLECTION_SUFFIX", "_v2")
+OLLAMA_EMBED_URL = f"{OLLAMA_HOST}/api/embeddings"
 
-# Adaptive truncation levels for mxbai-embed-large (512-token context)
-EMBED_TRUNC_LEVELS = (1200, 900, 600, 300)
-
-# Base collection names (logical identifiers). Suffix applied at query time.
-# Step 49: ext_canon and ext_archive removed — never existed in live DB.
+# Extend core registry with base_weight field for scoring
 COLLECTIONS = {
-    "dex_canon":     {"base_weight": 0.90, "label": "Canon"},
-    "ddl_archive":   {"base_weight": 0.65, "label": "Archive"},
-    "dex_code":      {"base_weight": 0.85, "label": "Code"},
-    "ext_creator":   {"base_weight": 0.85, "label": "ExtCreator"},
-    "ext_reference": {"base_weight": 0.75, "label": "ExtReference"},
+    k: {"base_weight": v["weight"], "label": v["label"]}
+    for k, v in _CORE_COLLECTIONS.items()
 }
-
-def _suffixed(name: str) -> str:
-    """Apply collection suffix to a base name."""
-    return name + COLLECTION_SUFFIX
 
 FILE_TYPE_WEIGHTS = {
     "council_review": 1.10,
@@ -60,7 +50,8 @@ FILE_TYPE_WEIGHTS = {
 # ── ChromaDB ──────────────────────────────────────────────────────────────────
 
 def get_client():
-    return chromadb.PersistentClient(path=CHROMA_PATH)
+    from dex_core import get_chroma_client
+    return get_chroma_client()
 
 def collection_exists(client, name: str) -> bool:
     try:
@@ -72,26 +63,9 @@ def collection_exists(client, name: str) -> bool:
 # ── Embedding ─────────────────────────────────────────────────────────────────
 
 def embed(text: str) -> list[float]:
-    """Embed text with adaptive truncation for mxbai-embed-large."""
-    last_err: Exception | None = None
-    for lim in EMBED_TRUNC_LEVELS:
-        prompt = (text or "")[:lim]
-        try:
-            r = requests.post(
-                OLLAMA_EMBED_URL,
-                json={"model": EMBED_MODEL, "prompt": prompt},
-                timeout=60,
-            )
-            if r.status_code == 200:
-                return r.json()["embedding"]
-            last_err = requests.HTTPError(
-                f"{r.status_code} at trunc={lim}: {r.text[:200]}"
-            )
-        except requests.RequestException as e:
-            last_err = e
-    if last_err:
-        raise last_err
-    raise RuntimeError("embed: unreachable")
+    """Embed text — delegates to dex_core.embed()."""
+    from dex_core import embed as _core_embed
+    return _core_embed(text)
 
 # ── Weight calculation ────────────────────────────────────────────────────────
 
