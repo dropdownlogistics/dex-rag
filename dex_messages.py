@@ -36,7 +36,7 @@ MESSAGES_DIR = r"C:\Users\dkitc\iCloudDrive\Documents\02_Dex\03_iMazingExports\i
 V1_PATH = r"C:\Users\dkitc\iCloudDrive\Documents\02_Dex\00_Archive\DexKit_v4.1_Archive\17_Messages\DexMessageMerged_All_v1.0.xlsx"
 DASHBOARD_PATH = r"C:\Users\dkitc\iCloudDrive\Documents\02_Dex\00_Archive\DexKit_v4.1_Archive\17_Messages\DexDashMaster_v1.0.xlsx"
 DEFAULT_OUTPUT = r"C:\Users\dkitc\iCloudDrive\Documents\02_Dex\00_Archive\DexKit_v4.1_Archive\17_Messages\DexMessageMerged_All_v2.0.xlsx"
-CLASSIFICATIONS_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dex-rag-scratch", "msg_classifications.json")
+CLASSIFICATIONS_CACHE = r"C:\Users\dexjr\dex-rag-scratch\msg_classifications.json"
 
 ERA_BREAKPOINT = datetime(2025, 5, 1)
 
