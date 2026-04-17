@@ -24,28 +24,18 @@ from datetime import datetime, timezone
 import chromadb
 import requests
 
-# Canonical sources for these constants:
-#   CHROMA_DIR: dex_jr_query.py:32, dex-ingest.py:50
-#   CACHE_DIR:  ingest_cache.py:22
-CHROMA_DIR = r"C:\Users\dkitc\.dex-jr\chromadb"
-CACHE_DIR = r"C:\Users\dkitc\.dex-jr\ingest_cache"
-OLLAMA_HOST = "http://localhost:11434"
-EMBED_MODEL = "mxbai-embed-large"
-GEN_MODEL = "qwen2.5-coder:7b"
+from dex_core import (
+    CHROMA_DIR, INGEST_CACHE_DIR as CACHE_DIR, OLLAMA_HOST, EMBED_MODEL,
+    GEN_MODEL, BACKUP_DIR, SWEEP_REPORTS_DIR, SCRIPT_DIR as _CORE_SCRIPT_DIR,
+    CHUNK_FLOORS, COLLECTIONS, COLLECTION_SUFFIX, suffixed,
+)
 
-BACKUP_DIR = r"D:\DDL_Backup\chromadb_backups"
 BACKUP_LOG = os.path.join(BACKUP_DIR, "_backup_log.jsonl")
 SWEEP_LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dex-sweep-log.jsonl")
-SWEEP_REPORTS_DIR = r"C:\Users\dkitc\OneDrive\DDL_Ingest\_sweep_reports"
 
-# 4 live collections with floor counts (Step 33c baseline)
-LIVE_COLLECTIONS = {
-    "dex_canon_v2":    253_978,
-    "ddl_archive_v2":  291_520,
-    "dex_code_v2":      20_384,
-    "ext_creator_v2":      922,
-}
-PROVISIONED_COLLECTIONS = ["ext_reference_v2"]
+# Derive from dex_core registry
+LIVE_COLLECTIONS = {suffixed(k): v for k, v in CHUNK_FLOORS.items()}
+PROVISIONED_COLLECTIONS = [suffixed(k) for k, v in COLLECTIONS.items() if v["status"] == "PROVISIONED"]
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
