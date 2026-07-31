@@ -159,7 +159,31 @@ def mindframe_chat(request: ChatRequest):
     # Build system prompt with RAG context
     system_prompt = MINDFRAME_SYSTEM
     if rag_context:
-        system_prompt += f"\n\nRELEVANT DDL CONTEXT (from the archive):\n{rag_context}\n\nUse this context to inform your questions and observations, but don't quote it directly."
+        # Scoped refusal contract. This is an INTERVIEW, not retrieval Q&A, so a
+        # blanket "answer only from context" would break the calibration purpose —
+        # the job here is to ask questions, not answer them. The defect being fixed
+        # is narrower: the prompt used to say to use context "to inform your
+        # questions" and not to quote it, which invites asserting DDL facts that
+        # were never retrieved. Questions stay free; factual claims get bounded.
+        system_prompt += (
+            f"\n\n=== DDL CONTEXT (retrieved from the archive) ===\n{rag_context}\n"
+            "=== END CONTEXT ===\n\n"
+            "HOW TO USE THIS CONTEXT — it bounds your FACTS, not your curiosity:\n"
+            "- Ask whatever the calibration calls for. That is unconstrained.\n"
+            "- But any FACTUAL CLAIM about DDL, its people, its history or its "
+            "decisions must come from the CONTEXT above. If it is not there, do "
+            "not assert it — ask instead.\n"
+            "- Never present something you inferred as something you know. "
+            "\"I don't have that in front of me — tell me about it\" is always "
+            "available, and is a better answer than a confident guess.\n"
+            "- Reference the context naturally rather than quoting it, but the "
+            "underlying fact must actually be in it."
+        )
+    else:
+        system_prompt += (
+            "\n\nNO DDL CONTEXT was retrieved for this turn. Make no factual claims "
+            "about DDL, its people, its history or its decisions — ask instead."
+        )
     
     # Build Ollama messages
     ollama_messages = [{"role": "system", "content": system_prompt}]
