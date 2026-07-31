@@ -284,15 +284,27 @@ def cmd_list() -> None:
     for f in files:
         by_channel.setdefault(f"{f.parent.parent.name}/{f.parent.name}", []).append(f)
     total = 0
+    missing = []
     for group in sorted(by_channel):
         items = by_channel[group]
         size = sum(p.stat().st_size for p in items)
         total += size
         print(f"{group}  ({len(items)} items, {size / 1024:.0f} KB)")
         for p in sorted(items):
-            print(f"    {p.name}")
+            # Convention: a transcript's summary sits beside it as
+            # <same basename>.summary.md. Surfaced here so the gap is visible
+            # rather than silently accumulating.
+            has = p.with_suffix(".summary.md").exists()
+            print(f"    [{'S' if has else ' '}] {p.name}")
+            if not has:
+                missing.append(p)
     print(f"\n{len(files)} transcripts, {total / 1024:.0f} KB total")
-    print(f"root: {CORPUS_ROOT}")
+    print(f"[S] = has a .summary.md alongside")
+    if missing:
+        print(f"\n{len(missing)} without a summary:")
+        for p in missing:
+            print(f"    {p.parent.name}/{p.name}")
+    print(f"\nroot: {CORPUS_ROOT}")
 
 
 def cmd_fetch(url: str, kind: str, force: bool, dry_run: bool) -> None:
