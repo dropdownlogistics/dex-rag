@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "_README": [
+    "SCHEMA ONLY. Every value below is a placeholder and this file will be",
+    "REFUSED by dex_exclusions.py if you point it at this file -- the loader",
+    "rejects any rule containing REPLACE_ME so the example can never be",
+    "mistaken for a working list.",
+    "",
+    "The real list lives LOCAL and GITIGNORED at the path in",
+    "dex_exclusions.DEFAULT_EXCLUSIONS_PATH. It is never committed: it",
+    "contains absolute paths into personal storage, and the paths themselves",
+    "disclose what was set aside.",
+    "",
+    "Roster precedent, established with Ellis Cooper (DDL-4008): schema in the",
+    "repo, values on the machine.",
+    "",
+    "Three rule kinds, and they are MEANT to overlap. Redundant coverage is",
+    "the design -- a directory caught by both its absolute path and its name",
+    "stays excluded after someone moves or copies it."
+  ],
+
+  "exclude_paths": [
+    "REPLACE_ME_ABSOLUTE_PATH_TO_SEQUESTERED_DIRECTORY",
+    "REPLACE_ME_ABSOLUTE_PATH_TO_A_SPECIFIC_EXCLUDED_FILE"
+  ],
+  "_exclude_paths_doc": "Absolute paths. Matches the path itself and everything beneath it. Case-insensitive.",
+
+  "exclude_dir_names": [
+    "REPLACE_ME_DIRECTORY_NAME"
+  ],
+  "_exclude_dir_names_doc": "Bare directory NAMES, matched at any depth. No separators -- the loader rejects entries that look like paths. This is the rule kind that survives a relocation.",
+
+  "exclude_filename_patterns": [
+    "REPLACE_ME_GLOB_PATTERN"
+  ],
+  "_exclude_filename_patterns_doc": "Globs matched against the basename only, e.g. '*.mbox', '*.har', '.env'. Case-insensitive."
+}

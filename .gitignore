@@ -1,4 +1,8 @@
 .env
+# The real exclusion list is local-only -- its paths disclose what was
+# sequestered. Only ingest-exclusions.example.json (placeholders) is committed.
+ingest-exclusions.json
+**/ingest-exclusions.json
 ingest-single/
 needoh-watcher/seen.json
 needoh-watcher/watcher.log
