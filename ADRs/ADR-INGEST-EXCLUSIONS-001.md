@@ -183,17 +183,54 @@ secrets in prose, where paths cannot help.
 | Sequestered material moved out of the source root | **done** — 86 files, verified 86/86 |
 | Local exclusion list in force | **done** — 23 rules, digest `439ab23e…` |
 | STD-CORPUS-003 filed in canon | **done** |
-| **`dex-ingest.py` wired to `load_exclusions()`** | **NOT DONE** |
-| **`dex-sweep.py` wired to `load_exclusions()`** | **NOT DONE** |
-| Stamp carrying `exclusion_digest` | **NOT DONE** — build has not started |
+| `dex-ingest.py` wired to `load_exclusions()` | **done** — Rule 5 go 2026-08-03 |
+| `dex-sweep.py` wired to `load_exclusions()` | **done** — Rule 5 go 2026-08-03 |
+| Exclusion + digest recorded per run | **done** — `dex-exclusions-log.jsonl`, `dex-sweep-log.jsonl` |
+| Unattended failure visible to a human | **done** — `SWEEP-FAILED-*.ALERT` |
+| 28 wiring tests | **done, passing** |
+| Stamp carrying `exclusion_digest` | **NOT DONE** — the build has not started |
 
-**The last three are the ones that matter operationally.** The control exists
-and is tested; it is not yet in the path of the live sweep. Wiring them touches
-live ingest infrastructure and is gated on CLAUDE.md Rule 5 (sensitive
-operations: anything writing to a collection, and the nightly sweep).
+### Wiring detail (2026-08-03)
 
-Claiming this ADR is in force today would be exactly the failure it was written
-during. It is in force for the new build, which has not started.
+**Both scripts gate at startup, not per file.** `dex-ingest.py` calls
+`load_exclusions()` as the first statement of `ingest()` — before the gated-
+collection check, before the backup pre-flight, before `import chromadb` does
+anything. Verified by absence: a refused run emits neither the backup line nor
+the chunk-count banner, which locates the exit at the gate rather than merely
+proving it happened.
+
+**`scan_archive()` and `scan_drop_folders()` take exclusions as a required
+argument with no default.** A default would let a caller who forgot still run,
+walking everything. Forgetting is now a `TypeError` at the call site. There is a
+test asserting the call fails without it.
+
+**Excluded directories are pruned from `os.walk`, not filtered after.** Nothing
+beneath a sequestered directory is enumerated or stat'd.
+
+**Exclusion is checked before the extension filter.** Otherwise a sequestered
+`.pdf` would be dropped by the extension check first and never appear in the
+exclusion log — making "no sequestered material present" indistinguishable from
+"sequestered material silently filtered by type."
+
+**The sweep excludes at scan time, before `copy_to_corpus`.** An excluded file
+is never written into `CANON_DIR` or the temp dir. Filtering at ingest time
+would still have deposited it on disk inside the corpus tree.
+
+**Unattended failure is made visible three ways**, because the sweep runs at 4am
+with nobody watching and stderr goes nowhere a human reads:
+
+1. a `SWEEP-FAILED-<ts>.ALERT` file in the reports folder the Operator opens
+2. a JSONL entry with the distinct outcome `refused_exclusions_unusable`
+3. `sys.exit(2)`, so Task Scheduler's Last Run Result shows the failure
+
+The `.ALERT` extension is deliberate: it is **not** in `INGEST_EXTENSIONS`, so a
+later sweep cannot pick the alert up, ingest it, and `shutil.move` it out of the
+folder — which would delete the very thing making the failure visible. There is
+a test asserting the extension stays outside that set.
+
+**The list is re-checked every sweep cycle**, not once at process start, so a
+list deleted during a long `--watch` run stops the next sweep rather than the
+one after a restart.
 
 ---
 

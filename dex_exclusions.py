@@ -222,6 +222,35 @@ def resolve_path() -> Path:
     return Path(override) if override else DEFAULT_EXCLUSIONS_PATH
 
 
+def try_load(path: Path | None = None) -> tuple[Exclusions | None, str | None]:
+    """Attempt to load. Returns (exclusions, None) or (None, problem).
+
+    Does NOT exit. Exists so an unattended caller -- the nightly sweep -- can
+    learn WHY the list is unusable and say so in an alert a human will actually
+    see, before the process dies. `load_exclusions()` is the exiting wrapper and
+    is what normal callers should use.
+    """
+    src = path or resolve_path()
+
+    if not src.exists():
+        return None, "file does not exist"
+    if not src.is_file():
+        return None, "path exists but is not a file"
+
+    try:
+        text = src.read_text(encoding="utf-8")
+    except OSError as exc:
+        return None, f"unreadable: {exc}"
+
+    if not text.strip():
+        return None, "file is empty"
+
+    try:
+        return parse_exclusions(text, src), None
+    except ExclusionsUnusable as exc:
+        return None, str(exc)
+
+
 def load_exclusions(path: Path | None = None, *, quiet: bool = False) -> Exclusions:
     """Load the exclusion list, or EXIT THE PROCESS.
 
@@ -256,23 +285,9 @@ def load_exclusions(path: Path | None = None, *, quiet: bool = False) -> Exclusi
         )
         sys.exit(2)
 
-    if not src.exists():
-        die("file does not exist")
-    if not src.is_file():
-        die("path exists but is not a file")
-
-    try:
-        text = src.read_text(encoding="utf-8")
-    except OSError as exc:
-        die(f"unreadable: {exc}")
-
-    if not text.strip():
-        die("file is empty")
-
-    try:
-        ex = parse_exclusions(text, src)
-    except ExclusionsUnusable as exc:
-        die(str(exc))
+    ex, problem = try_load(src)
+    if ex is None:
+        die(problem or "unusable for an unstated reason")
 
     if not quiet:
         # Always announced. The digest is how a swapped list becomes visible.

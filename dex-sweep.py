@@ -39,6 +39,7 @@ from dex_pipeline import (
     BackupFailedError,
 )
 from dex_core import suffixed
+from dex_exclusions import try_load, resolve_path
 
 # -----------------------------
 # CONFIG — EDIT THESE PATHS
@@ -91,19 +92,111 @@ SWEEP_CHUNK_ESTIMATE = 10_000
 TEMP_BASE = r"C:\Users\dexjr\dex-rag-scratch"
 
 # -----------------------------
+# EXCLUSION GATE (ADR-INGEST-EXCLUSIONS-001)
+# -----------------------------
+# This sweep runs unattended at 4am with nobody watching. stderr goes nowhere a
+# human reads. So the failure path does three things: writes an alert FILE into
+# the reports folder the operator actually opens, records the failure in the
+# JSONL, and exits non-zero so Task Scheduler's Last Run Result shows it.
+#
+# The alert uses a .ALERT extension deliberately: it is NOT in
+# INGEST_EXTENSIONS, so a later sweep will never pick it up, ingest it, and
+# shutil.move it out of the folder -- which would delete the very thing making
+# the failure visible.
+ALERT_EXT = ".ALERT"
+
+
+def write_exclusion_alert(problem: str, src) -> str | None:
+    """Drop a loud, human-visible marker that the sweep refused to run."""
+    try:
+        os.makedirs(SWEEP_REPORTS_DIR, exist_ok=True)
+        ts = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        path = os.path.join(SWEEP_REPORTS_DIR, f"SWEEP-FAILED-{ts}{ALERT_EXT}")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(
+                "NIGHTLY SWEEP DID NOT RUN\n"
+                "=========================\n\n"
+                f"When:    {datetime.datetime.now().isoformat()}\n"
+                f"Why:     exclusion list unusable -- {problem}\n"
+                f"Expected at: {src}\n\n"
+                "NO FILES WERE INGESTED. Nothing was copied, moved, or written\n"
+                "to any collection. The drop folders are untouched and the next\n"
+                "sweep will pick them up once this is fixed.\n\n"
+                "The sweep refuses to run without a readable, non-empty exclusion\n"
+                "list. An absent list is not permission to ingest everything --\n"
+                "it is indistinguishable from a list that failed to load.\n\n"
+                "TO FIX: restore the exclusion list at the path above.\n"
+                "Schema: ingest-exclusions.example.json in the dex-rag repo.\n"
+                "Verify with: python dex_exclusions.py\n\n"
+                "Authority: ADR-INGEST-EXCLUSIONS-001, STD-CORPUS-003\n"
+            )
+        return path
+    except Exception as e:
+        print(f"  WARN: could not write alert file: {e}", file=sys.stderr)
+        return None
+
+
+def require_exclusions():
+    """Load the exclusion list or kill the sweep loudly. Returns Exclusions."""
+    ex, problem = try_load()
+    if ex is not None:
+        print(f"  Exclusion policy: {ex.rule_count} rules, digest {ex.digest[:16]}...")
+        return ex
+
+    src = resolve_path()
+    print("", file=sys.stderr)
+    print("=" * 66, file=sys.stderr)
+    print("  SWEEP REFUSED -- exclusion list unusable", file=sys.stderr)
+    print(f"  path:    {src}", file=sys.stderr)
+    print(f"  problem: {problem}", file=sys.stderr)
+    print("  Nothing was scanned, copied, or ingested.", file=sys.stderr)
+    print("=" * 66, file=sys.stderr)
+    alert = write_exclusion_alert(problem, src)
+    if alert:
+        print(f"  Alert written: {alert}", file=sys.stderr)
+    log_sweep(
+        [], [], False,
+        error=f"exclusion list unusable: {problem}",
+        recovery_hint=f"restore {src}; verify with 'python dex_exclusions.py'",
+        outcome="refused_exclusions_unusable",
+    )
+    sys.exit(2)
+
+
+# -----------------------------
 # SWEEP
 # -----------------------------
-def scan_drop_folders():
-    """Find all ingestible files across all drop folders."""
+def scan_drop_folders(exclusions):
+    """Find all ingestible files across all drop folders.
+
+    Returns (found, excluded). `exclusions` is required -- see scan_archive in
+    dex-ingest.py for why there is no default.
+
+    Exclusion is applied HERE, at scan time, so an excluded file is never
+    copied to CANON_DIR or the temp dir. Filtering later would still leak it
+    onto disk in the corpus tree even if it never reached a collection.
+    """
     found = []
+    excluded = []
     for folder in DROP_FOLDERS:
         if not os.path.exists(folder):
             # Rule 15 fix: surface missing drop folders instead of silent skip.
             print(f"  WARN: drop folder not found (skipping): {folder}")
             continue
+        why_folder = exclusions.reason(folder)
+        if why_folder:
+            excluded.append({"path": folder, "kind": "directory", "reason": why_folder})
+            print(f"  EXCLUDED [drop folder] {folder} -- {why_folder}")
+            continue
         for filename in os.listdir(folder):
             filepath = os.path.join(folder, filename)
             if os.path.isfile(filepath):
+                # Checked before the extension filter, so an excluded file is
+                # recorded whatever its type.
+                why = exclusions.reason(filepath)
+                if why:
+                    excluded.append({"path": filepath, "kind": "file", "reason": why})
+                    continue
                 ext = os.path.splitext(filename)[1].lower()
                 if ext in INGEST_EXTENSIONS:
                     found.append({
@@ -112,7 +205,7 @@ def scan_drop_folders():
                         "folder": folder,
                         "size": os.path.getsize(filepath),
                     })
-    return found
+    return found, excluded
 
 
 def classify_scanned_files(files):
@@ -443,7 +536,10 @@ def log_sweep(files_found, files_copied, ingestion_ok,
               error=None, recovery_hint=None,
               subprocess_stderr=None, dry_run=False,
               outcome=None, report_written=None,
-              report_write_error=None):
+              report_write_error=None,
+              exclusion_digest=None, exclusion_rule_count=None,
+              excluded_count=None, excluded=None,
+              exclusion_source=None):
     """
     Append a JSON line to dex-sweep-log.jsonl.
 
@@ -469,6 +565,13 @@ def log_sweep(files_found, files_copied, ingestion_ok,
         "outcome": outcome,
         "report_written": report_written,
         "report_write_error": report_write_error,
+        # ADR-INGEST-EXCLUSIONS-001: which policy was in force for this run, so
+        # a corpus can be traced to the exclusion set that built it.
+        "exclusion_digest": exclusion_digest,
+        "exclusion_rule_count": exclusion_rule_count,
+        "exclusion_source": exclusion_source,
+        "excluded_count": excluded_count,
+        "excluded": excluded,
     }
     try:
         with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -513,10 +616,24 @@ def sweep(dry_run=False):
     report_write_error = None
     subprocess_stdout = ""
     ingest_run_id = f"sweep_{datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d_%H%M%S')}"
+    excluded: list = []
+    exclusions = None
+
+    # ADR-INGEST-EXCLUSIONS-001: gate BEFORE scanning. Re-checked every cycle
+    # rather than once at startup, so a list deleted during a long --watch run
+    # stops the next sweep instead of the one after a restart.
+    exclusions = require_exclusions()
 
     try:
         # Scan
-        files = scan_drop_folders()
+        files, excluded = scan_drop_folders(exclusions)
+
+        # Always reported, including zero. See dex-ingest.py for why the zero
+        # case is printed rather than omitted.
+        print(f"  Excluded by policy: {len(excluded)}")
+        for e in excluded:
+            print(f"    EXCLUDED [{e['kind']}] {e['path']} -- {e['reason']}")
+
         if not files:
             print(f"  No new files found.")
             outcome = "no_files_found"
@@ -672,6 +789,11 @@ def sweep(dry_run=False):
             outcome=outcome,
             report_written=str(report_path) if report_path else None,
             report_write_error=report_write_error,
+            exclusion_digest=exclusions.digest if exclusions else None,
+            exclusion_rule_count=exclusions.rule_count if exclusions else None,
+            exclusion_source=str(exclusions.source) if exclusions else None,
+            excluded_count=len(excluded),
+            excluded=excluded,
         )
 
 # -----------------------------
@@ -685,6 +807,9 @@ def watch(interval_minutes, dry_run=False):
     for f in DROP_FOLDERS:
         exists = "OK" if os.path.exists(f) else "NOT FOUND"
         print(f"    [{exists}] {f}")
+    # Fail immediately rather than after the first interval elapses. sweep()
+    # re-checks each cycle; this is so a broken list is obvious at launch.
+    require_exclusions()
     print(f"  Press Ctrl+C to stop\n")
 
     while True:

@@ -45,6 +45,7 @@ from ingest_cache import IngestCache, hash_file
 from dex_core import (
     CHROMA_DIR, OLLAMA_HOST, EMBED_MODEL, suffixed, is_gated,
 )
+from dex_exclusions import load_exclusions, Exclusions
 
 
 # -----------------------------
@@ -67,6 +68,13 @@ BULK_CHUNK_ESTIMATE = 10_000
 
 # Forensic audit log for --reset operations. Append-only JSONL.
 RESET_LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".reset_log")
+
+# Append-only JSONL recording what each run excluded and under which policy.
+# Per ADR-INGEST-EXCLUSIONS-001: an exclusion list that silently matches
+# everything is indistinguishable from one that matches nothing, and only the
+# count tells them apart. This is also where "why isn't that file in the
+# corpus?" gets answered in six weeks without a reconstruction.
+EXCLUSION_LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dex-exclusions-log.jsonl")
 
 # Extension-based source_type inference subset (STD-DDL-METADATA-001 enum: "code")
 CODE_EXTENSIONS = {
@@ -269,21 +277,69 @@ def read_text_file(path: str) -> Optional[str]:
     return None
 
 
-def scan_archive(root: str, extensions: Optional[set] = None) -> List[dict]:
+def append_exclusion_log(entry: dict) -> None:
+    """Append one JSON line to dex-exclusions-log.jsonl. Non-blocking on
+    failure, but never silent (Rule 15)."""
+    try:
+        with open(EXCLUSION_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"    WARN: exclusion log write failed (non-blocking): {e}", file=sys.stderr)
+
+
+def scan_archive(root: str, extensions: Optional[set], exclusions: Exclusions) -> Tuple[List[dict], List[dict]]:
+    """Walk `root`, returning (eligible_files, excluded_records).
+
+    `exclusions` is REQUIRED and has no default. A default would mean a caller
+    that forgot to pass one still runs, walking everything -- which is the exact
+    failure ADR-INGEST-EXCLUSIONS-001 exists to prevent. Forgetting is a
+    TypeError at the call site, not a silent full walk.
+
+    Excluded directories are pruned from the walk rather than filtered
+    afterwards, so nothing beneath a sequestered directory is ever enumerated
+    or stat'd.
+    """
     if extensions is None:
         extensions = PHASE1_EXTENSIONS
-    files = []
+
+    files: List[dict] = []
+    excluded: List[dict] = []
+
     for r, dirs, names in os.walk(root):
-        dirs[:] = [d for d in dirs if not d.startswith(".")]
+        # Prune excluded directories in place. os.walk honours mutation of
+        # `dirs`, so this stops the descent entirely.
+        keep = []
+        for d in dirs:
+            if d.startswith("."):
+                continue
+            full_dir = os.path.join(r, d)
+            why = exclusions.reason(full_dir)
+            if why:
+                excluded.append({"path": full_dir, "kind": "directory", "reason": why})
+                continue
+            keep.append(d)
+        dirs[:] = keep
+
         for n in names:
             if n in SKIP_FILENAMES:
                 continue
             if any(n.startswith(p) for p in SKIP_FILENAME_PREFIXES):
                 continue
+            full = os.path.join(r, n)
+
+            # Exclusion check precedes the extension filter deliberately. An
+            # excluded file should be RECORDED as excluded whatever its type --
+            # otherwise a sequestered .pdf is invisible in the log and we
+            # cannot tell "no sequestered material present" from "sequestered
+            # material silently filtered by extension first".
+            why = exclusions.reason(full)
+            if why:
+                excluded.append({"path": full, "kind": "file", "reason": why})
+                continue
+
             ext = os.path.splitext(n)[1].lower()
             if ext not in extensions:
                 continue
-            full = os.path.join(r, n)
             rel = os.path.relpath(full, root)
             files.append(
                 {
@@ -294,7 +350,7 @@ def scan_archive(root: str, extensions: Optional[set] = None) -> List[dict]:
                     "folder": os.path.basename(r),
                 }
             )
-    return files
+    return files, excluded
 
 
 # -----------------------------
@@ -303,8 +359,16 @@ def scan_archive(root: str, extensions: Optional[set] = None) -> List[dict]:
 def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fast: bool = False,
            collection: Optional[str] = None, ext_filter: Optional[set] = None,
            nominated_by: Optional[str] = None, skip_backup_check: bool = False,
-           force_rechunk: bool = False, no_ingest_cache: bool = False) -> None:
+           force_rechunk: bool = False, no_ingest_cache: bool = False,
+           exclusions: Optional[Exclusions] = None) -> None:
     import chromadb
+
+    # ADR-INGEST-EXCLUSIONS-001: fail closed BEFORE anything else.
+    # Missing, unreadable, malformed, or empty exclusion list -> sys.exit(2)
+    # inside load_exclusions(), before a single file is read or any collection
+    # is touched. An absent list is not permission to ingest everything.
+    if exclusions is None:
+        exclusions = load_exclusions()
 
     # Step 50: hard gate per ADR-CORPUS-001 Rule 3 (uses dex_core.is_gated).
     # Must fire before ANY collection access, backup check, or chunking.
@@ -335,6 +399,7 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
     # Generate ingest run id (HHMMSS precision to avoid same-minute collisions)
     ingest_run_id = f"manual_{datetime.now(timezone.utc).strftime('%Y-%m-%d_%H%M%S')}"
     print(f"  Ingest run id: {ingest_run_id}")
+    print(f"  Exclusion policy: {exclusions.rule_count} rules, digest {exclusions.digest[:16]}...")
 
     # Backup pre-flight (Trigger 3 of STD-DDL-BACKUP-001)
     if not skip_backup_check:
@@ -412,8 +477,35 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
 
     active_extensions = ext_filter if ext_filter else PHASE1_EXTENSIONS
     print(f"\n  Scanning archive for {', '.join(sorted(active_extensions))} files...")
-    files = scan_archive(archive_path, active_extensions)
+    files, excluded = scan_archive(archive_path, active_extensions, exclusions)
     print(f"  Found: {len(files)} files")
+
+    # Report exclusions ALWAYS, including the zero case. "0 excluded" is a
+    # measurement; a missing line is an absence of one, and those look identical
+    # in a log six weeks later.
+    print(f"  Excluded by policy: {len(excluded)}")
+    by_reason: dict = {}
+    for e in excluded:
+        by_reason[e["reason"]] = by_reason.get(e["reason"], 0) + 1
+    for reason, n in sorted(by_reason.items(), key=lambda kv: -kv[1]):
+        print(f"    {n:>6}  {reason}")
+    for e in excluded:
+        print(f"    EXCLUDED [{e['kind']}] {e['path']}")
+
+    append_exclusion_log({
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "source": "dex-ingest.py",
+        "ingest_run_id": ingest_run_id,
+        "archive_path": archive_path,
+        "exclusion_digest": exclusions.digest,
+        "exclusion_rule_count": exclusions.rule_count,
+        "exclusion_source": str(exclusions.source),
+        "files_eligible": len(files),
+        "excluded_count": len(excluded),
+        "excluded_by_reason": by_reason,
+        "excluded": excluded,
+    })
+
     if not files:
         return
 
