@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<!--
+  DexWake-Persistent : persistence definition for dex-wake.py (port 8789)
+  Authored by Ellis Cooper (DDL-4008) 2026-08-03. See ADR-DEXJR-WAKE-001.
+
+  WHY THIS PRINCIPAL (dkitc, by SID, S4U):
+    The token hash file C:\Users\dexjr\.config\ddl\wake-token.sha256 has
+    inheritance removed and grants ONLY:
+        NT AUTHORITY\SYSTEM:(F)
+        REBORN\dkitc:(R)
+    Local user "dexjr" and BUILTIN\Administrators have NO access, so dexjr is
+    excluded by evidence rather than preference: the service would exit at
+    startup unable to read its credential.
+    SYSTEM is rejected deliberately. This service launches processes, and every
+    service it started would inherit SYSTEM. SYSTEM also would not see dkitc's
+    user environment, which the dex-openai-api start path requires
+    (DEXJR_API_TOKEN). dkitc is the least privileged principal that can
+    actually read the credential.
+
+  WHY S4U (LogonType):
+    Runs with NO user logged on, which is the whole requirement, while storing
+    NO password anywhere. Trade-off accepted: an S4U token carries no network
+    credentials. dex-wake binds a local socket and authenticates its own
+    callers, so it needs none.
+
+  WHY ExecutionTimeLimit PT0S:
+    The Task Scheduler default is 3 days. A long lived service under the
+    default limit is silently killed on day 3. PT0S means no limit.
+
+  WHY the 5 minute repetition plus IgnoreNew:
+    "Starts at boot" is not the requirement. "Is running when the phone calls"
+    is. If the process dies, the next 5 minute tick restarts it. If it is
+    already alive, MultipleInstancesPolicy IgnoreNew makes the tick a no op.
+    This is the self heal, and it is what turns a boot trigger into
+    persistence.
+
+  BIND ADDRESS, DELIBERATELY NOT CHANGED:
+    The action below runs dex-wake with no tailnet flag, so it binds 127.0.0.1
+    only. This exactly matches the configuration verified on 2026-08-01 and
+    re-verified on 2026-08-03. Binding 0.0.0.0 on an unattended machine at boot
+    is a security posture decision that belongs to Silas and the Operator, not
+    to me, so I did not make it. To enable phone reachability, append the
+    tailnet flag to the Arguments line below. That is the only edit required.
+-->
+<Task version="1.3" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>dex-wake: on-demand DDL service starter, port 8789. Must be running before anything else on a rebooted machine with nobody logged in. See ADR-DEXJR-WAKE-001.</Description>
+    <URI>\DexWake-Persistent</URI>
+  </RegistrationInfo>
+
+  <Principals>
+    <Principal id="Author">
+      <UserId>S-1-5-21-1466200486-1941100702-3085517287-1001</UserId>
+      <LogonType>S4U</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <Priority>7</Priority>
+    <RestartOnFailure>
+      <Interval>PT1M</Interval>
+      <Count>3</Count>
+    </RestartOnFailure>
+    <IdleSettings>
+      <StopOnIdleEnd>false</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+  </Settings>
+
+  <Triggers>
+    <BootTrigger>
+      <Enabled>true</Enabled>
+      <Delay>PT30S</Delay>
+      <Repetition>
+        <Interval>PT5M</Interval>
+        <StopAtDurationEnd>false</StopAtDurationEnd>
+      </Repetition>
+    </BootTrigger>
+  </Triggers>
+
+  <Actions Context="Author">
+    <Exec>
+      <Command>C:\Windows\System32\cmd.exe</Command>
+      <Arguments>/c ""C:\Users\dexjr\dex-rag\.venv\Scripts\python.exe" -u "C:\Users\dexjr\dex-rag\dex-wake.py" &gt;&gt; "C:\Users\dexjr\dex-rag\dex-wake.boot.log" 2&gt;&amp;1"</Arguments>
+      <WorkingDirectory>C:\Users\dexjr\dex-rag</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>

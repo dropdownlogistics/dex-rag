@@ -71,11 +71,27 @@ papered over.
 high-entropy random, not a human password. There is no dictionary to slow down,
 so a KDF would add cost without adding resistance.
 
-**ACL caveat, honestly:** `icacls /inheritance:r /grant:r SYSTEM:F <user>:R` was
-applied, but the resulting listing surfaced only `SYSTEM:(F)`. Read access was
-then **verified by execution** — the file is readable by the service account.
-Whether that is the intended grant or owner-implicit read is **unverified**.
-Worth confirming before this is relied on as the boundary.
+**ACL caveat — SETTLED 2026-08-03, it was an explicit grant.**
+
+Originally recorded as unverified: `icacls /inheritance:r /grant:r SYSTEM:F
+<user>:R` was applied, but the listing surfaced only `SYSTEM:(F)`, leaving it
+unclear whether read worked by grant or by owner-implicit access.
+
+Re-measured by Ellis Cooper (DDL-4008): `icacls` now returns **both**
+`REBORN\dkitc:(R)` and `NT AUTHORITY\SYSTEM:(F)`. The original listing does not
+reproduce. The file was also read directly as `dkitc` — 64 characters, valid
+lowercase hex. **It is an explicit grant, not owner-implicit read.**
+
+**And the ACL turns out to be load-bearing for a decision it was not written to
+make.** Because inheritance is removed, the local user `dexjr` and
+`BUILTIN\Administrators` have *no* access at all. A persistence mechanism
+running as `dexjr` would `sys.exit` at startup, unable to read its own
+credential. That eliminated `dexjr` as the task principal on evidence rather
+than on preference.
+
+Credential path, for the record: `C:\Users\dexjr\.config\ddl\wake-token.sha256`,
+matching `dex-wake.py:43`. Noted here because a dispatch stated the `dkitc`
+path, which does not exist.
 
 ---
 
@@ -170,3 +186,50 @@ hand, which means the ferry gap is closed only while someone is at the machine �
 i.e. **not yet closed at all** for its actual use case.
 
 Claiming otherwise would be exactly the failure this service was built during.
+
+### Persistence status, 2026-08-03 (Ellis Cooper, DDL-4008)
+
+Moved from *undesigned* to *designed, validated, and one elevated command away
+from being testable*. It did NOT move to persistent, and **nothing is
+registered** — verified independently: no task file was written to
+`System32\Tasks`, and no `DexWake-Persistent` task exists.
+
+**Registration is blocked by privilege, not design.** The session runs as
+`REBORN\dkitc` with a filtered token — Administrators deny-only, Medium
+integrity. Registration failed under both the `ScheduledTasks` module and
+`schtasks.exe`, including a trivial control that should have succeeded.
+
+So **two steps remain, not one**: an elevated import, then a reboot.
+
+Design, for the record: task `DexWake-Persistent`, principal dkitc **by SID**,
+`LogonType S4U`, LeastPrivilege. SYSTEM was rejected deliberately — a process
+launcher at maximum privilege would hand SYSTEM to every service it starts, and
+SYSTEM cannot see dkitc's user environment. `ExecutionTimeLimit PT0S` because
+the 3-day default would silently kill a long-lived service on day three.
+
+Artifacts: `dex-wake-task.xml`, `verify-dex-wake-persistence.ps1`,
+`DEXWAKE-PERSISTENCE-RUNBOOK.md`. **These are a proposal. Registering boot
+persistence is a security-posture change and requires explicit Operator
+authorization of the mechanism — not merely of the lane.**
+
+**Largest unproven risk:** S4U logon for `dkitc` is untested and `dkitc` is a
+MicrosoftAccount; S4U paired with an MSA is known-flaky. The runbook therefore
+puts a `schtasks /Run` smoke test *before* the reboot, so that risk surfaces
+without committing to a restart.
+
+The verifier's decisive check is **Session 0**, since that is what actually
+proves "nobody logged in", plus a boot-proximity check — without it a manual
+`schtasks /Run` would satisfy "ran after boot" and produce a false PASS. That
+false-PASS path was found and closed by testing the verifier against a
+hand-started instance.
+
+### Port 8788 has a SECOND blocker that persistence does not fix
+
+`DEXJR_API_TOKEN` is unset in Process, User, **and** Machine scope — confirmed
+independently. `dex-openai-api` declares it in `env_required`, so an authorized
+start returns **503**, not a running service.
+
+Persistence alone will not light up the mobile endpoint. And as configured
+dex-wake binds `127.0.0.1`, so the phone still could not reach it; that
+one-line change is a posture decision documented in the runbook, deliberately
+not taken unilaterally.
