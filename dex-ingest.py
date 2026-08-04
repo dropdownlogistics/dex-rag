@@ -509,6 +509,33 @@ def ingest(archive_path: str, reset: bool = False, build_canon: bool = False, fa
     if not files:
         return
 
+    # ------------------------------------------------------------------
+    # STOP — READ THIS BEFORE POINTING THIS PASS AT NEW MATERIAL.
+    # Authority: STD-CORPUS-004 (Near-Identity Is a Relationship).
+    #
+    # This is EXACT-COPY dedupe: one document, several paths, keep one.
+    # That is correct for what it currently sees (e.g. DirectIngestCopy's
+    # 2,472 duplicates, the _sterling mirror) and it should keep doing it.
+    #
+    # It is WRONG for near-identity across systems. A dispatch drafted in a
+    # thread, pasted into a session, captured in a session log and quoted in
+    # a D-mail is FOUR DOCUMENTS with edits between them. This pass would
+    # collapse them to one, report a satisfying duplicate count, and exit 0.
+    #
+    # Two things die in that pass and neither is recoverable:
+    #   1. The shared text is the ONLY evidence that a session produced a
+    #      dispatch that generated a report. It is a join key, not noise.
+    #   2. The delta between drafted and sent is the Operator's EDIT --
+    #      judgment applied, recorded nowhere else. It exists only in the
+    #      difference between two copies. Neither copy contains it.
+    #
+    # The detection is identical; the correct ACTION is not. On a match in
+    # that class: record the edge, do not drop the copy.
+    #
+    # There is no guard here yet because the artifact archive is Phase 2 and
+    # unauthorized. If you are the one wiring that class in, build the guard
+    # first -- refuse on unclassified material rather than proceeding.
+    # ------------------------------------------------------------------
     print("\n  Running dedup pass (SHA-256)...")
     seen_hashes = set()
     unique_files = []
