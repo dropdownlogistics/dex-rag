@@ -95,12 +95,45 @@ def main():
     ap.add_argument("--quiet", action="store_true", help="only show clones with problems")
     ap.add_argument("--root", action="append", default=[],
                     help="extra directory to scan (repeatable). Makes the detector testable.")
+    ap.add_argument("--expect-clones", type=int, default=None, metavar="N",
+                    help="assert exactly N clones are found. Exits 3 if not. "
+                         "Converts a silent scope error into a loud assertion failure.")
     a = ap.parse_args()
 
     clones = find_clones([__import__('pathlib').Path(r) for r in a.root])
     if not clones:
         print("no ddl-org clones found under the known roots", file=sys.stderr)
         return 2
+
+    # SCOPE ASSERTION.
+    #
+    # Wrong OUTPUT is detectable: run it twice and diff. Wrong SCOPE is not --
+    # if a run examines 3 clones when it should have examined 8, both runs agree
+    # and both are wrong. No amount of re-running finds it, and the number looks
+    # perfectly reasonable on the way past.
+    #
+    # This is the failure a cheap model is most likely to produce, and it is the
+    # one this week's largest finding actually was: a diff computed over the
+    # wrong metadata key, agreeing with itself, off by an order of magnitude.
+    #
+    # Pre-declaring the population converts a judgment failure into an assertion
+    # failure. Assertion failures are loud. Judgment failures are silent.
+    if a.expect_clones is not None and len(clones) != a.expect_clones:
+        print("", file=sys.stderr)
+        print("=" * 66, file=sys.stderr)
+        print("  SCOPE ASSERTION FAILED", file=sys.stderr)
+        print("=" * 66, file=sys.stderr)
+        print(f"  expected clones : {a.expect_clones}", file=sys.stderr)
+        print(f"  actually found  : {len(clones)}", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("  The audit examined a different population than the one declared.", file=sys.stderr)
+        print("  Its findings describe that other population and must not be", file=sys.stderr)
+        print("  read as covering the declared one. NOT a pass with a warning.", file=sys.stderr)
+        print("", file=sys.stderr)
+        for c in clones:
+            print(f"    found: {c}", file=sys.stderr)
+        print("=" * 66, file=sys.stderr)
+        return 3
 
     rows = [audit(c) for c in clones]
     bad = [r for r in rows if r["problems"]]
