@@ -36,9 +36,27 @@ EMBED_TRUNC_LEVELS = (1200, 900, 600, 300)
 COLLECTION_SUFFIX = os.environ.get("DEXJR_COLLECTION_SUFFIX", "_v2")
 
 # Registry — base names. Suffix applied via suffixed().
+#
+# !! ddl_archive RETRIEVAL IS UNRELIABLE — measured 2026-08-04.
+#    It does NOT return its own documents. Self-retrieval scored 0/2 at best
+#    distance 0.668, against 0.0000 / 0.0096 / 0.0542 for the other three live
+#    collections. count() is correct, query() returns hits with plausible
+#    distances, and every declared fact about it agrees — it simply serves
+#    chunks that do not match the query.
+#
+#    Reproduce:  python dex-reconcile.py     (fact: collections_return_their_own_documents)
+#
+#    Status deliberately LEFT AS "LIVE". Flipping it would silently drop
+#    316,109 chunks out of every consumer of get_live_collections()
+#    (dex-search-api, dex-bridge, dex_weights) and would retire a store the
+#    Operator ruled stays standing until the new corpus is verified. That is a
+#    routing change and a retirement decision, neither of which belongs in a
+#    comment. Recorded here so the next reader of this registry knows before
+#    they trust a result from it.
 COLLECTIONS = {
     "dex_canon":     {"weight": 0.90, "label": "Canon",        "status": "LIVE"},
-    "ddl_archive":   {"weight": 0.65, "label": "Archive",      "status": "LIVE"},
+    "ddl_archive":   {"weight": 0.65, "label": "Archive",      "status": "LIVE",
+                      "retrieval_health": "UNRELIABLE-2026-08-04"},
     "dex_code":      {"weight": 0.85, "label": "Code",         "status": "LIVE"},
     "ext_creator":   {"weight": 0.85, "label": "ExtCreator",   "status": "LIVE"},
     "ext_reference": {"weight": 0.75, "label": "ExtReference", "status": "PROVISIONED"},
