@@ -420,10 +420,17 @@ Six commits landed locally on 2026-04-12, 589 lines removed. Nothing pushed.
   - `71d9b0e` chore: consolidate transcribe_mania to single canonical file
 
 ### Critical bugs (priority order)
-  1. **`dex-convert.py` silent data loss** — lines 252, 355, 360, 374, 419.
-     `except Exception:` blocks silently drop records during conversion.
-     No counter, no log. Operator does not know how many documents have
-     been lost. Fix early — add counter and flag-on-failure mode.
+  1. ~~**`dex-convert.py` silent data loss**~~ — **CLOSED 2026-08-04.** The
+     line numbers this entry carried (252, 355, 360, 374, 419) had already
+     gone stale and pointed at unrelated code. Verified: **no bare
+     `except Exception: pass` blocks remain** in any conversion path. The one
+     remaining bare `pass` is a failed stdout re-encode, not a data path.
+     Every drop is now counted, attributed to a reason code, and reconciled
+     against an independently measured input count by `dex_ingest_ledger.py`
+     (v1.2, ADR pending). A converter that loses records without recording
+     them fails the accounting identity and exits 3.
+     **The operator can now answer "how many documents were lost during
+     ingest", which was the actual complaint.**
   2. **`dex-search-api.py` invisible to 2 of 4 collections** — only queries
      `dex_canon_v2` and `ddl_archive_v2`. Anyone hitting the API expecting
      `ext_creator_v2` or `dex_code_v2` content gets silently empty results.
