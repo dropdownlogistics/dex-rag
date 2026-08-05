@@ -55,6 +55,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -359,6 +360,94 @@ def measure_dimensions_per_collection() -> tuple[dict[str, int], dict[str, str]]
     return dims, why
 
 
+def measure_scheduled_tasks() -> tuple[dict, str]:
+    """DDL scheduled tasks and whether they can actually run unattended.
+
+    A task with a Daily trigger DECLARES that it runs daily. `LogonType:
+    Interactive` MEASURES that it runs only while that user is logged on --
+    it does not fire on a rebooted, logged-out machine.
+
+    Found by hand 2026-08-04: all six DDL tasks are Interactive. The "nightly"
+    4am sweep does not run if the machine reboots overnight. Nothing declared
+    that, nothing contradicted it, and nothing would have surfaced it. The
+    schedule and the capability live in different fields and no one had put
+    them next to each other.
+    """
+    ps = (
+        "Get-ScheduledTask | Where-Object { $_.TaskName -like 'Dex*' } | "
+        "ForEach-Object { "
+        "  $t=$_; "
+        "  [pscustomobject]@{ "
+        "    name=$t.TaskName; "
+        "    logon=[string]$t.Principal.LogonType; "
+        "    user=[string]$t.Principal.UserId; "
+        "    state=[string]$t.State; "
+        "    triggers=(($t.Triggers | ForEach-Object { $_.CimClass.CimClassName }) -join ',') "
+        "  } } | ConvertTo-Json -Compress"
+    )
+    try:
+        r = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                           capture_output=True, text=True, timeout=90)
+        if r.returncode != 0 or not r.stdout.strip():
+            return {}, f"Get-ScheduledTask returned nothing (exit {r.returncode})"
+        data = json.loads(r.stdout)
+        if isinstance(data, dict):
+            data = [data]
+        return {d["name"]: d for d in data}, ""
+    except Exception as exc:  # noqa: BLE001
+        return {}, f"{type(exc).__name__}: {exc}"
+
+
+def measure_index_self_retrieval(name: str, sample: int = 2) -> tuple[dict, str]:
+    """Does a collection return ITS OWN documents when queried with their text?
+
+    A document embedded and searched against the collection it came from must
+    come back at ~0 distance. This is the only check that distinguishes
+    "retrieval works" from "retrieval returns confident, well-ranked, wrong
+    results" -- and it cannot be satisfied by a metadata fallback, because a
+    metadata path cannot rank by vector similarity.
+
+    Found by hand 2026-08-04: ddl_archive_v2 (316,109 chunks, the majority of
+    the corpus) scored 0/6 with best distances 0.52-0.82, against a control
+    collection scoring 0.0035-0.20. count() was correct, query() returned
+    plausible hits, and every declared fact about it agreed. Nothing short of
+    asking it for its own documents would have found it.
+    """
+    try:
+        import chromadb
+        sys.path.insert(0, str(DEXRAG))
+        from dex_core import CHROMA_DIR, embed
+        col = chromadb.PersistentClient(path=CHROMA_DIR).get_collection(name)
+        n = col.count()
+        if n == 0:
+            return {}, "collection is empty"
+        got = col.get(limit=sample * 3, include=["documents"])
+        ids, docs = got["ids"], got["documents"]
+        results, tested = [], 0
+        for cid, doc in zip(ids, docs):
+            if tested >= sample:
+                break
+            if not doc or len(doc.strip()) < 80:
+                continue
+            tested += 1
+            q = col.query(query_embeddings=[embed(doc[:1200])], n_results=3,
+                          include=["distances"])
+            hit_ids, ds = q["ids"][0], q["distances"][0]
+            results.append({
+                "id": cid,
+                "self_rank": (hit_ids.index(cid) + 1) if cid in hit_ids else None,
+                "best_distance": round(min(ds), 4) if ds else None,
+            })
+        if not results:
+            return {}, "no document long enough to probe"
+        return {"probes": results,
+                "self_found": sum(1 for r in results if r["self_rank"]),
+                "tested": len(results),
+                "worst_best_distance": max(r["best_distance"] for r in results)}, ""
+    except Exception as exc:  # noqa: BLE001
+        return {}, f"{type(exc).__name__}: {str(exc)[:120]}"
+
+
 def measure_model_dimension(model: str) -> tuple[int | None, str]:
     """Ask the live Ollama what width THIS model emits. Cheap probe.
 
@@ -635,6 +724,74 @@ def build_report() -> dict:
         else:
             r.verdict, r.detail = "AGREE", f"all live collections carry '{sfx}'"
     rows.append(r)
+
+    # ---- can the scheduled tasks actually run unattended? ----------------
+    # One fact, N locations. Six tasks with the same defect is one finding
+    # with six sites, not six findings.
+    tasks, task_err = measure_scheduled_tasks()
+    r = Row("scheduled_tasks_can_run_unattended")
+    r.measure_note = "LogonType per task; Interactive runs only while that user is logged on"
+    if not tasks:
+        r.measurable = False
+        r.verdict, r.detail = "UNMEASURABLE", task_err or "no Dex* tasks found"
+    else:
+        interactive = {n: t for n, t in tasks.items()
+                       if str(t.get("logon", "")).lower() == "interactive"}
+        r.measured = {n: {"logon": t["logon"], "triggers": t["triggers"]}
+                      for n, t in sorted(tasks.items())}
+        r.measurement_comparisons = len(tasks)
+        if interactive:
+            r.verdict = "REFUTED"
+            r.detail = (
+                f"{len(interactive)} of {len(tasks)} DDL task(s) run LogonType=Interactive "
+                f"and therefore do NOT fire on a rebooted, logged-out machine, despite "
+                f"carrying recurring triggers: {', '.join(sorted(interactive))}. "
+                "A daily trigger declares a schedule; Interactive determines whether it "
+                "can be kept.")
+        else:
+            r.verdict = "AGREE"
+            r.detail = f"all {len(tasks)} task(s) can run unattended"
+    rows.append(r)
+
+    # ---- does each live collection return ITS OWN documents? -------------
+    if live:
+        r = Row("collections_return_their_own_documents")
+        r.measure_note = ("self-retrieval: a document embedded and queried against its "
+                          "own collection must come back at ~0 distance")
+        per, failures, unmeasured = {}, [], []
+        for cname in sorted(live_names & set(live)):
+            res, err = measure_index_self_retrieval(cname)
+            if err:
+                unmeasured.append(f"{cname} ({err})")
+                continue
+            per[cname] = res
+            # A collection whose own documents do not come back is not merely
+            # missing a feature -- it is returning other documents in their
+            # place, with plausible distances and no error.
+            if res["self_found"] == 0:
+                failures.append(f"{cname} 0/{res['tested']} "
+                                f"(best distance {res['worst_best_distance']})")
+        r.measured = per or None
+        r.measurement_comparisons = len(per)
+        if not per:
+            r.measurable = False
+            r.verdict, r.detail = "UNMEASURABLE", "; ".join(unmeasured) or "no collection probed"
+        elif failures:
+            r.verdict = "REFUTED"
+            r.detail = (f"{len(failures)} collection(s) do NOT return their own documents: "
+                        f"{'; '.join(failures)}. query() still returns hits, so retrieval "
+                        "looks healthy while serving the wrong chunks."
+                        + (f" Not probed: {'; '.join(unmeasured)}." if unmeasured else ""))
+        else:
+            r.verdict = "AGREE"
+            r.detail = (f"all {len(per)} probed collection(s) return their own documents"
+                        + (f"; not probed: {'; '.join(unmeasured)}" if unmeasured else ""))
+            if unmeasured:
+                # Coverage is incomplete even though what ran passed.
+                r.sources_expected = len(per) + len(unmeasured)
+                r.sources_read = len(per)
+                r.sources_failed = unmeasured
+        rows.append(r)
 
     # Attach source coverage, then let integrity_check override any
     # agreement-shaped verdict that rests on incomplete evidence.
