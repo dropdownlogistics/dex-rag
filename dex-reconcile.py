@@ -143,34 +143,128 @@ class Row:
     measure_note: str = ""
     verdict: str = ""
     detail: str = ""
+    # Source accounting. Without this the tool can report AGREE for a fact
+    # whose only disagreeing source failed to load -- see integrity_check().
+    sources_expected: int = 0
+    sources_read: int = 0
+    sources_failed: list = field(default_factory=list)
+    # Some rows reconcile one MEASUREMENT against another -- a live model
+    # probe against a stored vector width, or several collections against each
+    # other. That is a genuine comparison with no declaration involved, and a
+    # naive evidence count (declarations + 1 for "measured") misreads it as a
+    # single unverified data point. Rows that do this say how many independent
+    # measurements they compared.
+    measurement_comparisons: int = 0
+
+    @property
+    def coverage_complete(self) -> bool:
+        return self.sources_expected == 0 or self.sources_read == self.sources_expected
+
+
+def integrity_check(rows: list) -> None:
+    """Force UNCHECKED on any fact whose evidence is incomplete.
+
+    THE DEFECT THIS FIXES, found by auditing this tool against itself:
+
+    `embedding_model` is declared once in dex_core and twice in canon. The
+    verdict asked "how many DISTINCT values did I collect?" With canon
+    unreadable, exactly one value is collected, and the tool reported
+    AGREE -- "all sources say mxbai-embed-large".
+
+    That reads as "canon and code agree". It actually meant "canon was never
+    consulted". Measured: findings went 3 -> 0 and the night's most important
+    finding vanished, with exit code 0.
+
+    A tool built to detect false confirmations must not be able to produce one.
+
+    Two rules, applied after every verdict is set:
+
+      1. INCOMPLETE COVERAGE DOMINATES. If a source that should have been read
+         could not be, the fact is UNCHECKED whatever the survivors say.
+         "No disagreement found" and "could not compare" must never render
+         the same way.
+
+      2. ONE PIECE OF EVIDENCE IS NOT AGREEMENT. A single declaration with
+         nothing to compare it against is SINGLE_SOURCE, not AGREE. Nothing
+         was reconciled; there was only one opinion in the room.
+
+    A CONFLICT or REFUTED verdict is never downgraded -- a disagreement found
+    on partial evidence is still a real disagreement. Only agreement-shaped
+    verdicts are suspect, because those are the ones that claim a comparison
+    happened.
+    """
+    for r in rows:
+        if r.verdict in ("CONFLICT", "REFUTED"):
+            continue
+
+        if not r.coverage_complete:
+            missing = r.sources_expected - r.sources_read
+            r.verdict = "UNCHECKED"
+            r.detail = (f"{missing} of {r.sources_expected} declaration source(s) "
+                        f"could not be read — this fact was NOT reconciled. "
+                        + (f"Unread: {', '.join(r.sources_failed)}. " if r.sources_failed else "")
+                        + "Surviving sources may agree only because the "
+                          "disagreeing one is missing.")
+            continue
+
+        if r.verdict == "AGREE":
+            evidence = (len(r.declarations)
+                        + (1 if r.measured is not None else 0)
+                        + max(0, r.measurement_comparisons - 1))
+            if evidence < 2:
+                r.verdict = "SINGLE_SOURCE"
+                if r.declarations:
+                    r.detail = (f"declared in exactly one place and not independently "
+                                f"measured — nothing was compared. Value: "
+                                f"{r.declarations[0].value!r}")
+                elif r.measured is not None:
+                    r.detail = ("measured once with nothing to compare against — "
+                                "a lone reading, not a reconciliation")
+                else:
+                    r.detail = "no evidence at all"
 
 
 # ---------------------------------------------------------------------------
 # READ declarations
 # ---------------------------------------------------------------------------
-def read_declarations() -> tuple[dict[str, list[Declaration]], list[str]]:
-    """Lift every declared value out of every source. Missing files are
-    reported, never silently skipped -- a source that vanished is a finding."""
+def read_declarations() -> tuple[dict[str, list[Declaration]], list[str], dict[str, dict]]:
+    """Lift every declared value out of every source.
+
+    Also returns per-fact COVERAGE: how many sources were expected, how many
+    were actually read, and which failed. Without that accounting a fact whose
+    disagreeing source vanished looks identical to one where every source
+    agreed -- see integrity_check().
+    """
     out: dict[str, list[Declaration]] = {}
     problems: list[str] = []
+    coverage: dict[str, dict] = {}
 
     for src in SOURCES:
+        cov = coverage.setdefault(src.fact, {"expected": 0, "read": 0, "failed": []})
+        cov["expected"] += 1
+
+        def fail(msg: str) -> None:
+            problems.append(msg)
+            cov["failed"].append(f"{src.path.name} ({src.note})" if src.note else src.path.name)
+
         if not src.path.exists():
-            problems.append(f"declaration source missing: {src.path}")
+            fail(f"declaration source missing: {src.path}")
             continue
         try:
             text = src.path.read_text(encoding="utf-8", errors="replace")
         except OSError as exc:
-            problems.append(f"unreadable: {src.path}: {exc}")
+            fail(f"unreadable: {src.path}: {exc}")
             continue
 
         m = re.search(src.pattern, text, re.M)
         if not m:
-            problems.append(
+            fail(
                 f"pattern did not match in {src.path.name} for '{src.fact}' "
                 f"-- the file may have been restructured; this tool's reader is stale"
             )
             continue
+
+        cov["read"] += 1
 
         raw = m.group(1).strip()
         value: object = int(raw) if src.normalize == "int" else raw
@@ -181,7 +275,7 @@ def read_declarations() -> tuple[dict[str, list[Declaration]], list[str]]:
         out.setdefault(src.fact, []).append(
             Declaration(value, str(src.path), line, src.note))
 
-    return out, problems
+    return out, problems, coverage
 
 
 def read_chunk_floors() -> tuple[dict[str, int], str | None]:
@@ -301,7 +395,7 @@ def _distinct(decls: list[Declaration]) -> list:
 
 
 def build_report() -> dict:
-    declared, problems = read_declarations()
+    declared, problems, coverage = read_declarations()
     floors, floor_problem = read_chunk_floors()
     if floor_problem:
         problems.append(floor_problem)
@@ -341,6 +435,9 @@ def build_report() -> dict:
     r = Row("live_collections_share_one_embedding_space")
     r.measured = {n: d for n, d in sorted(live_dims.items())} or None
     r.measure_note = "stored vector widths, live collections only"
+    # Each collection measured is an independent reading compared against the
+    # others. Three collections agreeing is a real reconciliation.
+    r.measurement_comparisons = len(live_dims)
     if not live_dims:
         r.measurable = False
         r.verdict, r.detail = "UNMEASURABLE", dim_note
@@ -420,6 +517,9 @@ def build_report() -> dict:
         rr = Row(f"model_can_produce_LIVE_width[{name}]")
         rr.measured = got
         rr.measure_note = note
+        # Two independent measurements: a live probe of the model, and the
+        # width actually stored in the corpus.
+        rr.measurement_comparisons = 2 if (got is not None and stored_dim is not None) else 1
         if got is None:
             rr.measurable = False
             rr.verdict, rr.detail = "UNMEASURABLE", note
@@ -536,15 +636,28 @@ def build_report() -> dict:
             r.verdict, r.detail = "AGREE", f"all live collections carry '{sfx}'"
     rows.append(r)
 
+    # Attach source coverage, then let integrity_check override any
+    # agreement-shaped verdict that rests on incomplete evidence.
+    for r in rows:
+        cov = coverage.get(r.fact)
+        if cov:
+            r.sources_expected = cov["expected"]
+            r.sources_read = cov["read"]
+            r.sources_failed = list(cov["failed"])
+
+    integrity_check(rows)
+
     bad = [r for r in rows if r.verdict in ("CONFLICT", "REFUTED")]
-    return {"rows": rows, "problems": problems, "findings": bad}
+    unchecked = [r for r in rows if r.verdict in ("UNCHECKED", "UNMEASURABLE", "SINGLE_SOURCE")]
+    return {"rows": rows, "problems": problems, "findings": bad, "unchecked": unchecked}
 
 
 # ---------------------------------------------------------------------------
 # RENDER
 # ---------------------------------------------------------------------------
 MARK = {"AGREE": "  ", "CONFLICT": "!!", "REFUTED": "!!",
-        "UNMEASURABLE": "??", "UNDECLARED": " ?"}
+        "UNMEASURABLE": "??", "UNDECLARED": " ?",
+        "UNCHECKED": "??", "SINGLE_SOURCE": " ?"}
 
 
 def render(rep: dict, quiet: bool) -> None:
@@ -574,14 +687,30 @@ def render(rep: dict, quiet: bool) -> None:
             print(f"  ?? {p}")
         print()
 
+    # "No disagreement found" and "could not compare" must never render the
+    # same way. This block is why the summary cannot be read as a clean bill
+    # of health when half the sources failed to load.
+    if rep["unchecked"]:
+        print("=" * 72)
+        print(f"  {len(rep['unchecked'])} FACT(S) NOT RECONCILED — absence of a finding here")
+        print("  means NOTHING WAS COMPARED, not that everything agrees.")
+        for r in rep["unchecked"]:
+            print(f"    {r.verdict}: {r.fact}")
+            print(f"      {r.detail}")
+        print("=" * 72)
+        print()
+
     if rep["findings"]:
         print("=" * 72)
         print(f"  {len(rep['findings'])} FINDING(S)")
         for r in rep["findings"]:
             print(f"    {r.verdict}: {r.fact} — {r.detail}")
         print("=" * 72)
+    elif rep["unchecked"]:
+        print("  no disagreements among the facts that COULD be checked.")
+        print("  That is not the same as everything reconciling — see above.")
     else:
-        print("  everything reconciles.")
+        print("  everything reconciles, and every fact was actually compared.")
     print()
 
 
@@ -598,15 +727,26 @@ def main() -> int:
             "rows": [{"fact": r.fact, "verdict": r.verdict, "detail": r.detail,
                       "measured": r.measured, "measurable": r.measurable,
                       "measure_note": r.measure_note,
+                      "sources_expected": r.sources_expected,
+                      "sources_read": r.sources_read,
+                      "sources_failed": r.sources_failed,
                       "declarations": [{"value": d.value, "where": d.where, "note": d.note}
                                        for d in r.declarations]} for r in rep["rows"]],
             "problems": rep["problems"],
             "finding_count": len(rep["findings"]),
+            "unchecked_count": len(rep["unchecked"]),
         }, indent=2, default=str))
     else:
         render(rep, a.quiet)
 
-    return 1 if rep["findings"] else 0
+    # Distinct codes so automation can tell "found a problem" from "could not
+    # look". Both are non-zero: silence about an unchecked fact is the failure
+    # this tool exists to prevent.
+    if rep["findings"]:
+        return 1
+    if rep["unchecked"]:
+        return 4
+    return 0
 
 
 if __name__ == "__main__":
