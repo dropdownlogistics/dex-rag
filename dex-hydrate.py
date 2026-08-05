@@ -253,7 +253,21 @@ def main() -> int:
         return 1
 
     mine_local = {os.path.normcase(f["path"]) for f in files if is_local(f["path"])}
-    theirs_local = {p for p, d in verdict.items() if d == "materialized"}
+    # dex-ledger.py has SIX dispositions; "is the file local" is not the same
+    # question as "is its disposition materialized".
+    #
+    # Measured 2026-08-05: the first full run reported 40 disagreements, all in
+    # one direction. All 40 were ZERO-BYTE files. dex-ledger classifies those
+    # as `empty` -- a distinct and correct answer, since a zero-byte file has
+    # nothing to download. Counting only `materialized` made my comparator
+    # treat a correct classification as a conflict.
+    #
+    # Neither classifier was wrong. The judge was. Worth keeping, because the
+    # disagreement mechanism did its job: it refused to certify and sent me
+    # looking, and what it found was a defect in the checker rather than in
+    # either thing being checked.
+    LOCAL_DISPOSITIONS = {"materialized", "empty"}
+    theirs_local = {p for p, d in verdict.items() if d in LOCAL_DISPOSITIONS}
 
     only_mine = mine_local - theirs_local
     only_theirs = theirs_local - mine_local
@@ -276,7 +290,18 @@ def main() -> int:
         return 3
 
     if still_cloud:
-        print(f"\n  {still_cloud:,} file(s) are still not local. Re-run to resume.")
+        # Distinguish "not downloaded yet" from "no longer exists". Telling
+        # someone to re-run to resume a file that is gone is a small lie, and
+        # it would have them chase a transfer that can never complete.
+        gone_now = sum(1 for f in files if is_local(f["path"]) is None)
+        pending = still_cloud - gone_now
+        print()
+        if pending > 0:
+            print(f"  {pending:,} file(s) not yet local — re-run to resume.")
+        if gone_now > 0:
+            print(f"  {gone_now:,} file(s) no longer exist and cannot be hydrated.")
+            print( "  The manifest has aged past its source. Regenerate it from a")
+            print( "  fresh dex-ledger.py walk before using it as the build input.")
         return 1
 
     print("\n  both classifiers agree: every manifest file is materialized.")
