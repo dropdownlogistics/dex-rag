@@ -47,6 +47,11 @@ from dex_core import (
     CHROMA_DIR, EMBED_MODEL, GEN_MODEL, OLLAMA_HOST,
     get_chroma_client, get_live_collections, is_gated, suffixed,
 )
+# Plain import on purpose: if the gate is missing this process must not start.
+# A silently ungated endpoint is the exact state this was written to end.
+from dex_query_gate import (
+    classify, SUBSTANTIVE, CONVERSATIONAL, ACKNOWLEDGEMENTS, normalize,
+)
 
 PORT = 8788                       # 8787 dex-search-api · 8791 dex-chat · 8801 cockpit
 OLLAMA_EMBED = f"{OLLAMA_HOST}/api/embeddings"
@@ -84,6 +89,25 @@ invented answer that sounds plausible is the worst possible failure here."""
 NO_EVIDENCE = ("The corpus has nothing relevant to that. I'm not going to answer "
                "from general knowledge — that would look like retrieval and "
                "wouldn't be.\n\n(No chunk scored under the relevance threshold.)")
+
+# ---------------------------------------------------------------------------
+# Conversational replies — fixed text, no retrieval, no model call
+# ---------------------------------------------------------------------------
+# These are literal strings rather than a generated response, and that is the
+# safety property, not a shortcut. A greeting that reaches the model has to be
+# answered from SOMETHING; with no corpus context that something is general
+# knowledge, which is the one thing this endpoint exists to refuse.
+#
+# Fixed text makes no claim about the corpus, so there is nothing to
+# confabulate with. It also costs no GPU, which is why the gate runs BEFORE
+# the VRAM check: "Hello" should not be refused because the card is busy.
+GREETING_REPLY = (
+    "Hey. I'm Dex Jr. — I answer from the DDL corpus and only from it.\n\n"
+    "Ask me something specific and I'll retrieve what we actually have. "
+    "If we don't have it, I'll say so rather than guess."
+)
+ACK_REPLY = "Noted."
+EMPTY_REPLY = "I didn't get a question there — what do you want to look up?"
 
 app = FastAPI(title="Dex Jr. OpenAI-compatible API", version="1.0.0")
 
@@ -247,6 +271,34 @@ def chat_completions(body: ChatReq):
     user_msg = next((m.content for m in reversed(body.messages) if m.role == "user"), "")
     if not user_msg.strip():
         raise HTTPException(status_code=400, detail="no user message")
+
+    # ---- the query gate, BEFORE retrieval and before the GPU check ----
+    #
+    # Measured 2026-08-05 against dex_canon_v2: "Hello" scores 0.564 and
+    # PASSES the 0.62 refusal threshold, while "What is the Platinum Bounce
+    # recovery protocol?" scores 0.630 and is refused. A greeting retrieves
+    # better than a real question about the corpus's own content, so without
+    # this the most likely first message from a phone returns five arbitrary
+    # canon chunks for the model to answer from.
+    #
+    # This is not a threshold that could be tuned: four candidate signals
+    # (top1, spread, ratio, word count) all overlap between greetings and
+    # short real questions. Low-information input has no meaningful distance.
+    #
+    # It classifies KIND, not answerability. "What is AEN" is a real question
+    # the corpus cannot answer -- it passes through here and is refused below
+    # for no-evidence, which is the correct refusal and keeps the coverage gap
+    # visible instead of hiding it behind a friendly reply.
+    kind, why = classify(user_msg)
+    if kind != SUBSTANTIVE:
+        print(f"  gate: {kind} — {why}")
+        if kind == CONVERSATIONAL:
+            # Reuse the gate's own normalizer rather than re-implementing it.
+            # Two copies of a normalization rule drift, and the drift is silent.
+            reply = ACK_REPLY if normalize(user_msg) in ACKNOWLEDGEMENTS else GREETING_REPLY
+        else:
+            reply = EMPTY_REPLY
+        return _completion(body.model, reply)
 
     gpu = gpu_free_mb()
     if gpu is not None and gpu < VRAM_FLOOR_MB:
