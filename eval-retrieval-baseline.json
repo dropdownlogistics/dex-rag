@@ -1,0 +1,146 @@
+{
+  "collection": "dex_canon_v2",
+  "chunk_count": 67093,
+  "measured_at": "2026-08-05T00:02:39Z",
+  "on_domain": {
+    "rows": [
+      {
+        "query": "What is the Platinum Bounce recovery protocol?",
+        "distance": 0.6297
+      },
+      {
+        "query": "What is AsBuiltGovernance?",
+        "distance": 0.6456
+      },
+      {
+        "query": "what is the DDL methodology",
+        "distance": 0.5134
+      },
+      {
+        "query": "What is the council",
+        "distance": 0.5566
+      },
+      {
+        "query": "What is the CottageHumble design system?",
+        "distance": 0.399
+      },
+      {
+        "query": "What are Donella Meadows twelve leverage points for intervening in a system?",
+        "distance": 0.4288
+      },
+      {
+        "query": "Trace the evolution of MindFrame from v1.0 to v4.0",
+        "distance": 0.3333
+      },
+      {
+        "query": "What did the council say about Dex Jr calibration Round 3?",
+        "distance": 0.5365
+      },
+      {
+        "query": "How do Anaplan modules map to star schema fact tables?",
+        "distance": 0.5807
+      },
+      {
+        "query": "council review topics",
+        "distance": 0.5367
+      }
+    ],
+    "min": 0.3333,
+    "median": 0.5366,
+    "max": 0.6456
+  },
+  "off_domain": {
+    "rows": [
+      {
+        "query": "What is the melting point of tungsten carbide?",
+        "distance": 1.0594
+      },
+      {
+        "query": "Who won the 1974 FIFA World Cup final?",
+        "distance": 1.0865
+      },
+      {
+        "query": "Explain the Krebs cycle in cellular respiration",
+        "distance": 0.9085
+      },
+      {
+        "query": "How do I replace a timing belt on a 1998 Honda Civic?",
+        "distance": 0.9531
+      },
+      {
+        "query": "What are the tax implications of a Roth IRA conversion?",
+        "distance": 0.8795
+      },
+      {
+        "query": "Describe the plot of Wuthering Heights",
+        "distance": 0.7283
+      }
+    ],
+    "min": 0.7283,
+    "median": 0.9308,
+    "max": 1.0865
+  },
+  "degenerate": {
+    "rows": [
+      {
+        "query": "Hello",
+        "distance": 0.5638
+      },
+      {
+        "query": "hi",
+        "distance": 0.5845
+      },
+      {
+        "query": "hey",
+        "distance": 0.62
+      },
+      {
+        "query": "ok",
+        "distance": 0.7099
+      },
+      {
+        "query": "thanks",
+        "distance": 0.6429
+      },
+      {
+        "query": "yes",
+        "distance": 0.7772
+      },
+      {
+        "query": "?",
+        "distance": 0.8182
+      },
+      {
+        "query": "test",
+        "distance": 0.6404
+      },
+      {
+        "query": "qqqq wwww eeee",
+        "distance": 0.5791
+      },
+      {
+        "query": "asdfgh jkl",
+        "distance": 0.7818
+      }
+    ],
+    "min": 0.5638,
+    "median": 0.6417,
+    "max": 0.8182
+  },
+  "separation": {
+    "on_vs_off_gap": 0.0827,
+    "on_vs_degenerate_gap": -0.0818,
+    "on_off_separable": true,
+    "on_degenerate_separable": false,
+    "suggested_threshold": 0.6869
+  },
+  "at_live_threshold": {
+    "max_distance": 0.62,
+    "on_domain_refused": 2,
+    "on_domain_total": 10,
+    "degenerate_accepted": 4,
+    "degenerate_total": 10,
+    "off_domain_accepted": 0,
+    "off_domain_total": 6
+  }
+}
