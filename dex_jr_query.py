@@ -58,14 +58,47 @@ def embed(question: str) -> list[float]:
     return _core_embed(question)
 
 
+# Ollama's default num_ctx is 2048 and it TRUNCATES SILENTLY, keeping the tail.
+# Measured 2026-08-06 on a normal query: the prompt was ~4,849 tokens and
+# prompt_eval_count came back 2050 -- 58% of it never reached the model. The
+# primer sits 22% in and was inside the discarded region on every call.
+#
+# So every Dex Jr. answer to date was generated from a fraction of its prompt,
+# chunks were retrieved and cited that the model never received, and nothing
+# anywhere reported it. There is no error, no warning, no field in the response
+# that says "I only read part of this" unless you ask for prompt_eval_count and
+# compare it yourself.
+#
+# It also supplies a mechanism for the intermittency in the instruction-
+# execution defect: the truncation boundary moves with prompt length, which
+# moves with retrieved chunk sizes, so different content survives run to run.
+GEN_NUM_CTX = 8192
+
+# Below this fraction of the prompt reaching the model, the answer is not an
+# answer to the question that was asked.
+CTX_WARN_FRACTION = 0.95
+
+
 def generate(prompt: str) -> str:
     r = requests.post(
         f"{OLLAMA_HOST}/api/generate",
-        json={"model": GEN_MODEL, "prompt": prompt, "stream": False},
+        json={"model": GEN_MODEL, "prompt": prompt, "stream": False,
+              "options": {"num_ctx": GEN_NUM_CTX}},
         timeout=300,
     )
     r.raise_for_status()
-    return r.json()["response"]
+    payload = r.json()
+
+    # Report truncation rather than letting it be silent. A raised ceiling is
+    # not a guarantee -- a long enough prompt still overflows, and the failure
+    # mode is identical. What changes is that it now says so.
+    seen = payload.get("prompt_eval_count")
+    if seen and seen >= GEN_NUM_CTX - 2:
+        eprint(f"  !! CONTEXT TRUNCATED: model processed {seen} tokens and the "
+               f"limit is {GEN_NUM_CTX}. Part of the prompt was discarded and "
+               f"the answer does not reflect the whole context.")
+
+    return payload["response"]
 
 
 def extract_identifiers(query_text: str) -> list[str]:
