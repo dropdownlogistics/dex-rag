@@ -132,7 +132,9 @@ class Declaration:
             rel = os.path.relpath(self.path, r"C:\Users\dexjr")
         except ValueError:
             rel = self.path
-        return f"{rel}:{self.line}"
+        # line 0 means the value is declared by ABSENCE -- the constant is not
+        # in the file. Rendering ":0" would imply a line that does not exist.
+        return f"{rel}:{self.line}" if self.line else f"{rel} (constant absent)"
 
 
 @dataclass
@@ -723,6 +725,92 @@ def build_report() -> dict:
             r.verdict, r.detail = "UNDECLARED", f"collections not carrying suffix '{sfx}': {off}"
         else:
             r.verdict, r.detail = "AGREE", f"all live collections carry '{sfx}'"
+    rows.append(r)
+
+    # ---- is the refusal threshold anywhere near the real distances? ------
+    #
+    # Raised by Ellis Cooper (DDL-4008): two tools declare opposite floors and
+    # NEITHER NUMBER WAS EVER MEASURED AGAINST THE CORPUS. That is exactly the
+    # shape this tool exists for, and it had no row for it.
+    #
+    #   dex-openai-api.py   MAX_DISTANCE = 0.62, refuses anything above
+    #   dex_jr_query.py     no floor at all -- cites whatever is in the top-k
+    #
+    # The absence of a floor is itself a declaration, so a missing constant is
+    # reported as "none" rather than as a source that failed to load.
+    #
+    # The measurement is what makes this more than a lint: a floor is a claim
+    # about the corpus's distance distribution, and that distribution is
+    # measurable. A floor nobody measured is a number someone guessed once.
+    r = Row("retrieval_distance_floor")
+    r.measure_note = "top-1 distance over real questions from dex-bridge-log.jsonl"
+    floors = []
+    for path, const in ((DEXRAG / "dex-openai-api.py", "MAX_DISTANCE"),
+                        (DEXRAG / "dex_jr_query.py", "MAX_DISTANCE")):
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        m = re.search(rf"^{const}\s*=\s*([\d.]+)", text, re.M)
+        line = text[: m.start()].count("\n") + 1 if m else 0
+        floors.append(Declaration(float(m.group(1)) if m else "none",
+                                  str(path), line,
+                                  "refusal threshold" if m else "NO FLOOR — cites any top-k hit"))
+    r.declarations = floors
+
+    # Cite the question set from the eval tool rather than restating it here.
+    # Restating would make this file the second place those questions live,
+    # and they would drift.
+    questions: list[str] = []
+    evp = DEXRAG / "dex-eval-retrieval.py"
+    if evp.exists():
+        mm = re.search(r"ON_DOMAIN\s*=\s*\[(.*?)\]", evp.read_text(encoding="utf-8"), re.S)
+        if mm:
+            questions = re.findall(r'"([^"]{8,})"', mm.group(1))
+
+    dists: list[float] = []
+    if questions and live:
+        try:
+            import chromadb
+            from dex_core import CHROMA_DIR as _CD, embed as _embed, suffixed as _sfx
+            col = chromadb.PersistentClient(path=_CD).get_collection(_sfx("dex_canon"))
+            for q in questions:
+                res = col.query(query_embeddings=[_embed(q)], n_results=1,
+                                include=["distances"])
+                d = res["distances"][0]
+                if d:
+                    dists.append(d[0])
+        except Exception as exc:  # noqa: BLE001
+            r.measure_note += f" (probe failed: {type(exc).__name__})"
+
+    numeric = [d.value for d in floors if isinstance(d.value, float)]
+    if not dists:
+        r.measurable = False
+        r.verdict, r.detail = "UNMEASURABLE", "could not probe live distances"
+    elif not numeric:
+        r.verdict = "UNDECLARED"
+        r.detail = f"no tool declares a floor; real questions span {min(dists):.3f}-{max(dists):.3f}"
+    else:
+        r.measured = {"real_question_top1": [round(d, 3) for d in dists]}
+        r.measurement_comparisons = len(dists)
+        floor = min(numeric)
+        refused = [d for d in dists if d > floor]
+        disagree = len(set(str(d.value) for d in floors)) > 1
+        if refused:
+            r.verdict = "REFUTED"
+            r.detail = (
+                f"the declared floor {floor} refuses {len(refused)} of {len(dists)} "
+                f"REAL questions taken from the query log "
+                f"(worst {max(dists):.3f}). A threshold that rejects questions the "
+                f"corpus can answer was not calibrated against it."
+                + (" And the two tools disagree: one declares a floor, the other none."
+                   if disagree else ""))
+        elif disagree:
+            r.verdict = "CONFLICT"
+            r.detail = ("one tool declares a floor and the other declares none; "
+                        "the same hit is cited by one and refused by the other")
+        else:
+            r.verdict = "AGREE"
+            r.detail = f"floor {floor} admits all {len(dists)} real questions probed"
     rows.append(r)
 
     # ---- can the scheduled tasks actually run unattended? ----------------
