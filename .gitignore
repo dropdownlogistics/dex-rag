@@ -12,3 +12,24 @@ needoh-watcher/watcher.log
 *.mp4
 tiktok_transcripts/
 tiktok/
+
+# --- machine output only (added 2026-08-07, hygiene pass) ---
+# Scope was deliberately limited to artifacts a build or run regenerates.
+# Verified before adding: 0 tracked files match any pattern below, so nothing
+# already in the repo is shadowed. The *.txt and *.json extensions are NOT
+# ignored -- 6 and 8 tracked files use them respectively.
+#
+# NOT ignored on purpose, because they are real uncommitted work and the
+# decision is already queued in CLAUDE.md Open Items ("second audit pass over
+# non-.py files"): dex-chat/, AUDITS/, prompts/, AGENTS.md, CHANGELOG-v4.1.md,
+# DEPLOYMENT-v4.1.md, and the _step*/audit_*/fetch_* scripts. Ignoring those
+# would hide them rather than decide them.
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.robots_cache/
+.claude/
+chromadb/
+*.jsonl
+*.log
