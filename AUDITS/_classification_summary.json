@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "dex_canon": {
+      "files": 3315,
+      "chunks": 58919
+    },
+    "ddl_archive": {
+      "files": 1124,
+      "chunks": 94795
+    },
+    "dex_code": {
+      "files": 54,
+      "chunks": 414
+    },
+    "ext_creator": {
+      "files": 0,
+      "chunks": 0
+    },
+    "ext_reference": {
+      "files": 0,
+      "chunks": 0
+    },
+    "DELETE": {
+      "files": 190,
+      "chunks": 104364
+    }
+  },
+  "total_sources": 4683,
+  "total_chunks": 258492
+}
