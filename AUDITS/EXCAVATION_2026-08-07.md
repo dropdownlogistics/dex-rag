@@ -201,6 +201,124 @@ April document should not be read as current backlog without this correction.
 
 ---
 
+## Part 2 -- reconciling the rest of GAP_ASSESSMENT_2026-04-17.md
+
+Continued on the same instruction ("dig in, tokens authorized"). Same rule:
+nothing below is trusted from April without live re-verification today.
+
+### GAP A2 (PDF ingestion) -- CONFIRMED STILL OPEN
+
+`dex-convert.py` has zero references to PDF, pdfplumber, or PyPDF anywhere in
+the file. The single PDF-related hit anywhere in the ingest path is a comment
+about the sequestration exclusion gate, unrelated to extraction. Exactly as
+April found it. No drift, no partial progress.
+
+### GAP B4 (retrieval quality benchmarks) -- MIXED: the right tool got built,
+### the wrong thing got scheduled, and it has probably never once succeeded
+
+`dex-eval-retrieval.py` exists, dated **2026-08-04** -- three days before this
+excavation, not April. It runs and produces real output:
+
+```
+dex_canon_v2  (67,093 chunks)
+  on vs off-domain   gap +0.083   SEPARABLE
+  on vs degenerate   gap -0.082   OVERLAPPING
+  at the LIVE MAX_DISTANCE = 0.62:
+    real questions REFUSED    2/10
+    greetings ACCEPTED        4/10
+    off-domain ACCEPTED       0/6
+```
+
+**This is a live, current, measurable retrieval-quality problem**, not an
+April leftover: at the threshold actually in production, one in five
+legitimate questions gets refused, while four in ten greetings get accepted
+as though they were on-domain content. **Not touched.** `MAX_DISTANCE` is a
+routing/scoring parameter -- Rule 10 requires operator approval before any
+change, and this is squarely that.
+
+**Separately, `DexWeeklyEval` -- the scheduled task that should be running
+retrieval quality checks -- does not call this script at all.** It runs:
+
+```
+python dex-council.py --from-file prompts\EVAL-WEEKLY.txt --all --rag --save council-runs\eval-2026-04-17 --ingest
+```
+
+**`--rag` is not, and has never been, a valid flag on `dex-council.py`.**
+Confirmed from the script's own `--help`: RAG is on by default, disabled only
+via `--no-rag`. `--rag` does not exist in the argument parser. Running the
+exact scheduled command live reproduces the failure immediately:
+
+```
+dex-council.py: error: unrecognized arguments: --rag
+```
+
+**This fails at argument parsing, before a single line of output is
+produced.** `council-runs/eval-2026-04-17/` does not exist on disk, confirming
+the task has never gotten far enough to write anything. Given the flag has
+apparently never been valid, `DexWeeklyEval` has likely **never once
+succeeded** since it was scheduled -- not "stopped working," never worked.
+
+**Secondary defect in the same command, lower priority:** the save path is
+hardcoded to `eval-2026-04-17` rather than a dynamic date. Even with `--rag`
+removed, every future weekly run would write into the same April-dated folder,
+mixing or overwriting each week's output. Worth fixing in the same pass as the
+flag, not separately.
+
+**Fix identified, attempted, blocked by the same permission wall as
+Finding 4:**
+
+```powershell
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-ExecutionPolicy Bypass -Command "cd C:\Users\dexjr\dex-rag; python dex-council.py --from-file prompts\EVAL-WEEKLY.txt --all --save council-runs\eval-<DATE> --ingest"'
+Set-ScheduledTask -TaskName "DexWeeklyEval" -Action $action
+```
+
+`Set-ScheduledTask` returned `Access is denied`, identical to Finding 4.
+**Both scheduled-task fixes need the same elevated session to apply** -- worth
+doing together rather than two separate elevation requests.
+
+### GAP C3 (log rotation) -- CONFIRMED STILL OPEN
+
+No rotation logic in any `.py` file. Current sizes, largest first:
+`dex-health-log.jsonl` 160,852 bytes, `dex-bridge-log.jsonl` 149,095,
+`dex-sweep-log.jsonl` 73,611, `dex-repo-backup-log.jsonl` 60,026 (this one
+will keep growing now that Finding 2 is fixed and backups run again),
+`dex-fetch-log.jsonl` 55,460. None yet large enough to be a performance
+problem, exactly as April assessed. Still nobody's problem until it is.
+
+### GAP C4 (primer freshness check) -- CONFIRMED STILL OPEN
+
+Zero references to primer age, freshness, or hash comparison anywhere in
+`dex_health.py`. Not attempted, not partial. `DDL_PRIMER.md` can go stale with
+nothing to notice.
+
+### GAP G1 (auto-classification) -- CONFIRMED STILL OPEN, unchanged from April
+
+`infer_source_type()` and `classify_tier()` in `dex-ingest.py` are exactly as
+April described them: filename-pattern heuristics, no content-based or
+LLM-based classification step. Still true today, word for word.
+
+### GAP G3 (drift detection) -- CONFIRMED STILL OPEN
+
+No file, function, or reference matching drift detection anywhere in the repo
+root. Never started.
+
+### Updated reconciliation
+
+| April finding | Status after Part 2 |
+|---|---|
+| GAP A2 -- PDF ingestion | **STILL OPEN**, unchanged |
+| GAP B4 -- retrieval benchmarks | **PARTIALLY BUILT, SCHEDULED WRONG.** The eval tool exists and works; the scheduled job runs a different, permanently-broken command. Also revealed a live, unrelated retrieval-quality problem (2/10 real questions refused at the current threshold) that April could not have found because the tool didn't exist yet. |
+| GAP C3 -- log rotation | **STILL OPEN**, unchanged |
+| GAP C4 -- primer freshness | **STILL OPEN**, unchanged |
+| GAP G1 -- auto-classification | **STILL OPEN**, unchanged |
+| GAP G3 -- drift detection | **STILL OPEN**, unchanged |
+
+Every remaining item in `GAP_ASSESSMENT_2026-04-17.md` has now been
+individually re-verified against live state. None of it should be re-read as
+current fact without this reconciliation from this point forward.
+
+---
+
 ## Why this matters more than any single bug
 
 **You said this is exactly why you've never been able to trust Dex Jr.** The
@@ -245,10 +363,18 @@ authorization — none touch corpus data)
 2. **Health log encoding fix (Finding 4) — command prepared, not executed.**
    Blocked by permissions, and modifying a scheduled task is a system setting
    change that should be yours to run.
-3. **The rest of the April `GAP_ASSESSMENT` backlog — not re-verified
-   item by item.** Flagging explicitly so it is not mistaken for "checked and
-   still true." It is untouched by tonight's excavation beyond what's noted
-   above.
+3. ~~The rest of the April `GAP_ASSESSMENT` backlog — not re-verified
+   item by item.~~ **DONE in Part 2, same session.** All six remaining items
+   individually re-checked against live state. Four confirmed unchanged
+   (A2, C3, C4, G3, G1). One found partially built and wrongly scheduled
+   (B4). See Part 2 below for the full reconciliation.
+4. **`MAX_DISTANCE` retrieval threshold — not touched.** Rule 10. `dex-eval-
+   retrieval.py`'s live output (2/10 real questions refused, 4/10 greetings
+   accepted at the current threshold) is a scoring/routing finding, and
+   changing it is an operator decision, not an execution one.
+5. **`DexWeeklyEval`'s broken command — not fixed.** Same permission wall as
+   Finding 4; both scheduled-task fixes are ready for the same elevated
+   session.
 
 ---
 
