@@ -34,6 +34,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
@@ -114,6 +115,42 @@ def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
 
 
+# YouTube's caption/metadata endpoints occasionally answer with a 429 under
+# ordinary, non-abusive use -- observed live 2026-09-04 fetching a single
+# video's captions, no bulk operation involved. yt-dlp reports this in
+# stderr rather than a distinct exit code, so detection is text-matching on
+# stderr, not on returncode alone.
+_RATE_LIMIT_MARKERS = ("HTTP Error 429", "Too Many Requests")
+
+# Retry count and delays are a judgment call (Silas Reeve, 2026-09-04), not
+# tuned against real repeated-429 data -- three attempts, short exponential
+# backoff (5s/15s/45s), because this is a single-item fetch a human is
+# waiting on, not a bulk job that can afford to wait minutes. Revisit if a
+# longer/heavier backoff turns out to be needed in practice.
+_RATE_LIMIT_RETRIES = 3
+_RATE_LIMIT_BACKOFF_BASE = 5
+
+
+def _is_rate_limited(r: subprocess.CompletedProcess) -> bool:
+    return any(marker in (r.stderr or "") for marker in _RATE_LIMIT_MARKERS)
+
+
+def run_with_retry(cmd: list[str], *, label: str, **kw) -> subprocess.CompletedProcess:
+    """Like run(), but retries with backoff specifically on a YouTube 429 --
+    every other failure (bad URL, no captions, network down, etc.) returns
+    immediately on the first attempt, unchanged from before this existed."""
+    r = run(cmd, **kw)
+    attempt = 1
+    while _is_rate_limited(r) and attempt <= _RATE_LIMIT_RETRIES:
+        delay = _RATE_LIMIT_BACKOFF_BASE * (3 ** (attempt - 1))
+        print(f"  [{label}] rate-limited (429) -- retry {attempt}/{_RATE_LIMIT_RETRIES} "
+              f"in {delay}s", file=sys.stderr)
+        time.sleep(delay)
+        r = run(cmd, **kw)
+        attempt += 1
+    return r
+
+
 FIELDS = ["id", "title", "channel", "uploader", "upload_date", "duration_string", "webpage_url"]
 
 
@@ -126,8 +163,8 @@ def probe(ytdlp: list[str], url: str) -> dict:
     commonly serves the ASR track under both `en` and `en-orig`, so a file named
     `<id>.en.vtt` is not evidence of a manual track.
     """
-    r = run(ytdlp + ["--skip-download", "--no-warnings", "--no-playlist",
-                     "--dump-single-json", url])
+    r = run_with_retry(ytdlp + ["--skip-download", "--no-warnings", "--no-playlist",
+                                 "--dump-single-json", url], label="metadata")
     if r.returncode != 0:
         sys.exit(f"error: yt-dlp metadata fetch failed:\n{r.stderr.strip()[:600]}")
     try:
@@ -162,7 +199,7 @@ def fetch_captions(ytdlp: list[str], url: str, workdir: Path, meta: dict) -> tup
         "--write-subs" if caption_type == "manual" else "--write-auto-subs",
         url,
     ]
-    r = run(cmd)
+    r = run_with_retry(cmd, label="captions")
     found = sorted(workdir.glob(f"{vid}*.vtt"))
     if not found:
         sys.exit(
