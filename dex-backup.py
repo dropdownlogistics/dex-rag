@@ -24,6 +24,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import sqlite3
 import sys
@@ -46,6 +47,8 @@ TRIGGER_CHUNK_DELTA = 1000
 TRIGGER_BATCH_THRESHOLD = 100
 
 # Rotation policy
+MANAGED_BACKUP_NAME = re.compile(r"^chromadb_\d{4}-\d{2}-\d{2}_\d{6}_\d+$")
+
 RETAIN_DAILY = 7
 RETAIN_WEEKLY = 4
 RETAIN_MONTHLY = 3
@@ -119,14 +122,19 @@ def find_existing_backups() -> list[Path]:
     """Return sorted list of existing backup directories (newest first)."""
     if not BACKUP_ROOT.exists():
         return []
+    # Only this tool's own snapshots: chromadb_YYYY-MM-DD_HHMMSS_<pid>.
+    #
+    # Measured 2026-09-25: the old `startswith("chromadb_")` + reverse name sort
+    # ranked the MANUAL `chromadb_pre_mindframe_ingest_20260718` snapshot as the
+    # "most recent" backup ('p' > '2'). It has no manifest, so
+    # most_recent_manifest_invalid fired on every check since 2026-07-18 and a
+    # freshly validated backup never registered as current. Hand-made snapshots
+    # are left on disk untouched; they are just not managed backups.
     backups = [
         p for p in BACKUP_ROOT.iterdir()
-        if p.is_dir()
-        and p.name.startswith("chromadb_")
-        and not p.name.endswith("_FAILED")
-        and not p.name.endswith("_INCOMPLETE")
+        if p.is_dir() and MANAGED_BACKUP_NAME.match(p.name)
     ]
-    backups.sort(key=lambda p: p.name, reverse=True)
+    backups.sort(key=lambda p: p.name, reverse=True)  # fixed-width date: name order == time order
     return backups
 
 
