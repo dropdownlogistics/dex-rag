@@ -53,12 +53,27 @@ COLLECTION_SUFFIX = os.environ.get("DEXJR_COLLECTION_SUFFIX", "_v2")
 #    routing change and a retirement decision, neither of which belongs in a
 #    comment. Recorded here so the next reader of this registry knows before
 #    they trust a result from it.
+#
+# ROUTING SWITCHED 2026-09-25 (Operator-approved under Rule 10; logged in
+# ddl-org _shared/OPERATOR-DECISIONS.md, "Dex Jr upgrade approved"). Dex Jr now
+# queries ddl_everything_v2 INSTEAD OF the four. Measured first, twice
+# (dexjr-eval, 2026-08-16 and 2026-09-25, identical): hit_on_identifier
+# control 2/8 -> 5/8, unreachable-today set 0/8 -> 4/8, and "both" scored no
+# higher than consolidated alone -- so adding would only have created two
+# overlapping live paths. ddl_everything_v2 is a strict superset of the four
+# minus 159 known orphans (PROPOSAL-route-dex-jr-to-the-consolidated-corpus).
+#
+# STANDBY = kept in the DB, NOT retired, NOT in get_live_collections(); still
+# queryable explicitly (`dex_jr_query.py --collection dex_canon_v2`). That keeps
+# the Operator's standing ruling that the old stores stand until the new corpus
+# is verified, and keeps the 159+11 orphans reachable by hand.
 COLLECTIONS = {
-    "dex_canon":     {"weight": 0.90, "label": "Canon",        "status": "LIVE"},
-    "ddl_archive":   {"weight": 0.65, "label": "Archive",      "status": "LIVE",
+    "ddl_everything": {"weight": 0.85, "label": "Everything",  "status": "LIVE"},
+    "dex_canon":     {"weight": 0.90, "label": "Canon",        "status": "STANDBY"},
+    "ddl_archive":   {"weight": 0.65, "label": "Archive",      "status": "STANDBY",
                       "retrieval_health": "UNRELIABLE-2026-08-04"},
-    "dex_code":      {"weight": 0.85, "label": "Code",         "status": "LIVE"},
-    "ext_creator":   {"weight": 0.85, "label": "ExtCreator",   "status": "LIVE"},
+    "dex_code":      {"weight": 0.85, "label": "Code",         "status": "STANDBY"},
+    "ext_creator":   {"weight": 0.85, "label": "ExtCreator",   "status": "STANDBY"},
     "ext_reference": {"weight": 0.75, "label": "ExtReference", "status": "PROVISIONED"},
 }
 
@@ -68,6 +83,7 @@ GATED_COLLECTIONS = ["dex_dave"]
 # Post-rebuild floors (2026-04-17: corpus rebuild removed 200K
 # garbage/misrouted chunks from canon, moved 95K to archive)
 CHUNK_FLOORS = {
+    "ddl_everything": 399_940,
     "dex_canon":    58_919,
     "ddl_archive": 316_109,
     "dex_code":     20_416,

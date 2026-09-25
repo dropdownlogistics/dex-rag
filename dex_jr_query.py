@@ -35,14 +35,23 @@ if hasattr(sys.stdout, "reconfigure"):
 
 DEFAULT_COLLECTIONS = get_live_collections()
 DEFAULT_TOP_K = 3
+LEGACY_FANOUT = 4  # live collections before the 2026-09-25 switch to ddl_everything_v2
 DEFAULT_MERGE_N = 5
 CHUNK_PREVIEW_CHARS = 300
 
 # B3: governance-identifier pattern. All-caps by convention. Matches e.g.
 # STD-DDL-SWEEPREPORT-001, CR-INGEST-PIPELINE-001, ADR-CORPUS-001,
 # PRO-BACKUP-001, OBS-DJ-004, SYS-BRIDGE-001. Case-sensitive.
+#
+# Widened 2026-09-25 (Operator-approved Dex Jr upgrade): the families above
+# need 2+ segments, which excluded every short-form family -- AXIOM-001,
+# AB-0033, MCN-*, CONF-001 never triggered the lookup, so questions about them
+# fell through to pure vector search (the AXIOM-001 / MDN->MCN failures in the
+# 08-15 eval). Short forms mirror the reborn-cowork identifier-graph PATTERNS.
 IDENTIFIER_PATTERN = re.compile(
-    r"\b(?:STD|CR|ADR|PRO|OBS|SYS)(?:-[A-Z0-9]+){2,}\b"
+    r"\b(?:(?:STD|CR|ADR|PRO|OBS|SYS)(?:-[A-Z0-9]+){2,}"
+    r"|AB-\d{4}|AXIOM-\d{3}|CONF-\d{3}|RH-\d{3}|PE-SCORE-\d{4}"
+    r"|MCN-[A-Z0-9-]*\d|CONV-\d{4}[A-Z]?|PROP-\d{4}|SEARCH-\d{4}|GT-\d{3,4})\b"
 )
 PREFILTER_PER_ID = 5  # max chunks returned per detected identifier per collection
 BODY_MATCH_PER_ID = 3  # max body-contains chunks per identifier per collection
@@ -130,7 +139,10 @@ def prefilter_by_source_file(
                 continue
             try:
                 got = col.get(
-                    where={"source_file": {"$in": variants}},
+                    # ddl_everything_v2 records the name as `filename` only;
+                    # the legacy four carry `source_file`. Match either.
+                    where={"$or": [{"source_file": {"$in": variants}},
+                                   {"filename": {"$in": variants}}]},
                     limit=per_id,
                     include=["documents", "metadatas"],
                 )
@@ -374,7 +386,15 @@ def run_query(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        vector_hits = search_collections(client, embedding, collections, args.top_k)
+        # --top-k is "chunks per collection". The 2026-09-25 routing switch
+        # (4 live collections -> ddl_everything_v2 alone) would otherwise shrink
+        # the vector CANDIDATE pool to a quarter before ranking (the final
+        # context is still capped at DEFAULT_MERGE_N). Preserve the pool on the
+        # default route only; an explicit --collection keeps its literal meaning.
+        per_col = args.top_k
+        if not args.collection and len(collections) == 1:
+            per_col = args.top_k * LEGACY_FANOUT
+        vector_hits = search_collections(client, embedding, collections, per_col)
     except Exception as e:
         eprint(f"ERROR: ChromaDB query failed: {e}")
         return 2
