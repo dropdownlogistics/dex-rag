@@ -103,6 +103,11 @@ ROOTS = {
     "my-drive":       (r"C:\Users\dkitc\My Drive",                "document"),
     "onedrive":       (r"C:\Users\dkitc\OneDrive",                "document"),
     "icloud":         (r"C:\Users\dkitc\iCloudDrive",             "document"),
+    # The intake: iCloud drops copied local and sha256-verified first (dex/intake/
+    # icloud_intake.py), so cloud-only files that the icloud root skips as
+    # placeholders arrive here as real files. Operator, 2026-09-25: "copy/paste
+    # from icloud to a local repository and then routed from there".
+    "intake":         (r"D:\DDL_Intake",                          "document"),
 }
 
 # Filenames whose PURPOSE is to instruct a model. Ingested, but labelled.
