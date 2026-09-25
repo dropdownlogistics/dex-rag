@@ -210,7 +210,10 @@ def retrieve(query: str, names: list[str], top_n: int = TOP_N) -> list[dict]:
                 continue
             meta = res["metadatas"][0][i] or {}
             hits.append({"text": res["documents"][0][i],
-                         "source": meta.get("source_file", "?"),
+                         # ddl_everything_v2 (live since 2026-09-25) records
+                         # `filename`, not `source_file`; without the fallback
+                         # every citation on the phone endpoint read "?".
+                         "source": meta.get("source_file") or meta.get("filename") or "?",
                          "collection": name, "distance": round(d, 3)})
     hits.sort(key=lambda h: h["distance"])
     return hits[:top_n]
