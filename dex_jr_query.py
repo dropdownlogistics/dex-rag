@@ -28,6 +28,11 @@ from dex_core import (
     EMBED_TRUNC_LEVELS, get_live_collections, load_primer,
 )
 from dex_weights import calculate_weight, score_result
+from dex_supersede import load_superseded
+
+# Chunk ids of stale versions of edited files (dex_supersede.py). Loaded once;
+# a missing sidecar hides nothing.
+SUPERSEDED = load_superseded()
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -153,6 +158,8 @@ def prefilter_by_source_file(
             docs = got.get("documents", []) or []
             metas = got.get("metadatas", []) or []
             for cid, doc, md in zip(ids, docs, metas):
+                if cid in SUPERSEDED:
+                    continue
                 md = md or {}
                 key = (name, cid)
                 if key in seen_keys:
@@ -206,6 +213,8 @@ def body_match_by_identifier(
             docs = got.get("documents", []) or []
             metas = got.get("metadatas", []) or []
             for cid, doc, md in zip(ids, docs, metas):
+                if cid in SUPERSEDED:
+                    continue
                 md = md or {}
                 key = (name, cid)
                 if key in seen_keys:
@@ -250,6 +259,8 @@ def search_collections(
         res.setdefault("ids", res_ids_raw)
         ids = res.get("ids", [[]])[0]
         for cid, doc, md, dist in zip(ids, docs, metas, dists):
+            if cid in SUPERSEDED:
+                continue
             md = md or {}
             hits.append({
                 "id": cid,

@@ -47,6 +47,10 @@ from dex_core import (
     CHROMA_DIR, EMBED_MODEL, GEN_MODEL, OLLAMA_HOST,
     get_chroma_client, get_live_collections, is_gated, suffixed,
 )
+from dex_supersede import load_superseded
+
+SUPERSEDED = load_superseded()  # stale versions of edited files; see dex_supersede.py
+
 # Plain import on purpose: if the gate is missing this process must not start.
 # A silently ungated endpoint is the exact state this was written to end.
 from dex_query_gate import (
@@ -205,6 +209,8 @@ def retrieve(query: str, names: list[str], top_n: int = TOP_N) -> list[dict]:
         res = col.query(query_embeddings=[vec], n_results=top_n,
                         include=["documents", "metadatas", "distances"])
         for i in range(len(res["ids"][0])):
+            if res["ids"][0][i] in SUPERSEDED:
+                continue
             d = res["distances"][0][i]
             if d > MAX_DISTANCE:
                 continue
