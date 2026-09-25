@@ -136,7 +136,11 @@ def prefilter_by_source_file(
     hits: list[dict] = []
     seen_keys: set[tuple[str, str]] = set()
     for ident in identifiers:
-        variants = [f"{ident}.txt", f"{ident}.md", f"{ident} Draft.txt"]
+        # `{ID}-DRAFT.md` is the _candidates/ convention for draft standards
+        # (STD-CORPUS-005-DRAFT.md, STD-DDL-MDD-001-DRAFT.md, ...). Without it the
+        # standard itself was never pre-filtered and a review of it ranked first.
+        variants = [f"{ident}.txt", f"{ident}.md", f"{ident} Draft.txt",
+                    f"{ident}-DRAFT.md", f"{ident}_DRAFT.md"]
         for name in collection_names:
             try:
                 col = client.get_collection(name)
