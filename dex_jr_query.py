@@ -348,6 +348,75 @@ def fmt_plain(answer: str | None) -> str:
     return (answer or "").strip()
 
 
+# --- Advisory namespace/currentness verifier (opt-in, off by default) ------
+#
+# Wires reborn-cowork's dexjr_namespace_verifier / dexjr_verifier_wrapper as
+# a post-answer, advisory-only check. This block is inert unless the caller
+# passes --namespace-check:
+#   - the import only happens inside this function, never at module load
+#   - `answer` is never mutated; the verifier reads it, never rewrites it
+#   - a failure here (missing module, bad path, any exception) is caught,
+#     printed once to stderr, and returns None -- it can never turn a
+#     successful query into a failed one
+#
+# FLAGGED is advisory, not failure: a FLAGGED result does not change `answer`,
+# does not change the process exit code, and is rendered as a separate,
+# clearly-labeled block, never merged into the answer text.
+_NAMESPACE_CHECKER_PATH = (
+    r"C:\Users\dexjr\ddl-wings\reborn-cowork\reborn-cowork\work\corpus-classifier"
+)
+
+
+def _namespace_check_advisory(
+    question: str, answer: str, merged: list[dict],
+    collections_used: list[str], default_collections: list[str],
+) -> dict | None:
+    """Returns the wrapper's {"answer": ..., "verifier": {...}} dict, or None
+    if the check could not run for any reason. Never raises."""
+    try:
+        if _NAMESPACE_CHECKER_PATH not in sys.path:
+            sys.path.insert(0, _NAMESPACE_CHECKER_PATH)
+        from dexjr_verifier_wrapper import wrap_dexjr_answer  # noqa: PLC0415
+    except Exception as e:  # noqa: BLE001 -- advisory tooling must never break the answer path
+        eprint(f"  [info] --namespace-check unavailable, skipping ({e})")
+        return None
+
+    try:
+        # Collection name only -- never source_file, text, or distance --
+        # matching dexjr_verifier_wrapper's own privacy contract.
+        chunks_for_verifier = [{"collection": c["collection"]} for c in merged]
+        return wrap_dexjr_answer(
+            question=question,
+            answer=answer,
+            chunks=chunks_for_verifier,
+            reachable_collections=set(collections_used),
+            all_known_collections=set(default_collections),
+        )
+    except Exception as e:  # noqa: BLE001
+        eprint(f"  [info] --namespace-check failed, skipping ({e})")
+        return None
+
+
+def _fmt_namespace_advisory(wrapped: dict) -> str:
+    """A small, separate, plainly-labeled block -- never concatenated into
+    the answer. PASS renders as a one-line confirmation, not silence, so a
+    caller with --namespace-check on always sees that the check ran."""
+    v = wrapped["verifier"]
+    lines = ["", "## Namespace/currentness check (advisory)", ""]
+    lines.append(f"status: {v['verifier_status']}")
+    if v["verifier_status"] == "FLAGGED":
+        lines.append(f"triggered: {', '.join(v['triggered_checks'])}")
+        note = v.get("recommended_followup_question_or_warning")
+        if note:
+            lines.append(note)
+    lines.append(
+        "(Advisory only. PASS does not imply canon, sensitivity clearance, "
+        "promotion, or public safety. UNKNOWN means the check had nothing "
+        "to say either way, not that the answer is safe.)"
+    )
+    return "\n".join(lines)
+
+
 def run_query(args: argparse.Namespace) -> int:
     collections = [args.collection] if args.collection else DEFAULT_COLLECTIONS
     skip_answer = args.raw or args.no_answer
@@ -439,12 +508,33 @@ def run_query(args: argparse.Namespace) -> int:
             eprint(f"ERROR: Ollama unreachable for generation: {e}")
             return 1
 
+    # Opt-in, advisory only. Default is off; when off, this entire block
+    # (including the import inside _namespace_check_advisory) never runs,
+    # so --namespace-check absent means zero behavioral or import-time
+    # difference from before this flag existed.
+    namespace_check_enabled = getattr(args, "namespace_check", False)
+    verifier_wrapped: dict | None = None
+    if namespace_check_enabled and answer is not None:
+        verifier_wrapped = _namespace_check_advisory(
+            args.question, answer, merged, collections, DEFAULT_COLLECTIONS
+        )
+
     if args.format == "markdown":
         print(fmt_markdown(args.question, merged, answer))
+        if verifier_wrapped is not None:
+            print(_fmt_namespace_advisory(verifier_wrapped))
     elif args.format == "json":
-        print(fmt_json(args.question, merged, answer))
+        payload = json.loads(fmt_json(args.question, merged, answer))
+        if verifier_wrapped is not None:
+            payload["verifier"] = verifier_wrapped["verifier"]
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
     elif args.format == "plain":
         print(fmt_plain(answer) if not skip_answer else "\n".join(h["text"] for h in merged))
+        if verifier_wrapped is not None:
+            # stdout stays the bare-answer contract even with the flag on --
+            # the advisory goes to stderr so nothing parsing plain stdout
+            # (a script, a pipe) ever sees a schema change.
+            eprint(_fmt_namespace_advisory(verifier_wrapped))
     return 0
 
 
@@ -563,6 +653,11 @@ def main() -> int:
                    help="Verify Ollama + ChromaDB connectivity and exit")
     p.add_argument("--no-prefilter", action="store_true",
                    help="Disable B3 identifier pre-filter (compare against pure vector retrieval)")
+    p.add_argument("--namespace-check", action="store_true",
+                   help="Advisory only, off by default: run the post-answer namespace/"
+                        "currentness verifier (reborn-cowork) and print its result in a "
+                        "separate block. Never changes the answer text, the exit code, "
+                        "or default output when this flag is absent.")
     args = p.parse_args()
 
     if args.self_test:
