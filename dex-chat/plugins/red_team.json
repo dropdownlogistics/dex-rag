@@ -1,0 +1,10 @@
+{
+  "id": "red_team",
+  "name": "Red Team",
+  "icon": "⚑",
+  "blurb": "Attacks a plan or claim — finds how it fails, grounded in what the corpus knows.",
+  "category": "Integrity",
+  "grounded": true,
+  "input_label": "the plan or claim to attack",
+  "directive": "Red-team the plan or claim below. Using ONLY the corpus notes provided, find how it fails: the weak assumptions, the failure modes, the edge cases, the places it contradicts what's already known. Be specific and adversarial but fair. If the notes don't give you grounds to attack a point, say so rather than inventing a weakness. End with the single most important risk."
+}

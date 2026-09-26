@@ -1,0 +1,85 @@
+{
+  "run_id": "everything_20260814T183758Z",
+  "generated_utc": "2026-08-14T18:37:58Z",
+  "stats": {
+    "scanned": 57254,
+    "ingested": 22826,
+    "chunks": 337020,
+    "skipped_placeholder": 18226,
+    "skipped_dupe": 15714,
+    "skipped_big": 487,
+    "skipped_unreadable": 0,
+    "by_root": {
+      "reborn-cowork": {
+        "files": 2374,
+        "chunks": 6869,
+        "placeholders_skipped": 0
+      },
+      "ddl-canon": {
+        "files": 883,
+        "chunks": 78460,
+        "placeholders_skipped": 0
+      },
+      "dex-rag": {
+        "files": 657,
+        "chunks": 68583,
+        "placeholders_skipped": 0
+      },
+      "03_Work": {
+        "files": 238,
+        "chunks": 3559,
+        "placeholders_skipped": 0
+      },
+      "dex-universe": {
+        "files": 13275,
+        "chunks": 93302,
+        "placeholders_skipped": 175
+      },
+      "sesslog-dexjr": {
+        "files": 5,
+        "chunks": 34,
+        "placeholders_skipped": 0
+      },
+      "quarantine": {
+        "files": 100,
+        "chunks": 411,
+        "placeholders_skipped": 0
+      },
+      "ddl-vault": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "ddl-external": {
+        "files": 422,
+        "chunks": 2355,
+        "placeholders_skipped": 0
+      },
+      "sesslog-dkitc": {
+        "files": 2,
+        "chunks": 7,
+        "placeholders_skipped": 0
+      },
+      "my-drive": {
+        "files": 870,
+        "chunks": 27119,
+        "placeholders_skipped": 0
+      },
+      "onedrive": {
+        "files": 2448,
+        "chunks": 29984,
+        "placeholders_skipped": 1543
+      },
+      "icloud": {
+        "files": 1552,
+        "chunks": 26337,
+        "placeholders_skipped": 16508
+      }
+    },
+    "by_class": {
+      "governance": 62,
+      "content": 22182,
+      "instructional": 582
+    }
+  }
+}

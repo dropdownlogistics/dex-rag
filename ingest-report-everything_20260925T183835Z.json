@@ -1,0 +1,91 @@
+{
+  "run_id": "everything_20260925T183835Z",
+  "generated_utc": "2026-09-25T18:38:35Z",
+  "stats": {
+    "scanned": 62104,
+    "ingested": 26945,
+    "chunks": 468509,
+    "skipped_placeholder": 682,
+    "skipped_dupe": 33515,
+    "skipped_big": 961,
+    "skipped_unreadable": 0,
+    "skipped_unembeddable": 0,
+    "by_root": {
+      "reborn-cowork": {
+        "files": 4959,
+        "chunks": 33437,
+        "placeholders_skipped": 0
+      },
+      "ddl-canon": {
+        "files": 878,
+        "chunks": 78443,
+        "placeholders_skipped": 0
+      },
+      "ddl-canon-git": {
+        "files": 1459,
+        "chunks": 43835,
+        "placeholders_skipped": 0
+      },
+      "dex-rag": {
+        "files": 665,
+        "chunks": 68548,
+        "placeholders_skipped": 0
+      },
+      "03_Work": {
+        "files": 235,
+        "chunks": 3544,
+        "placeholders_skipped": 0
+      },
+      "dex-universe": {
+        "files": 12908,
+        "chunks": 85450,
+        "placeholders_skipped": 175
+      },
+      "sesslog-dexjr": {
+        "files": 5,
+        "chunks": 34,
+        "placeholders_skipped": 0
+      },
+      "quarantine": {
+        "files": 17,
+        "chunks": 33,
+        "placeholders_skipped": 0
+      },
+      "ddl-vault": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "ddl-external": {
+        "files": 199,
+        "chunks": 762,
+        "placeholders_skipped": 0
+      },
+      "sesslog-dkitc": {
+        "files": 2,
+        "chunks": 7,
+        "placeholders_skipped": 0
+      },
+      "my-drive": {
+        "files": 593,
+        "chunks": 21126,
+        "placeholders_skipped": 0
+      },
+      "onedrive": {
+        "files": 2273,
+        "chunks": 42032,
+        "placeholders_skipped": 62
+      },
+      "icloud": {
+        "files": 2752,
+        "chunks": 91258,
+        "placeholders_skipped": 445
+      }
+    },
+    "by_class": {
+      "instructional": 636,
+      "governance": 94,
+      "content": 26215
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "steelman",
+  "name": "Steelman",
+  "icon": "◈",
+  "blurb": "Builds the strongest, most charitable version of an argument or idea.",
+  "category": "Reasoning",
+  "grounded": false,
+  "input_label": "the argument or idea to steelman",
+  "directive": "Build the STRONGEST, most charitable version of the argument or idea below — the version its smartest advocate would give. State its best evidence, its most defensible form, and the conditions under which it's right. Do not strawman it and do not rebut it; your only job is to make the best possible case for it. Be concise and rigorous."
+}

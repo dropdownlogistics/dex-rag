@@ -1,0 +1,95 @@
+{
+  "run_id": "everything_20260926T094049Z",
+  "generated_utc": "2026-09-26T09:40:49Z",
+  "stats": {
+    "scanned": 63514,
+    "ingested": 496,
+    "chunks": 12826,
+    "skipped_placeholder": 672,
+    "skipped_dupe": 61384,
+    "skipped_big": 961,
+    "skipped_unreadable": 0,
+    "skipped_unembeddable": 0,
+    "by_root": {
+      "reborn-cowork": {
+        "files": 412,
+        "chunks": 9620,
+        "placeholders_skipped": 0
+      },
+      "ddl-canon": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "ddl-canon-git": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "dex-rag": {
+        "files": 7,
+        "chunks": 56,
+        "placeholders_skipped": 0
+      },
+      "03_Work": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "dex-universe": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 175
+      },
+      "sesslog-dexjr": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "quarantine": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "ddl-vault": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "ddl-external": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "sesslog-dkitc": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "my-drive": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "onedrive": {
+        "files": 3,
+        "chunks": 3,
+        "placeholders_skipped": 62
+      },
+      "icloud": {
+        "files": 74,
+        "chunks": 3147,
+        "placeholders_skipped": 435
+      },
+      "intake": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      }
+    },
+    "by_class": {
+      "content": 494,
+      "instructional": 2
+    }
+  }
+}

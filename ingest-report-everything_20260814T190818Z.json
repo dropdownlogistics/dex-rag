@@ -1,0 +1,26 @@
+{
+  "run_id": "everything_20260814T190818Z",
+  "generated_utc": "2026-08-14T19:08:18Z",
+  "stats": {
+    "scanned": 909,
+    "ingested": 372,
+    "chunks": 47250,
+    "skipped_placeholder": 0,
+    "skipped_dupe": 534,
+    "skipped_big": 3,
+    "skipped_unreadable": 0,
+    "skipped_unembeddable": 0,
+    "by_root": {
+      "ddl-canon": {
+        "files": 372,
+        "chunks": 47250,
+        "placeholders_skipped": 0
+      }
+    },
+    "by_class": {
+      "content": 354,
+      "instructional": 9,
+      "governance": 9
+    }
+  }
+}

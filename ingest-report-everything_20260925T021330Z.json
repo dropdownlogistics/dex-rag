@@ -1,0 +1,91 @@
+{
+  "run_id": "everything_20260925T021330Z",
+  "generated_utc": "2026-09-25T02:13:30Z",
+  "stats": {
+    "scanned": 61701,
+    "ingested": 2870,
+    "chunks": 69193,
+    "skipped_placeholder": 681,
+    "skipped_dupe": 57188,
+    "skipped_big": 961,
+    "skipped_unreadable": 0,
+    "skipped_unembeddable": 0,
+    "by_root": {
+      "reborn-cowork": {
+        "files": 2380,
+        "chunks": 20527,
+        "placeholders_skipped": 0
+      },
+      "ddl-canon": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "ddl-canon-git": {
+        "files": 134,
+        "chunks": 15833,
+        "placeholders_skipped": 0
+      },
+      "dex-rag": {
+        "files": 12,
+        "chunks": 57,
+        "placeholders_skipped": 0
+      },
+      "03_Work": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "dex-universe": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 175
+      },
+      "sesslog-dexjr": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "quarantine": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "ddl-vault": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "ddl-external": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "sesslog-dkitc": {
+        "files": 0,
+        "chunks": 0,
+        "placeholders_skipped": 0
+      },
+      "my-drive": {
+        "files": 11,
+        "chunks": 3068,
+        "placeholders_skipped": 0
+      },
+      "onedrive": {
+        "files": 99,
+        "chunks": 1942,
+        "placeholders_skipped": 62
+      },
+      "icloud": {
+        "files": 234,
+        "chunks": 27766,
+        "placeholders_skipped": 444
+      }
+    },
+    "by_class": {
+      "instructional": 65,
+      "content": 2781,
+      "governance": 24
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "five_whys",
+  "name": "Five Whys",
+  "icon": "⬡",
+  "blurb": "",
+  "category": "Reasoning",
+  "grounded": false,
+  "input_label": "the problem",
+  "directive": "Ask why five times to drive to the root cause of the problem below."
+}
