@@ -103,12 +103,25 @@ ROOTS = {
     "my-drive":       (r"C:\Users\dkitc\My Drive",                "document"),
     "onedrive":       (r"C:\Users\dkitc\OneDrive",                "document"),
     "icloud":         (r"C:\Users\dkitc\iCloudDrive",             "document"),
-    # The intake: iCloud drops copied local and sha256-verified first (dex/intake/
-    # icloud_intake.py), so cloud-only files that the icloud root skips as
-    # placeholders arrive here as real files. Operator, 2026-09-25: "copy/paste
-    # from icloud to a local repository and then routed from there".
-    "intake":         (r"D:\DDL_Intake",                          "document"),
 }
+
+# PRIVATE roots go ONLY to the operator-only collection (--roots private). Operator
+# rulings, 2026-09-26: the bulk-ingest hold is lifted; "encrypted and private material
+# goes only into the separate collection that only the Operator's role answers from"
+# (SEAT-1002:20260926T125142Z-rul1); and "yes... everything" to vault + Claude Code
+# sessions + the evidence locker being that private material. The evidence locker was
+# in the general collection for one night (D:\DDL_Intake as root "intake", 2026-09-26
+# 04:40 run); it moved here, and its general chunks were removed with his approval.
+PRIVATE_ROOTS = {
+    "vault":          (r"C:\Users\dexjr\ddl-vault",              "private"),   # git-crypt, unlocked on Reborn
+    "sessions":       (r"D:\DDL_Private\sessions",                 "private"),   # dex/intake/sessions_to_text.py
+    "evidencelocker": (r"D:\DDL_Intake",                            "private"),   # dex/intake/icloud_intake.py
+}
+PRIVATE_COLLECTION = "ddl_private_v1"
+# Kept out of the GENERAL run wherever they appear (the iCloud catch-all holds a copy of
+# the evidence locker), and out of the private run where they're noise.
+GENERAL_SKIP = {"evidencelocker", "_evidencelocker"}
+PRIVATE_SKIP = {"graph", "_manifests", ".githooks"}   # the vault's graph is a graph, not prose
 
 # Filenames whose PURPOSE is to instruct a model. Ingested, but labelled.
 INSTRUCTIONAL_STEMS = (
@@ -182,14 +195,24 @@ def main():
     ap.add_argument("--limit", type=int, default=0, help="max files (0 = no cap)")
     ap.add_argument("--dry-run", action="store_true",
                     help="scan and report, embed nothing")
-    ap.add_argument("--collection", default=COLLECTION)
+    ap.add_argument("--collection", default=None)
     args = ap.parse_args()
 
-    selected = (list(ROOTS) if args.roots == "all"
+    private = args.roots == "private"
+    table = PRIVATE_ROOTS if private else ROOTS
+    args.collection = args.collection or (PRIVATE_COLLECTION if private else COLLECTION)
+    # Private material never lands in the general collection, and general runs never
+    # read private roots, whatever the flags say.
+    if private and args.collection == COLLECTION:
+        sys.exit(f"refusing: private roots may not be written to {COLLECTION}")
+    if not private and args.collection == PRIVATE_COLLECTION:
+        sys.exit(f"refusing: general roots may not be written to {PRIVATE_COLLECTION}")
+    selected = (list(table) if args.roots in ("all", "private")
                 else [r.strip() for r in args.roots.split(",") if r.strip()])
-    unknown = [r for r in selected if r not in ROOTS]
+    unknown = [r for r in selected if r not in table]
     if unknown:
-        sys.exit(f"unknown root(s): {unknown}\nvalid: {list(ROOTS)}")
+        sys.exit(f"unknown root(s): {unknown}\nvalid: {list(table)}")
+    skip_dirs = SKIP_DIRS | (PRIVATE_SKIP if private else GENERAL_SKIP)
 
     run_id = "everything_" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -228,7 +251,7 @@ def main():
           f"{'  [DRY RUN]' if args.dry_run else ''}\n")
 
     for name in selected:
-        root_path, src_type = ROOTS[name]
+        root_path, src_type = table[name]
         root = Path(root_path)
         if not root.is_dir():
             print(f"  ABSENT  {name}")
@@ -236,7 +259,7 @@ def main():
         r_files = r_chunks = r_ph = 0
 
         for dirpath, dirnames, filenames in os.walk(root, topdown=True):
-            dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+            dirnames[:] = [d for d in dirnames if d not in skip_dirs]
             for fn in filenames:
                 p = Path(dirpath) / fn
                 # **This tool's own output must not become its own input.**
