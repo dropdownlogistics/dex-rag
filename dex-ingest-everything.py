@@ -116,6 +116,9 @@ PRIVATE_ROOTS = {
     "vault":          (r"C:\Users\dexjr\ddl-vault",              "private"),   # git-crypt, unlocked on Reborn
     "sessions":       (r"D:\DDL_Private\sessions",                 "private"),   # dex/intake/sessions_to_text.py
     "evidencelocker": (r"D:\DDL_Intake",                            "private"),   # dex/intake/icloud_intake.py
+    # Personal material moved out of the dex-rag tree 2026-09-26 (converted exports, the Claudit
+    # employment files, a hearing transcript); git copy is encrypted in ddl-vault archive/.
+    "archive":        (r"D:\DDL_Private\archive",                   "private"),
 }
 PRIVATE_COLLECTION = "ddl_private_v1"
 # Kept out of the GENERAL run wherever they appear (the iCloud catch-all holds a copy of
