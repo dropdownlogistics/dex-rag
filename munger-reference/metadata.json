@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-03-07T19:29:17.379201",
+  "version": "3.0",
+  "prompt": "Generate a comprehensive reference document on Charlie Munger's Psychology of Human Misjudgment. Cover all 25 cognitive biases Munger identified. For each bias: (1) Name and definition. (2) How it manifests in decision-making. (3) A concrete example in a business or governance context. (4) How to detect it in yourself or others. (5) Specific application to DDL contexts — council reviews, audit methodology, AI governance, product decisions. Format as structured reference documentation with one section per bias. This is for a CPA and systems thinker who uses Munger's framework as a decision-making overlay.",
+  "model_count": 2,
+  "successful": 2,
+  "failed": 0,
+  "models": [
+    {
+      "name": "Gemini (Google)",
+      "provider": "gemini",
+      "model_id": "gemini-2.5-flash",
+      "elapsed": 101.9,
+      "error": null,
+      "response_length": 52607
+    },
+    {
+      "name": "Mistral/LeChat (European)",
+      "provider": "mistral",
+      "model_id": "mistral-small-latest",
+      "elapsed": 19.8,
+      "error": null,
+      "response_length": 14001
+    }
+  ],
+  "synthesis_elapsed": 128.5
+}

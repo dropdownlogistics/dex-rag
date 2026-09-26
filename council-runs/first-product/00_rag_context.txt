@@ -1,0 +1,43 @@
+[Source: 98_Threads_NonCouncil_ChatGPT\128_Thread - MindFrame_v1.3.txt]
+ng, Inc. is a management consulting firm focused on strengthening financial, operational, and control environments through practical audit insight, data-driven analysis, and scalable system design.
+
+
+I provide both general accounting support and specialized advisory services, including internal audit, Sarbanes-Oxley (SOX) compliance, internal control testing, process walkthroughs, risk assessments, control gap analysis, and business process improvement. In addition to traditional audit and compl
+
+[Source: Dex_iOS\NotesConsolidation\10_VendorCouncilReviews.txt]
+se they do the work that CAE would automate.
+
+Is the primary buyer a builder, a control owner, a CAE, or a risk executive?
+
+Buyer: Director-level (or above) in Internal Audit / Enterprise Risk. Why?
+
+· They have budget authority
+· They feel the cost of manual reconciliation (even if they don't do it)
+· They need to produce clean outputs for the C-suite and regulators
+· They are evaluated on "control environment" quality, not just compliance
+
+Builders are users, not buyers. The product must delig
+
+[Source: 98_Threads_NonCouncil_ChatGPT\128_Thread - MindFrame_v1.3.txt]
+exactly what they do and why it matters.
+
+
+
+DAK Consulting, Inc. is a management consulting firm focused on helping organizations strengthen their financial, operational, and control environments.
+
+
+I provide both general accounting support and specialized advisory services, including internal audit, Sarbanes-Oxley (SOX) compliance, internal control testing, process walkthroughs, risk assessments, control gap analysis, and business process improvement. My work is grounded in practical execution 
+
+[Source: Dex_iOS\NotesConsolidation\10_VendorCouncilReviews.txt]
+ation and variation.
+    *   **Controllership / Finance Operations:** When preparing for SOX or other financial controls compliance, the lack of a single source of truth for controls is a nightmare.
+
+*   **Is the primary buyer a builder, a control owner, a CAE, or a risk executive?**
+    The **primary user is the builder** (your target). The **primary buyer is the risk executive or audit leader** (e.g., Head of Internal Audit, Chief Risk Officer, Head of Compliance). They don't use it daily, but
+
+[Source: Dex_iOS\NotesConsolidation\10_VendorCouncilReviews.txt]
+ever for experts.
+· Why it matters: It positions ASAP Utilities outside the user's actual mental model of "solving Excel problems." This creates cognitive dissonance and reduces perceived relevance.
+
+What Would Undermine Trust Fast
+– Early warning signs (concept-level): The moment the facilitator explains the methodology behind the demo—the multi-dataset approach, the constraints, the tiered narrative sourced from a survey. If the setup requires more explanation than the result, the audience's i

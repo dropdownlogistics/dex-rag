@@ -1,0 +1,28 @@
+MODEL: Qwen (Code Specialist)
+PROVIDER: local
+MODEL_ID: qwen2.5-coder:7b
+ELAPSED: 18.0s
+TIMESTAMP: 2026-03-26T13:41:42.795881
+
+============================================================
+RESPONSE
+============================================================
+
+**POSITION:** Building Block Criteria
+
+**CRITERIA:**
+- **Recurring Patterns:** Identification of consistent and repeatable patterns in MDN data.
+- **Impact Analysis:** Evaluation of the impact of these patterns on system performance, user experience, or business outcomes.
+- **Complexity Assessment:** Measurement of the complexity and interdependencies within the pattern.
+
+**THRESHOLD:**
+- **Pattern Frequency:** At least 10 occurrences over a defined period (e.g., one quarter).
+- **Impact Score:** A composite score indicating significant positive or negative impact on system performance, user satisfaction, or business metrics.
+- **Complexity Index:** Patterns with a complexity index greater than 3.
+
+**PREDICTION:**
+- MDNs that meet the threshold criteria will be classified as Building Blocks, enabling further optimization and automation.
+- Patterns that do not meet the threshold may be flagged for manual review or categorized as Best Practices for future reference.
+
+**CONFIDENCE:** 
+High. The criteria are based on empirical evidence and industry standards, ensuring a robust foundation for classification decisions.

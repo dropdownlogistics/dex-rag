@@ -1,0 +1,88 @@
+{
+  "n_source_files": 95,
+  "total_rechunks": 10000,
+  "skipped": 0,
+  "elapsed_sec": 301.1,
+  "chunks_per_sec": 33.21,
+  "char_min": 334,
+  "char_mean": 1411,
+  "char_max": 2001,
+  "chunker_config": {
+    "target_tokens": 400,
+    "overlap_tokens": 50,
+    "min_tokens": 50,
+    "chars_per_token": 4
+  },
+  "spot_check": [
+    {
+      "source_file": "03_Thread_LeChat.txt",
+      "chars": 613,
+      "est_tokens": 153,
+      "starts_mid_word": true,
+      "head": "ontext. Risk: conflates with CanonPress brand.  F. Something else entirely    If"
+    },
+    {
+      "source_file": "0016_WorkMgmt.txt",
+      "chars": 906,
+      "est_tokens": 226,
+      "starts_mid_word": false,
+      "head": " evidence   \u2022 structuring the problem clearly   \u2022 interrogating the result   \u2022 i"
+    },
+    {
+      "source_file": "28_CognitiveArchitecture.txt",
+      "chars": 1684,
+      "est_tokens": 421,
+      "starts_mid_word": true,
+      "head": "nymore. You just do it.That\u2019s what changed.Not the quantity. Not the drama. The "
+    },
+    {
+      "source_file": "28_CognitiveArchitecture.txt",
+      "chars": 1662,
+      "est_tokens": 415,
+      "starts_mid_word": true,
+      "head": "the first time a girl had ever told me she liked me.And I had all week.Holy shit"
+    },
+    {
+      "source_file": "28_CognitiveArchitecture.txt",
+      "chars": 1751,
+      "est_tokens": 437,
+      "starts_mid_word": true,
+      "head": "y someone who spent most of his life being told the record didn't match what peo"
+    },
+    {
+      "source_file": "03_Thread_LeChat.txt",
+      "chars": 735,
+      "est_tokens": 183,
+      "starts_mid_word": false,
+      "head": "  Final Note: \"This protocol turns naming from chaos into a governed identity la"
+    },
+    {
+      "source_file": "03_Thread_LeChat.txt",
+      "chars": 1759,
+      "est_tokens": 439,
+      "starts_mid_word": true,
+      "head": "integration-readiness without platform dependence  If you nail those, AI becomes"
+    },
+    {
+      "source_file": "77_LLMAdvisor.txt",
+      "chars": 1525,
+      "est_tokens": 381,
+      "starts_mid_word": true,
+      "head": "ditor card concept on r/Accounting during a Thanksgiving high, and now it's actu"
+    },
+    {
+      "source_file": "03_Thread_LeChat.txt",
+      "chars": 599,
+      "est_tokens": 149,
+      "starts_mid_word": true,
+      "head": "mble (30t) + canon/archive (20t); cap at 400t.        Parameters       REVISE   "
+    },
+    {
+      "source_file": "78_AuditForgePM.txt",
+      "chars": 470,
+      "est_tokens": 117,
+      "starts_mid_word": false,
+      "head": " TIME TRACKING  Timesheets per auditor per engagement Budget vs actual Ability t"
+    }
+  ]
+}

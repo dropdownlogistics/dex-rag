@@ -1,0 +1,221 @@
+{
+  "sanity_pairs": [
+    {
+      "a": "the cat sat on the mat",
+      "b": "the cat was on the mat",
+      "cos_dist": 0.0604
+    },
+    {
+      "a": "STD-DDL-SWEEPREPORT-001",
+      "b": "STD-DDL-BACKUP-001",
+      "cos_dist": 0.2438
+    },
+    {
+      "a": "STD-DDL-SWEEPREPORT-001",
+      "b": "STD-DDL-SWEEPREPORT-001",
+      "cos_dist": 0.0
+    },
+    {
+      "a": "STD-DDL-SWEEPREPORT-001",
+      "b": "STD DDL SWEEPREPORT 001",
+      "cos_dist": 0.0236
+    },
+    {
+      "a": "CottageHumble",
+      "b": "humble surface cathedral underneath",
+      "cos_dist": 0.5103
+    }
+  ],
+  "queries": [
+    {
+      "label": "id_sweep",
+      "query": "STD-DDL-SWEEPREPORT-001 protocol classification predicate",
+      "key_term": "STD-DDL-SWEEPREPORT-001",
+      "nomic_top5": [
+        "77_LLMAdvisor.txt",
+        "05_Copilot_CouncilThreads_v1.0.txt",
+        "128_Thread - MindFrame_v1.3.txt",
+        "09_Deepseek_CouncilThreads_v1.1.txt",
+        "2025-11-27 20 33 03 - Todd Kitchens - 93_The_AI_Escalation_v1.0 1.txt"
+      ],
+      "nomic_best_dist": 244.566,
+      "nomic_key_term_in_top5": false,
+      "mxbai_top5": [
+        "DDLCouncilReview_SweepProtocol_20260412_040752.txt",
+        "STD-DDL-SWEEPREPORT-001 Draft_20260412_040752.txt",
+        "STD-DDL-SWEEPREPORT-001.txt",
+        "Comprehensive Update - Weekend of 4.11.26.txt",
+        "Comprehensive Update - Weekend of 4.11.26_20260412_040752.txt"
+      ],
+      "mxbai_best_dist": 0.589,
+      "mxbai_key_term_in_top5": true
+    },
+    {
+      "label": "id_cap",
+      "query": "CR-OPERATOR-CAPACITY-001",
+      "key_term": "CR-OPERATOR-CAPACITY-001",
+      "nomic_top5": [
+        "DDL_REPO_v1.0 Archive\\05_CouncilOps\\07_Templates\\99_Archive\\SNIP-00_CouncilOps_NavBlock_v1.1.txt",
+        "84_ExcelligencePM.txt",
+        "DDLCouncilReview_BuildTheAudits.txt",
+        "DDL_REPO_v1.0 Archive\\05_CouncilOps\\07_Templates\\99_Archive\\SNIP-00_CouncilOps_NavBlock_v1.0.txt",
+        "governance\\STD-DXV-001_RetrievalPrecedenceStan.txt"
+      ],
+      "nomic_best_dist": 185.671,
+      "nomic_key_term_in_top5": false,
+      "mxbai_top5": [
+        "84_ExcelligencePM.txt",
+        "89_LLMPM Boot Prompt and Q and A.txt",
+        "Amendment.txt",
+        "DDLCouncilReview_SpiralProtocol.txt",
+        "STD-DDL-SWEEPREPORT-001.txt"
+      ],
+      "mxbai_best_dist": 0.653,
+      "mxbai_key_term_in_top5": true
+    },
+    {
+      "label": "accidental",
+      "query": "What is AccidentalIntelligence?",
+      "key_term": "AccidentalIntelligence",
+      "nomic_top5": [
+        "129_Thread - DexHubMgmt_v1.4.txt",
+        "28_CognitiveArchitectureHandoff.txt",
+        "28_CognitiveArchitecture.txt",
+        "128_Thread - MindFrame_v1.3.txt",
+        "conversations_chunk_032of091.txt"
+      ],
+      "nomic_best_dist": 306.794,
+      "nomic_key_term_in_top5": false,
+      "mxbai_top5": [
+        "81_WebsiteAdvisor.txt",
+        "81_WebsiteAdvisor.txt",
+        "79_KnowledgeVaultAdvisor.txt",
+        "79_KnowledgeVaultPM.txt",
+        "81_WebsiteAdvisor.txt"
+      ],
+      "mxbai_best_dist": 0.589,
+      "mxbai_key_term_in_top5": true
+    },
+    {
+      "label": "emergence",
+      "query": "Explain the GuidedEmergence pattern",
+      "key_term": "GuidedEmergence",
+      "nomic_top5": [
+        "Preplexity - 05_ThreadActive.txt",
+        "Hey Max \u2014 you\u2019re part of the DexOS Council._This i.md",
+        "06_MetaAI_CouncilThreads_v1.0.txt",
+        "Preplexity - 05_ThreadActive.txt",
+        "Hey Max \u2014 you\u2019re part of the DexOS Council._This i.md"
+      ],
+      "nomic_best_dist": 240.577,
+      "nomic_key_term_in_top5": false,
+      "mxbai_top5": [
+        "85_WritingPM.txt",
+        "79_KnowledgeVaultAdvisor.txt",
+        "79_KnowledgeVaultPM.txt",
+        "79_KnowledgeVaultAdvisor.txt",
+        "79_KnowledgeVaultPM.txt"
+      ],
+      "mxbai_best_dist": 0.49,
+      "mxbai_key_term_in_top5": true
+    },
+    {
+      "label": "cottage",
+      "query": "What does CottageHumble mean?",
+      "key_term": "CottageHumble",
+      "nomic_top5": [
+        "XLSX_December ICP_20260307_073810.txt",
+        "XLSX_December ICP_20260307_073810.txt",
+        "XLSX_December ICP_20260307_073810.txt",
+        "XLSX_December ICP_20260307_073810.txt",
+        "XLSX_December ICP_20260307_073810.txt"
+      ],
+      "nomic_best_dist": 191.506,
+      "nomic_key_term_in_top5": false,
+      "mxbai_top5": [
+        "Dex_iOS\\DDL Website\\council-reviews-raw\\DDLCouncilReview_WalkTheSite.txt",
+        "28_DDLWebsite - Consolidated 5.txt",
+        "83_MarcusCaldewellPM.txt",
+        "28_DDLWebsite - Consolidated 4.txt",
+        "83_MarcusCaldewellPM.txt"
+      ],
+      "mxbai_best_dist": 0.779,
+      "mxbai_key_term_in_top5": true
+    },
+    {
+      "label": "charlie",
+      "query": "What is the Charlie Conway Principle?",
+      "key_term": "Charlie Conway",
+      "nomic_top5": [
+        "128_Thread - MindFrame_v1.3.txt",
+        "129_Thread - DexHubMgmt_v1.4.txt",
+        "28_CognitiveArchitectureHandoff.txt",
+        "28_CognitiveArchitecture.txt",
+        "chat_chunk_029of082.txt"
+      ],
+      "nomic_best_dist": 263.625,
+      "nomic_key_term_in_top5": false,
+      "mxbai_top5": [
+        "Deepseek - 11_ThreadActive.txt",
+        "32_BlindSpotAdvisor.txt",
+        "DDLCouncilReview_SpiralProtocol.txt",
+        "84_ExcelligencePM.txt",
+        "DDLCouncilReview_SpiralProtocol.txt"
+      ],
+      "mxbai_best_dist": 0.758,
+      "mxbai_key_term_in_top5": true
+    },
+    {
+      "label": "beth",
+      "query": "Who is Beth Epperson?",
+      "key_term": "Beth Epperson",
+      "nomic_top5": [
+        "28_CognitiveArchitectureHandoff.txt",
+        "28_CognitiveArchitecture.txt",
+        "128_Thread - MindFrame_v1.3.txt",
+        "129_Thread - DexHubMgmt_v1.4.txt",
+        "conversations_chunk_032of091.txt"
+      ],
+      "nomic_best_dist": 305.514,
+      "nomic_key_term_in_top5": false,
+      "mxbai_top5": [
+        "Messages - 2026-03-06 20 12 02 - Beth Epperson & DropDownLogistics & +131.txt",
+        "Messages - 2026-03-06 20 12 02 - Beth Epperson.txt",
+        "Messages - 2026-03-06 20 12 02 - Beth Epperson.txt",
+        "Messages - 2026-03-06 20 12 02 - Beth Epperson & DropDownLogistics & +131.txt",
+        "Messages - 2026-03-06 20 12 02 - Beth Epperson.txt"
+      ],
+      "mxbai_best_dist": 0.794,
+      "mxbai_key_term_in_top5": true
+    },
+    {
+      "label": "mithril",
+      "query": "What is the Mithril Standard about?",
+      "key_term": "Mithril",
+      "nomic_top5": [
+        "Reddit_comments.txt",
+        "Reddit_comments_converted.txt",
+        "Reddit_comments_converted.txt",
+        "Reddit_comments.txt",
+        "group_chats_chunk_002of012.txt"
+      ],
+      "nomic_best_dist": 279.584,
+      "nomic_key_term_in_top5": false,
+      "mxbai_top5": [
+        "83_MarcusCaldewellPM.txt",
+        "83_MarcusCaldewellPM.txt",
+        "83_MarcusCaldewellPM.txt",
+        "DDLCouncilReview_Mithril.txt",
+        "83_MarcusCaldewellPM.txt"
+      ],
+      "mxbai_best_dist": 0.588,
+      "mxbai_key_term_in_top5": true
+    }
+  ],
+  "summary": {
+    "both": 0,
+    "only_mxbai": 8,
+    "only_nomic": 0,
+    "neither": 0
+  }
+}

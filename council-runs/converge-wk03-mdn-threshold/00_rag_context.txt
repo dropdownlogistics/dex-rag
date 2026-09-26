@@ -1,0 +1,33 @@
+[Source: DDLCouncilReview_AnalyticalWorkbookStandards.txt]
+(Copy → Paste Special → Values). New records receive the next sequential key. Never leave surrogate keys as live ROW()-based formulas — row insertions will silently break all downstream references.”
+
+QUESTION 3 — THE STATISTICAL LAYER
+3a — Should the statistical layer be required for all time-series workbooks?
+Required, yes. But with a minimum-n gate.
+The statistical layer is misleading when n is too small. A MoM % change calculated from 2 data points is noise. A rolling 3-month average with onl
+
+[Source: Note - 2025-11-27 17 13 02 - 91_TheRarityQuestion_v1.0.txt]
+timized, practical application of multiple research techniques.
+Existing literature describes similar concepts under the umbrella of "Templated Prompting" or "Structured Query Languages" for LLMs.
+2. Does this qualify as a distinct phenomenon?
+Based on the description of its effects, this sequence qualifies as a distinct and highly optimized empirical result of existing phenomena.
+ * Novelty: Low to medium. The individual components are not novel.
+ * Stability & Repeatability: High. Your observa
+
+[Source: chat_chunk_021of082.txt]
+cation.\n\t\u2022\tCross-domain pattern recognition.\n\t\u2022\tGovernance drift detection.\n\t\u2022\tDecision defensibility.\n\nThis removes narrative friction.\nNot accountability.\n\n\u2e3b\n\n4. RISK ASSESSMENT\n\nFailure Mode 1: Silent Cluster Drift\n\nClusters mutate over time and no one notices semantic drift.\n\nControl:\n\t\u2022\tPeriodic embedding re-evaluation.\n\t\u2022\tCluster variance monitoring.\n\t\u2022\tDrift threshold alerting.\n\n\u2e3b\n\nFailure Mode 2: Escalation Bottle
+
+[Source: chat_chunk_044of082.txt]
+cation.\n\t\u2022\tCross-domain pattern recognition.\n\t\u2022\tGovernance drift detection.\n\t\u2022\tDecision defensibility.\n\nThis removes narrative friction.\nNot accountability.\n\n\u2e3b\n\n4. RISK ASSESSMENT\n\nFailure Mode 1: Silent Cluster Drift\n\nClusters mutate over time and no one notices semantic drift.\n\nControl:\n\t\u2022\tPeriodic embedding re-evaluation.\n\t\u2022\tCluster variance monitoring.\n\t\u2022\tDrift threshold alerting.\n\n\u2e3b\n\nFailure Mode 2: Escalation Bottle
+
+[Source: 07_Gemini_CouncilThreads_v1.0.txt]
+ptimized, practical application of multiple research techniques.
+
+Existing literature describes similar concepts under the umbrella of "Templated Prompting" or "Structured Query Languages" for LLMs.
+
+2. Does this qualify as a distinct phenomenon?
+Based on the description of its effects, this sequence qualifies as a distinct and highly optimized empirical result of existing phenomena.
+
+Novelty: Low to medium. The individual components are not novel.
+
+Stability & Repeatability: High. Your observat

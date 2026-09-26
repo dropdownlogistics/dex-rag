@@ -1,0 +1,14 @@
+DEX JR RAG BRIDGE - Query Transcript
+============================================================
+TIMESTAMP: 2026-03-14T19:34:43.750504
+PROVENANCE: [Sources: 10×Canon]
+SOURCES: 19_CognitiveArchitecture.txt, 2025-11-23 12 26 04 - David Purifoy - 01_DexProjectSummary - AI Platforms_v1.0.txt, Note - 2025-12-05 23 07 05 - 02_CouncilReflect_v1.0.txt, DDLCouncilReview_WebsiteDeployment.txt, 28_CognitiveArchitectureHandoff.txt, DDLCouncilReview_CorpusSources.txt, 29_ACE.txt, 2026-01-31 14 29 55 - David Purifoy - 02_Claude_CouncilThreads_v1.0.txt, 02_Claude_CouncilThreads_v1.1.txt, Dex_iOS\DDL Website\artifacts\63_MindFrameAdvisor\console-callback-engine.jsx
+============================================================
+
+QUERY:
+What is Eugene Wei's Status as a Service framework? What is proof of work in the context of social platforms?
+
+RESPONSE:
+I don't have enough in the retrieved chunks to answer this.
+
+[TRUNCATED — prioritized top items]

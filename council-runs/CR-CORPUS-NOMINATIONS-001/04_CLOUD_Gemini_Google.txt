@@ -1,0 +1,27 @@
+MODEL: Gemini (Google)
+PROVIDER: gemini
+MODEL_ID: gemini-2.5-flash
+ELAPSED: 8.3s
+TIMESTAMP: 2026-03-14T08:39:52.738929
+
+============================================================
+RESPONSE
+============================================================
+
+SEAT: 1004 - Perplexity (Max Sullivan)
+
+NOMINATION 1 — ext_reference
+  Source:     The Data Warehouse Toolkit, 3rd Edition
+  Type:       book
+  Author:     Ralph Kimball and Margy Ross
+  Rationale:  This book is the foundational text for dimensional modeling and star schema design, directly aligning with DDL's explicit core methodology of "star schema dimensional modeling." Its principles are timeless and essential for structuring data effectively for analytics and governance, which is critical for any system DDL builds.
+  Relevance:  Dimensional modeling / star schema thinking, Analytics and data, Systems thinking and methodology.
+  Caveat:     This is a widely recognized work, but its fundamental and direct alignment with DDL's stated data modeling approach provides a specific and indispensable fit rather than being a generic reference.
+
+NOMINATION 2 — ext_creator
+  Creator:    Ethan Mollick
+  Platform:   Substack / Blog ("One Useful Thing")
+  URL:        oneusefulthing.substack.com
+  Rationale:  Ethan Mollick consistently provides research-backed, practical insights into AI's impact on work, productivity, and organizational systems. His focus on responsible AI integration, thoughtful experimentation, and critical evaluation of AI capabilities directly supports DDL's objectives for governed AI infrastructure and advanced AI collaboration.
+  Relevance:  Governed AI infrastructure, AI collaboration and prompt engineering, Systems thinking and methodology, Operations and process design.
+  Caveat:     Mollick's content is inherently dynamic due to the rapid evolution of AI; however, his underlying principles of structured experimentation, ethical consideration, and systemic integration remain highly relevant and foundational for AI governance.

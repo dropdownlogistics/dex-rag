@@ -1,0 +1,48 @@
+MODEL: Mistral/LeChat (European)
+PROVIDER: mistral
+MODEL_ID: mistral-small-latest
+ELAPSED: 3.8s
+TIMESTAMP: 2026-03-13T17:10:06.739946
+
+============================================================
+RESPONSE
+============================================================
+
+### **Structured Assessment: CR-CANON-001 — NAMING REVIEW**
+
+#### **Governance Context**
+- **Hierarchy Compliance**: Aligns with **Governance Artifacts (STD-, PRO-)** and **Council Consensus (CR-)**.
+- **Methodology**: Follows **Divergence before Convergence** (independent responses → synthesis).
+- **Boundaries**: No clinical, RED zone, or silent fix violations.
+
+---
+
+### **Verdict: LOCK**
+**RECOMMENDATION**: **OperatorManifest**
+**RATIONALE**:
+1. **Distinct from `llms.txt` spec**: "Manifest" is a DDL canon term (e.g., `llms.txt` references "Manifest" as a governance artifact).
+2. **Portable context**: "Operator" anchors it to DDL’s methodology (e.g., "Operator Authority" in governance hierarchy).
+3. **Coinable**: "OperatorManifest" is trademark-eligible (no genericization risk).
+4. **Flexible usage**: Works as noun ("the OperatorManifest") and modifier ("OperatorManifest standard").
+5. **DDL-grade**: Avoids hype; aligns with "methodology" tone.
+
+**CONCERN**:
+- **Potential ambiguity**: "Manifest" could loosely refer to other DDL artifacts (e.g., `llms.txt` itself). Mitigation: Define in **Canon Glossary** as "a portable operating context for AI collaborators."
+
+---
+
+### **Divergence Notes (for Council Synthesis)**
+- **Seat 1001 (Local AI)**: Prefers **ManifestOS** for "operating system" connotation.
+- **Seat 1003**: Rejects **CanonFile** due to brand conflation risk.
+- **Seat 1005**: Proposes **GroundFile** but notes it lacks "portable context" clarity.
+
+**Synthesis**: **OperatorManifest** resolves divergence by prioritizing DDL terminology and governance hierarchy alignment.
+
+---
+
+### **Action Items**
+1. **Ingest**: Save to `council-runs/CR-CANON-001` and update `/knowledge/glossary`.
+2. **Update**: Add to `llms.txt` under "Canon Glossary" with definition.
+3. **Audit**: Verify no conflicts with existing DDL terminology.
+
+**End of Assessment**.

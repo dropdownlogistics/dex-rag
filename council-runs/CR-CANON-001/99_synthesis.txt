@@ -1,0 +1,39 @@
+SYNTHESIZER: dexjr
+ELAPSED: 12.7s
+TIMESTAMP: 2026-03-13T17:10:06.739946
+
+============================================================
+SYNTHESIS
+============================================================
+
+### CONVERGENCE:
+- **All models agreed** on the name "OperatorManifest" as the preferred term for the class of document.
+- They all identified it as precise, DDL vocabulary, and aligning with DDL's governance hierarchy.
+
+### DIVERGENCE:
+- **Model 1 (Qwen)** did not mention any concerns.
+- **Model 2 (Llama)** expressed a concern about potential generic adoption but suggested trademarking to mitigate this risk.
+- **DeepSeek-Local** proposed "Operational Context Manifest" (OC M) as an alternative, emphasizing operational structure and avoiding generic terms like "Manifest."
+- **Gemini** noted the term "manifest" could cause ambiguity in broader technical discussions.
+- **Mistral/LeChat** did not mention any concerns but suggested defining "OperatorManifest" in the Canon Glossary to avoid ambiguity.
+
+### UNIQUE INSIGHTS:
+- **DeepSeek-Local** proposed "Operational Context Manifest" (OC M) as a more specific term that emphasizes operational structure and avoids potential genericization.
+- **Gemini** highlighted the risk of ambiguity with the term "manifest" in broader technical discussions.
+
+### LOCAL vs CLOUD:
+- There were no significant quality or speed differences noted between local and cloud models.
+
+### RECOMMENDED ACTIONS:
+1. **Save to `council-runs/CR-CANON-001`**.
+2. **Update `/knowledge/glossary` with the definition of "OperatorManifest"**.
+3. **Add to `llms.txt` under "Canon Glossary"**.
+
+### CONFIDENCE:
+High
+
+### VERDICT:
+LOCK
+
+### ESCALATION:
+No further escalation required.

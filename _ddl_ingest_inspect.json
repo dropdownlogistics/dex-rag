@@ -1,0 +1,150 @@
+{
+  "total_files_top_level": 22,
+  "files_inspected": 22,
+  "skipped_by_name_rule": [],
+  "hash_errors": [],
+  "supported_count": 14,
+  "unsupported_count": 8,
+  "unsupported_files": [
+    {
+      "name": "auditforge_og_image.svg",
+      "ext": ".svg",
+      "size": 29648
+    },
+    {
+      "name": "ledger-og (2).png",
+      "ext": ".png",
+      "size": 56683
+    },
+    {
+      "name": "ledger-og.png",
+      "ext": ".png",
+      "size": 56683
+    },
+    {
+      "name": "og-image excelligence (2).png",
+      "ext": ".png",
+      "size": 866740
+    },
+    {
+      "name": "og-image excelligence.png",
+      "ext": ".png",
+      "size": 866740
+    },
+    {
+      "name": "og-image-ddl.com (2).png",
+      "ext": ".png",
+      "size": 1137432
+    },
+    {
+      "name": "og-image-ddl.com.png",
+      "ext": ".png",
+      "size": 1137432
+    },
+    {
+      "name": "og-image-kv.png",
+      "ext": ".png",
+      "size": 1096572
+    }
+  ],
+  "internal_duplicates": [
+    {
+      "sha256": "f0c2fea15bb2971f7e49659b7fbe5bc87de63987d736a92936e7353e7fd105d7",
+      "names": [
+        "ledger-og (2).png",
+        "ledger-og.png"
+      ]
+    },
+    {
+      "sha256": "36caa0b1aab4e5926fc4509e8df03bfa54a814a89b5932c8b914550a0a2f1ce2",
+      "names": [
+        "og-image excelligence (2).png",
+        "og-image excelligence.png"
+      ]
+    },
+    {
+      "sha256": "0f585ccd0165d95a4db61896f273ff71fa2cf220b4ad20b2465c7754328b0cfd",
+      "names": [
+        "og-image-ddl.com (2).png",
+        "og-image-ddl.com.png"
+      ]
+    }
+  ],
+  "already_in_canon": [
+    {
+      "name": "DDLExtraction_DaveKitchens_SourceMaterial_4.13.26.md",
+      "size": 262541,
+      "file_hash": "9bbdb73496c640d5"
+    },
+    {
+      "name": "LLMPM_Full Session Log - 4.12.26.txt",
+      "size": 967098,
+      "file_hash": "c2cdb72a31294f2c"
+    },
+    {
+      "name": "WebsitePM Full Session Log - 4.13.26.txt",
+      "size": 303463,
+      "file_hash": "8a3207d346afe44e"
+    },
+    {
+      "name": "WorkBench-BrandKit-v1_0.html",
+      "size": 38396,
+      "file_hash": "29d68da822e7be9b"
+    },
+    {
+      "name": "WorkBench-Favicon-Reference.html",
+      "size": 13353,
+      "file_hash": "522bce8a33a9f154"
+    },
+    {
+      "name": "WorkBench-OG-Image.html",
+      "size": 8001,
+      "file_hash": "4bd75bc332fcdffd"
+    },
+    {
+      "name": "Workbench Full Session Log - 4.13.26.txt",
+      "size": 219342,
+      "file_hash": "3f73cf891fe4c466"
+    },
+    {
+      "name": "gridtactics-demo.jsx",
+      "size": 20409,
+      "file_hash": "7f553ef22d0eb027"
+    }
+  ],
+  "already_in_archive": [],
+  "already_in_both": [],
+  "novel": [
+    {
+      "name": "AuditForge Full Session Log - 4.14.26.txt",
+      "ext": ".txt",
+      "size": 202966
+    },
+    {
+      "name": "AuditForge Full Session Log - 4.14_.txt",
+      "ext": ".txt",
+      "size": 279521
+    },
+    {
+      "name": "KnowledgeVault Full Session Log - 4.14.26.txt",
+      "ext": ".txt",
+      "size": 803666
+    },
+    {
+      "name": "KnowledgeVault and DexJr Audit - 4.14.26.txt",
+      "ext": ".txt",
+      "size": 173741
+    },
+    {
+      "name": "LLMPM Full Session Log 4.14.26.txt",
+      "ext": ".txt",
+      "size": 661129
+    },
+    {
+      "name": "WebsitePM Full Session Log - 4.14.26.txt",
+      "ext": ".txt",
+      "size": 951601
+    }
+  ],
+  "total_size_bytes": 10153157
+}

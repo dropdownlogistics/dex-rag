@@ -1,0 +1,228 @@
+MODEL: Mistral/LeChat (European)
+PROVIDER: mistral
+MODEL_ID: mistral-small-latest
+ELAPSED: 9.3s
+TIMESTAMP: 2026-03-07T18:06:34.144865
+
+============================================================
+RESPONSE
+============================================================
+
+# **Kimball Dimensional Modeling Reference Guide**
+*For Experienced Modelers Applying Star Schema Across AI Governance & Audit Methodology*
+
+---
+
+## **1. Core Concepts**
+### **Fact Tables**
+- **Definition**: Central tables containing quantitative business metrics (measures).
+- **Characteristics**:
+  - Grain defines the level of detail (e.g., "per transaction" or "per day").
+  - Measures are numeric (e.g., revenue, count, duration).
+  - Linked to dimension tables via foreign keys (FKs).
+
+### **Dimension Tables**
+- **Definition**: Tables containing descriptive attributes used to filter and group facts.
+- **Characteristics**:
+  - Attributes are text, dates, or codes (e.g., `customer_name`, `product_category`).
+  - Surrogate keys (SKs) replace natural keys for stability.
+  - Hierarchies enable roll-up (e.g., `day → month → year`).
+
+### **Grain**
+- **Definition**: The level of detail in a fact table (e.g., "per order line" vs. "per order").
+- **Rule**: Must be unambiguous and consistent across all facts.
+
+### **Measures**
+- **Definition**: Numeric values in fact tables (e.g., `revenue`, `quantity`).
+- **Types**:
+  - **Additive**: Can be summed across all dimensions (e.g., `sales`).
+  - **Semi-additive**: Summed only along some dimensions (e.g., `inventory` by date, not by product).
+  - **Non-additive**: Not summed (e.g., `ratio`).
+
+### **Attributes**
+- **Definition**: Descriptive fields in dimension tables (e.g., `customer_name`, `region`).
+- **Best Practices**:
+  - Avoid redundant attributes (e.g., `full_name` + `first_name` + `last_name`).
+  - Use derived attributes sparingly (e.g., `age` from `birth_date`).
+
+### **Surrogate Keys (SKs)**
+- **Definition**: System-generated integers replacing natural keys (e.g., `customer_id` → `SK_customer`).
+- **Why Use?**:
+  - Stability (natural keys change; SKs don’t).
+  - Performance (smaller keys, faster joins).
+
+---
+
+## **2. Star Schema vs. Snowflake Schema**
+### **Star Schema**
+- **Structure**: Fact table connected directly to dimension tables (no normalization).
+- **When to Use**:
+  - Performance-critical queries (fewer joins).
+  - Simple, high-cardinality dimensions (e.g., `product`).
+- **Tradeoffs**:
+  - Redundancy (e.g., `region_name` repeated in `customer` and `store`).
+  - Easier to query, harder to maintain.
+
+### **Snowflake Schema**
+- **Structure**: Fact table connected to normalized dimension tables (sub-dimensions).
+- **When to Use**:
+  - Low-cardinality dimensions (e.g., `country` → `region` → `city`).
+  - Storage optimization (less redundancy).
+- **Tradeoffs**:
+  - More joins (slower queries).
+  - Cleaner data structure.
+
+**Rule of Thumb**:
+- Default to **star schema** for performance.
+- Use **snowflake** only for high-cardinality hierarchies.
+
+---
+
+## **3. Slowly Changing Dimensions (SCDs)**
+### **Type 1: Overwrite**
+- **Definition**: Update existing record (no history).
+- **Example**: Correcting a typo in `product_name`.
+- **Use Case**: Non-critical attributes (e.g., `description`).
+
+### **Type 2: Track History**
+- **Definition**: Add a new row with `valid_from`/`valid_to` dates.
+- **Example**:
+  ```sql
+  INSERT INTO dim_customer (SK_customer, customer_name, valid_from, valid_to)
+  VALUES (1, "Jane Doe", '2024-01-01', '2024-06-30');
+  INSERT INTO dim_customer (SK_customer, customer_name, valid_from, valid_to)
+  VALUES (1, "Jane Smith", '2024-07-01', NULL);
+  ```
+- **Use Case**: Audit trails (e.g., `customer_name` changes).
+
+### **Type 3: Add Columns**
+- **Definition**: Add columns for previous values (e.g., `current_name`, `previous_name`).
+- **Example**:
+  ```sql
+  ALTER TABLE dim_customer ADD COLUMN previous_name VARCHAR(100);
+  ```
+- **Use Case**: Simple history (e.g., `price` changes).
+
+**Rule of Thumb**:
+- **Type 2** for governance/audit.
+- **Type 1/3** for non-critical data.
+
+---
+
+## **4. Conformed Dimensions**
+### **Definition**
+- **Shared dimensions** across multiple fact tables (e.g., `date_dim` used in `sales_fact` and `inventory_fact`).
+- **Why They Matter**:
+  - Ensures consistency (e.g., `2024-01-01` means the same in all schemas).
+  - Enables cross-fact analysis (e.g., "Compare sales vs. inventory by date").
+
+### **Implementation**
+1. **Identify shared entities** (e.g., `customer`, `product`).
+2. **Define a single dimension table** for all facts.
+3. **Use surrogate keys** to enforce consistency.
+
+**Rule of Thumb**:
+- **Conform first, then extend** (e.g., add `warehouse_dim` attributes only if needed).
+
+---
+
+## **5. Kimball’s Four-Step Design Process**
+1. **Select the Business Process**
+   - Example: "Order-to-cash" vs. "Inventory management."
+2. **Declare the Grain**
+   - Example: "One row per order line."
+3. **Identify Dimensions**
+   - Example: `customer`, `product`, `date`, `store`.
+4. **Identify Facts**
+   - Example: `quantity`, `unit_price`, `discount`.
+
+**Rule of Thumb**:
+- **Start with grain** (it constrains everything else).
+
+---
+
+## **6. Common Fact Table Types**
+### **Transaction Fact Table**
+- **Definition**: Records individual events (e.g., `sales_transaction`).
+- **Example**:
+  ```sql
+  CREATE TABLE fact_sales (
+      SK_transaction INT,
+      SK_customer INT,
+      SK_product INT,
+      SK_date INT,
+      quantity INT,
+      unit_price DECIMAL(10,2)
+  );
+  ```
+
+### **Periodic Snapshot Fact Table**
+- **Definition**: Aggregates data at fixed intervals (e.g., "daily inventory levels").
+- **Example**:
+  ```sql
+  CREATE TABLE fact_inventory_snapshot (
+      SK_date INT,
+      SK_warehouse INT,
+      SK_product INT,
+      inventory_count INT
+  );
+  ```
+
+### **Accumulating Snapshot Fact Table**
+- **Definition**: Tracks milestones in a process (e.g., "order status over time").
+- **Example**:
+  ```sql
+  CREATE TABLE fact_order_status (
+      SK_order INT,
+      SK_date INT,
+      status VARCHAR(50),
+      status_date TIMESTAMP
+  );
+  ```
+
+**Rule of Thumb**:
+- **Transaction** for granularity.
+- **Snapshot** for aggregation.
+
+---
+
+## **7. Specialized Dimensions**
+### **Degenerate Dimension**
+- **Definition**: A fact table key that doesn’t link to a dimension (e.g., `order_id` in `order_line`).
+- **Use Case**: Preserving raw IDs for reference.
+
+### **Junk Dimension**
+- **Definition**: A dimension combining low-cardinality flags (e.g., `is_promotion`, `is_weekend`).
+- **Example**:
+  ```sql
+  CREATE TABLE dim_junk (
+      SK_junk INT,
+      is_promotion BOOLEAN,
+      is_weekend BOOLEAN
+  );
+  ```
+
+### **Role-Playing Dimension**
+- **Definition**: A single dimension used in multiple roles (e.g., `date_dim` as `order_date`, `ship_date`).
+- **Example**:
+  ```sql
+  CREATE TABLE fact_sales (
+      SK_order_date INT,
+      SK_ship_date INT,
+      -- Both point to the same dim_date table
+  );
+  ```
+
+**Rule of Thumb**:
+- **Junk dimensions** for flags.
+- **Role-playing** for temporal flexibility.
+
+---
+
+## **Final Notes**
+- **Governance Alignment**: Treat dimensions as "governed artifacts" (STD-).
+- **Audit Trails**: Use **Type 2 SCDs** for compliance.
+- **Performance**: Prefer **star schema** unless storage is critical.
+
+**End of Document**
+*For DDL AutoCouncil review: CR-2024-06-15-DIM-MODELING*

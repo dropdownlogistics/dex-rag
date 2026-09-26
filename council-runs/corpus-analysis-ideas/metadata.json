@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-03-07T06:39:23.392201",
+  "version": "3.0",
+  "prompt": "The DDL corpus now contains 140,000+ chunks including 28 months of documents, 576 text message threads, 1,785 iPhone notes, 100+ council reviews, and all AutoCouncil outputs. What automated analysis should Dex Jr perform on this corpus? Consider: insight extraction, pattern detection, gap analysis, contradiction detection, decision lineage tracking, relationship mapping, and anything else a governed local AI with full archive access should be doing. Be specific about what each analysis would produce and how often it should run.",
+  "model_count": 5,
+  "successful": 5,
+  "failed": 0,
+  "models": [
+    {
+      "name": "Qwen (Code Specialist)",
+      "provider": "local",
+      "model_id": "qwen2.5-coder:7b",
+      "elapsed": 32.9,
+      "error": null,
+      "response_length": 5042
+    },
+    {
+      "name": "Llama (General Reasoning)",
+      "provider": "local",
+      "model_id": "llama3.1:8b",
+      "elapsed": 53.1,
+      "error": null,
+      "response_length": 3694
+    },
+    {
+      "name": "DeepSeek-Local (Chain-of-Thought)",
+      "provider": "local",
+      "model_id": "deepseek-r1:8b",
+      "elapsed": 124.0,
+      "error": null,
+      "response_length": 4335
+    },
+    {
+      "name": "Gemini (Google)",
+      "provider": "gemini",
+      "model_id": "gemini-2.5-flash",
+      "elapsed": 26.2,
+      "error": null,
+      "response_length": 10072
+    },
+    {
+      "name": "Mistral/LeChat (European)",
+      "provider": "mistral",
+      "model_id": "mistral-small-latest",
+      "elapsed": 5.7,
+      "error": null,
+      "response_length": 3534
+    }
+  ],
+  "synthesis_elapsed": 32.2
+}

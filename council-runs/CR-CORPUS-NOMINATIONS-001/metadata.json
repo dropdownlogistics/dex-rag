@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-03-14T08:39:52.740491",
+  "version": "3.0",
+  "prompt": "=====================================================================\nCR-CORPUS-NOMINATIONS-001\nDDL External Corpus — First Sources Nomination\nOperator: Dave Kitchens\nDate: 2026-03-14\nDistribution: All Council Seats (1001–1010)\nClassification: Corpus Governance — Nominations\nVerdict: NOMINATION (not LOCK/REVISE/REJECT)\n=====================================================================\n\nCONTEXT\n=====================================================================\n\nThe DDL corpus is expanding to include external collections.\nTwo new collections are being built:\n\n  ext_reference   Books, frameworks, academic papers, standards.\n                  High authority. Timeless material.\n                  Weight: 0.75\n\n  ext_creator     Named approved creators — people whose voice,\n                  methodology, or output belongs alongside DDL's\n                  internal knowledge.\n                  Weight: 0.60\n\nThe operator has authorized each council seat to nominate\none source for each collection. These nominations will be\nreviewed by the operator and approved or vetoed individually.\nApproved nominations enter the ext_ build queue.\n\n=====================================================================\nYOUR TASK\n=====================================================================\n\nYou are nominating TWO sources — one per collection.\n\nNominate based on genuine fit with DDL's domains:\n\n  - Dimensional modeling / star schema thinking\n  - Governed AI infrastructure\n  - Audit, risk, controls, compliance\n  - Systems thinking and methodology\n  - Operations and process design\n  - Writing, publishing, creative systems\n  - Analytics and data\n  - Personal knowledge management\n  - AI collaboration and prompt engineering\n\nDo not nominate to impress. Nominate what actually belongs.\nIf you are uncertain, say so and explain why you're nominating\nanyway.\n\n=====================================================================\nNOMINATION FORMAT\n=====================================================================\n\nSEAT: [your seat number and name]\n\nNOMINATION 1 — ext_reference\n  Source:     [title / author / framework name]\n  Type:       [book / paper / framework / standard / other]\n  Author:     [author or organization]\n  Rationale:  [why this belongs in DDL's corpus — 2-3 sentences]\n  Relevance:  [which DDL domains it serves]\n  Caveat:     [anything the operator should know before approving]\n\nNOMINATION 2 — ext_creator\n  Creator:    [name / handle / channel name]\n  Platform:   [YouTube / Substack / podcast / blog / other]\n  URL:        [if known]\n  Rationale:  [why this voice belongs — 2-3 sentences]\n  Relevance:  [which DDL domains it serves]\n  Caveat:     [anything the operator should know before approving]\n\n=====================================================================\nCONSTRAINTS\n=====================================================================\n\n  - One nomination per collection. No more.\n  - Do not nominate DDL's own content (already internal).\n  - Do not nominate generic reference works everyone knows\n    unless you can argue specific fit to DDL's methodology.\n  - Do not nominate sources you cannot verify exist.\n  - Seat 1002 (Marcus Caldwell) should note: your META\n    pattern is known. Nominate a real source, not a framework\n    for how to think about nominating sources.\n\n=====================================================================\nSYNTHESIS INSTRUCTIONS (for Dex Jr.)\n=====================================================================\n\nAfter all seats respond, produce:\n\nREFERENCE NOMINATIONS — ranked by operator fit\n  For each: seat, source, type, rationale summary, caveat\n  Flag: duplicates, conflicts, weak rationale\n\nCREATOR NOMINATIONS — ranked by operator fit\n  For each: seat, creator, platform, rationale summary, caveat\n  Flag: duplicates, conflicts, weak rationale\n\nOPERATOR DECISION LIST\n  Two tables (reference / creator), one row per nomination,\n  columns: Seat | Source | Fit Score (1-5) | Recommend | Notes\n  Operator circles APPROVE or VETO on each row.\n\nNote any seat that nominated something outside DDL's domains\nor that appears to be filling the form rather than nominating\nwith intent.\n\n=====================================================================\nDropdown Logistics — Chaos → Structured → Automated\nCR-CORPUS-NOMINATIONS-001 | The corpus earns its sources.\n=====================================================================",
+  "model_count": 5,
+  "successful": 5,
+  "failed": 0,
+  "models": [
+    {
+      "name": "Qwen (Code Specialist)",
+      "provider": "local",
+      "model_id": "qwen2.5-coder:7b",
+      "elapsed": 73.8,
+      "error": null,
+      "response_length": 12747
+    },
+    {
+      "name": "Llama (General Reasoning)",
+      "provider": "local",
+      "model_id": "llama3.1:8b",
+      "elapsed": 44.6,
+      "error": null,
+      "response_length": 2396
+    },
+    {
+      "name": "DeepSeek-Local (Chain-of-Thought)",
+      "provider": "local",
+      "model_id": "deepseek-r1:8b",
+      "elapsed": 42.5,
+      "error": null,
+      "response_length": 1321
+    },
+    {
+      "name": "Gemini (Google)",
+      "provider": "gemini",
+      "model_id": "gemini-2.5-flash",
+      "elapsed": 8.3,
+      "error": null,
+      "response_length": 1771
+    },
+    {
+      "name": "Mistral/LeChat (European)",
+      "provider": "mistral",
+      "model_id": "mistral-small-latest",
+      "elapsed": 4.4,
+      "error": null,
+      "response_length": 2464
+    }
+  ],
+  "synthesis_elapsed": 13.7
+}

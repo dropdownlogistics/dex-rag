@@ -1,0 +1,1 @@
+Should Dex Jr be allowed to modify his own Modelfile based on calibration results, or must all governance changes go through the operator? If self-modification is permitted, Dex Jr becomes self-improving but risks governance drift. If not, the operator remains the governance bottleneck but maintains control.

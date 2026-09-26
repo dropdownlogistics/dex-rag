@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-03-07T17:05:40.880734",
+  "version": "3.0",
+  "prompt": "Generate a comprehensive Anaplan platform architecture reference document. Cover: (1) Core object model — workspaces, models, modules, lists, line items, and how they relate to each other. (2) How Anaplan's architecture maps to dimensional modeling — modules as fact tables, lists as dimension tables, line items as measures/attributes. (3) Formula syntax basics — SUM, LOOKUP, IF, TIMESUM, and how line items reference each other. (4) Best practices for model design — flat vs hierarchical lists, module granularity, avoiding circular references. (5) Common design patterns — allocation models, driver-based planning, rolling forecasts. Format as structured reference documentation with headers and examples. This is for a CPA and dimensional modeler who starts using Anaplan on Monday.",
+  "model_count": 2,
+  "successful": 2,
+  "failed": 0,
+  "models": [
+    {
+      "name": "Gemini (Google)",
+      "provider": "gemini",
+      "model_id": "gemini-2.5-flash",
+      "elapsed": 31.5,
+      "error": null,
+      "response_length": 17535
+    },
+    {
+      "name": "Mistral/LeChat (European)",
+      "provider": "mistral",
+      "model_id": "mistral-small-latest",
+      "elapsed": 7.0,
+      "error": null,
+      "response_length": 5363
+    }
+  ],
+  "synthesis_elapsed": 20.5
+}

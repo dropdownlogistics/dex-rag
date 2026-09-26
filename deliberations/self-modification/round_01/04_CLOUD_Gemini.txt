@@ -1,0 +1,5 @@
+MODEL: Gemini
+PROVIDER: gemini
+ELAPSED: 0s
+
+ERROR: 404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDfvJGetLgf-ItUyNOjeYgD382vZ6Yqs7Q

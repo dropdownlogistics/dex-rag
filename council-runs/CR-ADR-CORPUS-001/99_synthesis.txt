@@ -1,0 +1,40 @@
+SYNTHESIZER: dexjr
+ELAPSED: 26.9s
+TIMESTAMP: 2026-03-16T00:26:18.312973
+
+============================================================
+SYNTHESIS
+============================================================
+
+### CONVERGENCE:
+All models agreed that the highest-stakes decision is the `dex_dave` ingestion gate (Rule 3), which must not be ingested before the query router is live to prevent governance contamination.
+
+### DIVERGENCE:
+1. **Question 1: Precedence Hierarchy**
+   - **Model 2:** Suggested placing `dex_dave` in Tier 4 and product collections in Tier 3, but this was rejected by all other models.
+   
+2. **Question 2: Rule 3: `dex_dave` Isolation Rule**
+   - **Model 1:** Suggested a system-level flag to prevent manual ingestion during router development, but this was not addressed by the other models.
+
+3. **Question 4: Build Order and Gaps**
+   - **Model 4:** Suggested adding rules for handling temporal conflicts and ambiguous queries, which were not addressed by the other models.
+   
+### UNIQUE INSIGHTS:
+- **Model 5 (European):** Highlighted the need to clarify that `dex_graveyard` should never be included in default retrieval, even for anti-pattern queries.
+
+### LOCAL vs CLOUD:
+No significant differences in quality or speed were observed between local and cloud models.
+
+### RECOMMENDED ACTIONS:
+1. **Lock Rule 3:** Ensure `dex_dave` ingestion is blocked until the query router is live.
+2. **Clarify `dex_graveyard`:** Add a note that it should never be included in default retrieval.
+3. **Address Ambiguous Queries:** Clarify that DEFAULT route (`dex_canon` + `ddl_archive`) applies for ambiguous queries without governance keywords.
+
+### CONFIDENCE:
+High, based on the consistent agreement on the highest-stakes decision and the core principles of the ADR.
+
+### VERDICT:
+LOCK
+
+### ESCALATION:
+No further escalation is needed as all critical issues have been addressed.

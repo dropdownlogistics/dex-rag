@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DDL Knowledge Vault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #0D1B2A;
+    --card:   #10202f;
+    --cream:  #F5F1EB;
+    --teal:   #2C7A7B;
+    --teal-lt:#3a9a9b;
+    --teal-dk:#1d5455;
+    --steel:  #6B7B8D;
+    --border: rgba(245,241,235,0.07);
+    --spoke:  rgba(44,122,123,0.35);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  html, body {
+    width:100%; height:100%;
+    background: var(--navy);
+    color: var(--cream);
+    font-family: 'Source Serif 4', Georgia, serif;
+    overflow: hidden;
+  }
+
+  /* ── HEADER BAR ── */
+  .topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 40px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(13,27,42,0.92);
+    backdrop-filter: blur(8px);
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .topbar-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .topbar-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--steel);
+    letter-spacing: 0.08em;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .topbar-stat {
+    text-align: right;
+  }
+
+  .topbar-stat-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--teal);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  .topbar-stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--steel);
+    letter-spacing: 0.06em;
+  }
+
+  .topbar-divider {
+    width: 1px;
+    height: 28px;
+    background: var(--border);
+  }
+
+  .topbar-link {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--steel);
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+
+  .topbar-link:hover { color: var(--teal); }
+
+  /* ── ORBITAL STAGE ── */
+  .stage {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 60px;
+  }
+
+  .orbital-wrap {
+    position: relative;
+    width: min(700px, 90vw);
+    height: min(700px, 90vw);
+  }
+
+  /* Orbit ring */
+  .orbit-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(44,122,123,0.18);
+    pointer-events: none;
+  }
+
+  .orbit-ring-inner {
+    position: absolute;
+    inset: 18%;
+    border-radius: 50%;
+    border: 1px dashed rgba(44,122,123,0.1);
+    pointer-events: none;
+  }
+
+  /* SVG for spokes */
+  .spoke-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  /* Center seal */
+  .center-seal {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 160px;
+    height: 160px;
+    cursor: default;
+    transition: transform 0.4s ease;
+    z-index: 10;
+  }
+
+  .center-seal:hover { transform: translate(-50%, -50%) scale(1.04); }
+
+  /* Orbital nodes */
+  .orbital-node {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    z-index: 20;
+  }
+
+  .node-pill {
+    padding: 10px 18px;
+    border: 1px solid rgba(44,122,123,0.3);
+    border-radius: 40px;
+    background: rgba(13,27,42,0.85);
+    backdrop-filter: blur(4px);
+    transition: all 0.25s ease;
+    white-space: nowrap;
+  }
+
+  .orbital-node:hover .node-pill,
+  .orbital-node.active .node-pill {
+    background: rgba(44,122,123,0.15);
+    border-color: rgba(44,122,123,0.7);
+    box-shadow: 0 0 24px rgba(44,122,123,0.15);
+  }
+
+  .node-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--cream);
+    display: block;
+  }
+
+  .node-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.58rem;
+    color: var(--teal);
+    letter-spacing: 0.06em;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .node-dot {
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--teal);
+    top: 50%;
+    transform: translateY(-50%);
+    transition: all 0.25s;
+  }
+
+  /* ── DETAIL PANEL ── */
+  .detail-panel {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(13,27,42,0.97);
+    border-top: 1px solid rgba(44,122,123,0.2);
+    padding: 32px 40px 28px;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 200;
+    max-height: 45vh;
+    overflow-y: auto;
+    backdrop-filter: blur(12px);
+  }
+
+  .detail-panel.open { transform: translateY(0); }
+
+  .detail-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+
+  .detail-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--teal);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .detail-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+
+  .detail-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--steel);
+    letter-spacing: 0.06em;
+  }
+
+  .detail-body {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: rgba(245,241,235,0.82);
+    margin-bottom: 16px;
+  }
+
+  .detail-stats {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .detail-stat {
+    padding: 8px 14px;
+    background: rgba(44,122,123,0.1);
+    border: 1px solid rgba(44,122,123,0.2);
+    border-radius: 4px;
+  }
+
+  .detail-stat-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--teal);
+    font-weight: 500;
+    display: block;
+  }
+
+  .detail-stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--steel);
+    letter-spacing: 0.06em;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .detail-close {
+    position: absolute;
+    top: 20px; right: 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--steel);
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: color 0.2s;
+  }
+
+  .detail-close:hover { color: var(--teal); }
+
+  /* ── FOOTER BAR ── */
+  .footbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 40px;
+    border-top: 1px solid var(--border);
+    background: rgba(13,27,42,0.92);
+    backdrop-filter: blur(8px);
+  }
+
+  .footbar-left {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--steel);
+    letter-spacing: 0.06em;
+  }
+
+  .footbar-right {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--teal);
+    letter-spacing: 0.06em;
+  }
+
+  /* Spoke animation */
+  @keyframes spokePulse {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 0.7; }
+  }
+
+  .spoke-line {
+    animation: spokePulse 3s ease-in-out infinite;
+  }
+
+  .spoke-line:nth-child(1) { animation-delay: 0s; }
+  .spoke-line:nth-child(2) { animation-delay: 0.5s; }
+  .spoke-line:nth-child(3) { animation-delay: 1s; }
+  .spoke-line:nth-child(4) { animation-delay: 1.5s; }
+  .spoke-line:nth-child(5) { animation-delay: 2s; }
+
+  .spoke-line.active {
+    animation: none;
+    opacity: 1 !important;
+    stroke: var(--teal) !important;
+    stroke-width: 1.5px !important;
+  }
+
+  /* Seal pulse */
+  @keyframes sealRing {
+    0%, 100% { opacity: 0.18; }
+    50% { opacity: 0.35; }
+  }
+
+  .seal-ring-pulse { animation: sealRing 4s ease-in-out infinite; }
+
+  /* Fade in on load */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translate(-50%, calc(-50% + 12px)); }
+    to   { opacity: 1; transform: translate(-50%, -50%); }
+  }
+
+  .center-seal { animation: fadeUp 0.8s ease forwards; }
+
+  @keyframes nodeIn {
+    from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)); }
+    to   { opacity: 1; transform: translate(-50%, -50%); }
+  }
+
+  .orbital-node {
+    opacity: 0;
+    animation: nodeIn 0.6s ease forwards;
+  }
+
+  .orbital-node:nth-child(1) { animation-delay: 0.15s; }
+  .orbital-node:nth-child(2) { animation-delay: 0.25s; }
+  .orbital-node:nth-child(3) { animation-delay: 0.35s; }
+  .orbital-node:nth-child(4) { animation-delay: 0.45s; }
+  .orbital-node:nth-child(5) { animation-delay: 0.55s; }
+</style>
+</head>
+<body>
+
+<!-- ── TOP BAR ── -->
+<div class="topbar">
+  <div class="topbar-left">
+    <svg width="28" height="28" viewBox="0 0 140 140">
+      <circle cx="70" cy="70" r="66" fill="none" stroke="#2C7A7B" stroke-width="3"/>
+      <circle cx="70" cy="70" r="62" fill="#0D1B2A"/>
+      <text x="70" y="82" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-weight="700" font-size="50" fill="#2C7A7B" letter-spacing="-3">KV</text>
+    </svg>
+    <div>
+      <div class="topbar-name">Knowledge Vault</div>
+      <div class="topbar-sub">DROPDOWN LOGISTICS</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-stat">
+      <div class="topbar-stat-val">497,750</div>
+      <div class="topbar-stat-label">CORPUS CHUNKS</div>
+    </div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-stat">
+      <div class="topbar-stat-val">44</div>
+      <div class="topbar-stat-label">VAULT FOLDERS</div>
+    </div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-stat">
+      <div class="topbar-stat-val">20</div>
+      <div class="topbar-stat-label">ARTIFACT TYPES</div>
+    </div>
+    <div class="topbar-divider"></div>
+    <span class="topbar-link" onclick="showLearnMore()">Learn More →</span>
+  </div>
+</div>
+
+<!-- ── ORBITAL STAGE ── -->
+<div class="stage">
+  <div class="orbital-wrap" id="orbitalWrap">
+
+    <!-- Orbit rings -->
+    <div class="orbit-ring"></div>
+    <div class="orbit-ring-inner"></div>
+
+    <!-- Spokes (SVG) -->
+    <svg class="spoke-svg" id="spokeSvg" viewBox="0 0 700 700">
+      <!-- Lines drawn by JS -->
+    </svg>
+
+    <!-- Center seal -->
+    <div class="center-seal" id="centerSeal">
+      <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="70" cy="70" r="66" fill="none" stroke="#2C7A7B" stroke-width="2" class="seal-ring-pulse"/>
+        <circle cx="70" cy="70" r="56" fill="none" stroke="#2C7A7B" stroke-width="0.75" stroke-dasharray="3 4"/>
+        <circle cx="70" cy="70" r="62" fill="#0D1B2A"/>
+        <text x="70" y="60" text-anchor="middle" font-family="'Space Grotesk', sans-serif" font-weight="700" font-size="32" fill="#2C7A7B" letter-spacing="-2">KV</text>
+        <text x="70" y="84" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.5" fill="#6B7B8D" letter-spacing="3">KNOWLEDGE VAULT</text>
+        <line x1="38" y1="90" x2="102" y2="90" stroke="#2C7A7B" stroke-width="0.75" opacity="0.6"/>
+        <text x="70" y="100" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="5.5" fill="#6B7B8D" letter-spacing="2.5">DROPDOWN LOGISTICS</text>
+        <line x1="70" y1="6" x2="70" y2="12" stroke="#2C7A7B" stroke-width="1.5"/>
+        <line x1="70" y1="128" x2="70" y2="134" stroke="#2C7A7B" stroke-width="1.5"/>
+        <line x1="6" y1="70" x2="12" y2="70" stroke="#2C7A7B" stroke-width="1.5"/>
+        <line x1="128" y1="70" x2="134" y2="70" stroke="#2C7A7B" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+    <!-- Orbital nodes (positioned by JS) -->
+    <div class="orbital-node" id="node-0" onclick="openPanel(0)">
+      <div class="node-pill">
+        <span class="node-title">What It Is</span>
+        <span class="node-sub">System of Structure</span>
+      </div>
+    </div>
+
+    <div class="orbital-node" id="node-1" onclick="openPanel(1)">
+      <div class="node-pill">
+        <span class="node-title">The Corpus</span>
+        <span class="node-sub">497,750 chunks · 9 collections</span>
+      </div>
+    </div>
+
+    <div class="orbital-node" id="node-2" onclick="openPanel(2)">
+      <div class="node-pill">
+        <span class="node-title">Dex Jr.</span>
+        <span class="node-sub">The archivist · Seat 1010</span>
+      </div>
+    </div>
+
+    <div class="orbital-node" id="node-3" onclick="openPanel(3)">
+      <div class="node-pill">
+        <span class="node-title">Governance</span>
+        <span class="node-sub">20 types · 65 standards</span>
+      </div>
+    </div>
+
+    <div class="orbital-node" id="node-4" onclick="openPanel(4)">
+      <div class="node-pill">
+        <span class="node-title">The Cathedral</span>
+        <span class="node-sub">One operator. One rig.</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── DETAIL PANEL ── -->
+<div class="detail-panel" id="detailPanel">
+  <span class="detail-close" onclick="closePanel()">CLOSE ✕</span>
+  <div class="detail-inner">
+    <div>
+      <div class="detail-label" id="panelLabel"></div>
+      <div class="detail-title" id="panelTitle"></div>
+      <div class="detail-id" id="panelId"></div>
+    </div>
+    <div>
+      <div class="detail-body" id="panelBody"></div>
+      <div class="detail-stats" id="panelStats"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER BAR ── */
+<div class="footbar" id="footbar">
+  <div class="footbar-left">
+    ONE OPERATOR &nbsp;·&nbsp; ONE RIG &nbsp;·&nbsp; CHAOS → STRUCTURED → AUTOMATED
+  </div>
+  <div class="footbar-right">
+    dropdownlogistics.com
+  </div>
+</div>
+
+<script>
+const NODES = [
+  {
+    angle: 270, // top
+    label: '01 — WHAT IT IS',
+    title: 'System of Structure',
+    id: 'STD-VAULT-002 · v1.0 · 2026-03-14',
+    body: 'The DDL Knowledge Vault is a governed local repository that ensures every DDL artifact — from council reviews to Substack posts to architectural decisions — has a canonical home, a consistent structure, and a clear path into the RAG corpus. It is the answer to "where does this live?" for every artifact the studio produces. Not a web app. Not a cloud service. A folder structure with enforced naming, an intake protocol, and a retrieval pipeline behind it.',
+    stats: [
+      { val: '44', label: 'Vault Folders' },
+      { val: '2', label: 'Mirror Drives' },
+      { val: '20', label: 'Artifact Types' },
+      { val: 'v1.0', label: 'Current Version' },
+    ]
+  },
+  {
+    angle: 30, // upper right
+    label: '02 — THE CORPUS',
+    title: 'Half a Million Chunks',
+    id: 'dex_canon · ddl_archive · 9 named collections',
+    body: 'The corpus is the institutional memory. 226,123 canon chunks — governed, ratified, high-confidence retrieval. 271,627 archive chunks — complete historical record. Nine named collections give Dex Jr. scoped retrieval: dex_auditforge, dex_blindspot, dex_code, dex_canonpress, dex_lore, dex_site, dex_dave, ext_reference, ext_creator. Memory pool becomes memory topology.',
+    stats: [
+      { val: '226K', label: 'Canon Chunks' },
+      { val: '271K', label: 'Archive Chunks' },
+      { val: '9', label: 'Collections' },
+      { val: '23', label: 'Ingested Ext.' },
+    ]
+  },
+  {
+    angle: 150, // lower right
+    label: '03 — THE ARCHIVIST',
+    title: 'Dex Jr.',
+    id: 'Seat 1010 · qwen2.5-coder:7b · 90%+ Judgment-Ready',
+    body: 'Local AI running on an RTX 3070. Not a chatbot. Not a search engine. A governed continuity engine — archivist, normalizer, retrieval judge, governance detector, and operator coprocessor. With 497K chunks and collection-aware queries, Dex Jr. answers "why is it this way now?" with sourced, weighted, constitutionally-ordered evidence. The corpus is what makes him irreplaceable.',
+    stats: [
+      { val: '90%+', label: 'Judgment-Ready' },
+      { val: '7B', label: 'Parameters' },
+      { val: 'RTX 3070', label: 'Local GPU' },
+      { val: 'v4.1', label: 'Modelfile' },
+    ]
+  },
+  {
+    angle: 210, // lower left
+    label: '04 — GOVERNANCE',
+    title: 'Structured by Design',
+    id: 'STD-VAULT-002 · PRO-VAULT-001 · 10-Seat Council',
+    body: 'Everything that enters the Vault is named, classified, versioned, and ingested. Twenty canonical artifact types. Sixty-five ratified standards. Twenty-seven OBS entries. A ten-seat AI council that reviews, deliberates, and advises — but never decides. The operator decides. The governance layer ensures nothing degrades as the corpus scales.',
+    stats: [
+      { val: '65', label: 'Standards' },
+      { val: '10', label: 'Council Seats' },
+      { val: '27+', label: 'OBS Entries' },
+      { val: 'LOCK / REVISE / REJECT', label: 'Verdict Types' },
+    ]
+  },
+  {
+    angle: 330, // upper left
+    label: '05 — THE CATHEDRAL',
+    title: 'One Person. One Rig.',
+    id: 'Dropdown Logistics · Dave Kitchens · CPA',
+    body: 'The cathedral is a governed personal intelligence studio where every meaningful output can be traced back through structure, decision, provenance, and retrieval. The Vault gives intake shape. The standards define valid artifact forms. The corpus preserves memory. The council pressure-tests meaning. Dex Jr. retrieves and normalizes. The products prove the architecture can ship. When it\'s done, DDL is not a collection of projects. It is a one-person institutional operating system.',
+    stats: [
+      { val: '3', label: 'Live Products' },
+      { val: '203', label: 'Site Pages' },
+      { val: '8', label: 'Wings' },
+      { val: '1', label: 'Operator' },
+    ]
+  },
+];
+
+const CENTER = 350; // SVG coords (viewBox 700x700)
+const RADIUS = 270;
+
+function angleToPos(deg, size) {
+  const rad = (deg - 90) * Math.PI / 180;
+  // Returns % position in the container
+  const x = 50 + (Math.cos(rad) * RADIUS / 700) * 100;
+  const y = 50 + (Math.sin(rad) * RADIUS / 700) * 100;
+  return { x, y };
+}
+
+// Position nodes
+NODES.forEach((n, i) => {
+  const pos = angleToPos(n.angle, 700);
+  const el = document.getElementById(`node-${i}`);
+  el.style.left = pos.x + '%';
+  el.style.top = pos.y + '%';
+
+  // Dot position
+  const dot = document.createElement('div');
+  dot.className = 'node-dot';
+  dot.id = `dot-${i}`;
+
+  // Place dot on edge facing center
+  const rad = (n.angle - 90) * Math.PI / 180;
+  const facingCenter = n.angle > 90 && n.angle < 270;
+  dot.style.right = facingCenter ? '-4px' : 'auto';
+  dot.style.left = facingCenter ? 'auto' : '-4px';
+  el.querySelector('.node-pill').appendChild(dot);
+});
+
+// Draw spokes
+const svg = document.getElementById('spokeSvg');
+NODES.forEach((n, i) => {
+  const rad = (n.angle - 90) * Math.PI / 180;
+  const nodeX = CENTER + Math.cos(rad) * RADIUS;
+  const nodeY = CENTER + Math.sin(rad) * RADIUS;
+
+  // End the spoke at the center seal boundary (~80px radius in 700 coord space)
+  const sealR = 80;
+  const cx = CENTER + Math.cos(rad) * sealR;
+  const cy = CENTER + Math.sin(rad) * sealR;
+
+  // Start spoke at node (offset slightly from center of node toward center)
+  const nodeR = 120; // approximate node pill edge in 700 space
+  const nx = CENTER + Math.cos(rad) * (RADIUS - nodeR * 0.4);
+  const ny = CENTER + Math.sin(rad) * (RADIUS - nodeR * 0.4);
+
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', nx);
+  line.setAttribute('y1', ny);
+  line.setAttribute('x2', cx);
+  line.setAttribute('y2', cy);
+  line.setAttribute('stroke', '#2C7A7B');
+  line.setAttribute('stroke-width', '1');
+  line.setAttribute('stroke-dasharray', '4 6');
+  line.classList.add('spoke-line');
+  line.id = `spoke-${i}`;
+  svg.appendChild(line);
+});
+
+// Panel logic
+let activeNode = null;
+
+const panelData = {
+  label: document.getElementById('panelLabel'),
+  title: document.getElementById('panelTitle'),
+  id: document.getElementById('panelId'),
+  body: document.getElementById('panelBody'),
+  stats: document.getElementById('panelStats'),
+};
+
+function openPanel(i) {
+  const n = NODES[i];
+
+  if (activeNode === i) { closePanel(); return; }
+  activeNode = i;
+
+  // Reset nodes
+  document.querySelectorAll('.orbital-node').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.spoke-line').forEach(el => el.classList.remove('active'));
+
+  document.getElementById(`node-${i}`).classList.add('active');
+  document.getElementById(`spoke-${i}`).classList.add('active');
+
+  panelData.label.textContent = n.label;
+  panelData.title.textContent = n.title;
+  panelData.id.textContent = n.id;
+  panelData.body.textContent = n.body;
+
+  panelData.stats.innerHTML = n.stats.map(s => `
+    <div class="detail-stat">
+      <span class="detail-stat-val">${s.val}</span>
+      <span class="detail-stat-label">${s.label}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('detailPanel').classList.add('open');
+  document.getElementById('footbar').style.display = 'none';
+}
+
+function closePanel() {
+  activeNode = null;
+  document.querySelectorAll('.orbital-node').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.spoke-line').forEach(el => el.classList.remove('active'));
+  document.getElementById('detailPanel').classList.remove('open');
+  document.getElementById('footbar').style.display = 'flex';
+}
+
+function showLearnMore() {
+  // Cycle through nodes on Learn More click
+  const next = (activeNode === null) ? 0 : (activeNode + 1) % NODES.length;
+  openPanel(next);
+}
+
+// Keyboard close
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePanel();
+});
+</script>
+</body>
+</html>

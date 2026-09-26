@@ -1,0 +1,20 @@
+DEX JR RAG BRIDGE - Query Transcript
+============================================================
+TIMESTAMP: 2026-03-17T21:25:28.384947
+PROVENANCE: [Sources: 5×Canon]
+SOURCES: DDLCouncilReview_MaximumSignalRecom.txt, DexJr_CorpusRecommendations.txt, Messages - 2026-03-06 20 12 02 - DropDownLogistics.txt, DDLCouncilReview_AuditForgeAnalysis.txt, DDLCouncilReview_AuditForgeAnalysisAnalysis.txt
+============================================================
+
+QUERY:
+What is the CottageHumble design system?
+
+RESPONSE:
+The CottageHumble design system enforces a set of guidelines for creating dark, professional-looking content, including:
+
+- Dark backgrounds with navy #0D1B2A as primary color and card surfaces in #10202f.
+- Text colors: cream #F5F1EB for body text and #E8E6E3 for secondary text.
+- Accent colors: crimson #B23531 (DDL brand), amber #C49A3C (data/analytics), violet #8a6cc9 (DexVerse), green #4A9E6B (dossiers), and blue #6B9DC2 (products).
+- Fonts: Space Grotesk for display headings, JetBrains Mono for data/code, and Source Serif 4 for body prose.
+- Avoiding Inter font, light mode backgrounds, and unstructured white tables.
+
+This system is designed to maintain a professional appearance while being easy on the eyes.

@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-03-13T17:10:06.739946",
+  "version": "3.0",
+  "prompt": "python dex-council.py --from-file \"C:\\Users\\dexjr\\dex-rag\\prompts\\CR-CANON-001.txt\" --all --rag --save council-runs/CR-CANON-001 --ingest\n```\n\nSave this as `CR-CANON-001.txt` in your prompts folder:\n```\nCR-CANON-001 — NAMING REVIEW\nSeat 1002 (Marcus Caldwell) | 2026-03-13\nClassification: Canon Decision — Terminology\n\nDDL's llms.txt at /llms.txt follows the open standard in format only.\nAt v1.4 it is 400+ lines covering operator identity, design system,\nwing architecture, AI council (10 seats), council review log, local AI\ninfrastructure, content type registry, 160+ routes, canon glossary, and\nrules of engagement. Any AI that reads it arrives fully oriented.\n\nThis is not a crawl hint. It is a portable operating context for AI\ncollaborators. It needs a name.\n\nTHE QUESTION: What do we call this class of document?\n\nRequirements for the name:\n1. Distinguishes from standard llms.txt spec\n2. Reflects what it is — portable AI operating context\n3. Coinable as DDL canon term (trademark eligible, not genericized)\n4. Works as noun (\"the ___\") and modifier (\"___ standard\", \"___ format\")\n5. Feels DDL — methodology-grade, not hype\n\nCANDIDATES:\nA. OperatorManifest — precise, DDL vocabulary, clean line from spec\nB. ManifestOS — implies the document runs something, not just describes\nC. ContextManifest — literal, clean, possibly too generic\nD. GroundFile — plays off GroundTruth series, foundation document\nE. CanonFile — plays off CanonPress, risk: brand conflation\nF. Open proposal — if none fit, propose an alternative\n\nYou are naming the CLASS OF DOCUMENT, not reviewing llms.txt content.\nThe name enters the canon glossary, appears in llms.txt itself, and\nlives at /knowledge/glossary. Small decision, long downstream reach.\n\nVERDICT FORMAT:\nVERDICT: LOCK / REVISE / REJECT\nRECOMMENDATION: [preferred term or proposal]\nRATIONALE: [tight]\nCONCERN: [one thing to watch, if any]",
+  "model_count": 5,
+  "successful": 5,
+  "failed": 0,
+  "models": [
+    {
+      "name": "Qwen (Code Specialist)",
+      "provider": "local",
+      "model_id": "qwen2.5-coder:7b",
+      "elapsed": 6.3,
+      "error": null,
+      "response_length": 342
+    },
+    {
+      "name": "Llama (General Reasoning)",
+      "provider": "local",
+      "model_id": "llama3.1:8b",
+      "elapsed": 26.5,
+      "error": null,
+      "response_length": 1371
+    },
+    {
+      "name": "DeepSeek-Local (Chain-of-Thought)",
+      "provider": "local",
+      "model_id": "deepseek-r1:8b",
+      "elapsed": 58.8,
+      "error": null,
+      "response_length": 2300
+    },
+    {
+      "name": "Gemini (Google)",
+      "provider": "gemini",
+      "model_id": "gemini-2.5-flash",
+      "elapsed": 8.1,
+      "error": null,
+      "response_length": 830
+    },
+    {
+      "name": "Mistral/LeChat (European)",
+      "provider": "mistral",
+      "model_id": "mistral-small-latest",
+      "elapsed": 3.8,
+      "error": null,
+      "response_length": 1876
+    }
+  ],
+  "synthesis_elapsed": 12.7
+}

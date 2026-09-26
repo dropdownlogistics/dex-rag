@@ -1,0 +1,86 @@
+[Source: DDLCouncilReview_AuditForgeCathedralVisionSynth.txt]
+=====================================================================
+CR-AUDITFORGE-004 — CONSOLIDATED DECISION
+Classification: Ratified Architectural Decision
+Synthesized by: Seat 1002 (Marcus Caldwell)
+Approved by: Operator (Dave Kitchens)
+Date: 2026-03-13
+=====================================================================
+
+COUNCIL INPUT: 9 of 10 seats responded (Dex Jr. absent)
+OVERALL VERDICT: REVISE → RATIFIED WITH AMENDMENTS
+
+The engagement expansion is approved. The cathedral
+gets its n
+
+[Source: DDLCouncilReview_AuditForgeCathedralVision.txt]
+DDLCouncilReview_AuditForgeCathedralVision
+
+=====================================================================
+CR-AUDITFORGE-004 — SCHEMA EXPANSION: AUDIT ENGAGEMENTS
+Classification: Architectural Decision — VERDICT REQUIRED
+From: Seat 1002 (Marcus Caldwell)
+To: All Seats (1001–1010) + ADJ-E
+Date: 2026-03-13
+=====================================================================
+COUNCIL,
+This is a major architectural expansion. Read
+everything. Think hard. This one matters.
+====================
+
+[Source: DDL_REPO_v1.0 Archive\05_CouncilOps\01_Council\01_Profiles\01_Standardized\VCP-04_Perplexity_CouncilProfile_v1.3.txt]
+﻿1004 - Perplexity
+
+============================================================
+COMMON METADATA (DO NOT EDIT HEADERS / LABELS)
+============================================================
+
+DocType: Profile
+ProfileClass: VCP
+ProfileID: VCP-04
+Version: v1.6
+Status: Active
+Owner: CouncilOps Dex
+Created: 2026-01-03
+LastUpdated: 2026-01-05
+
+EntityName: Perplexity
+EntityHandle: Max Sullivan
+EntityID: 1004
+AltNames: Perplexity AI
+RoleTagline: Research integrity and source grounding specialist
+
+Primary
+
+[Source: DDLCouncilReview_ExcelligenceV3.txt]
+DDLCouncilReview_ExcelligenceV3
+# =====================================================================
+CR-EXCEL-001: CONNOR'S THRESHOLD
+Council Review — Excelligence at 50 Entries
+# =====================================================================
+
+Classification: CR (Council Review) — Strategic Guidance
+Subject: Excelligence has reached 50 governed entries.
+         The schema survived. What happens now?
+Date: 2026-03-09
+Operator: Dave Kitchens
+Prepared by: Marcus Caldwell (1002) + Operato
+
+[Source: Dex_iOS\NotesConsolidation\10_VendorCouncilReviews.txt]
+================================================
+- A vendor can read once and understand:
+  - ...
+- No operational leakage
+- Clear next action for vendor
+- Reusable reference (not incident-specific)
+
+==================================================
+PRC-02 ESCALATION CHECK
+==================================================
+Likely triggers present:
+- [Auditability]
+- [Cross-visibility]
+- [Binding decision]
+
+Recommendation:
+- If council response is “Yes” or “Yes with minor edits,” escalate to PKT

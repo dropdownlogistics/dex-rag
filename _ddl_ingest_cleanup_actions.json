@@ -1,0 +1,121 @@
+[
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "delete",
+    "file": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\AuditForge Full Session Log - 4.14.26.txt",
+    "size": 202966,
+    "reason": "partial_save"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\auditforge_og_image.svg",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_review\\auditforge_og_image.svg",
+    "category": "unsupported"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\ledger-og (2).png",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_review\\ledger-og (2).png",
+    "category": "unsupported"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\ledger-og.png",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_review\\ledger-og.png",
+    "category": "unsupported"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\og-image excelligence (2).png",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_review\\og-image excelligence (2).png",
+    "category": "unsupported"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\og-image excelligence.png",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_review\\og-image excelligence.png",
+    "category": "unsupported"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\og-image-ddl.com (2).png",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_review\\og-image-ddl.com (2).png",
+    "category": "unsupported"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\og-image-ddl.com.png",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_review\\og-image-ddl.com.png",
+    "category": "unsupported"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\og-image-kv.png",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_review\\og-image-kv.png",
+    "category": "unsupported"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\DDLExtraction_DaveKitchens_SourceMaterial_4.13.26.md",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_duplicates\\DDLExtraction_DaveKitchens_SourceMaterial_4.13.26.md",
+    "category": "already_in_corpus"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\LLMPM_Full Session Log - 4.12.26.txt",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_duplicates\\LLMPM_Full Session Log - 4.12.26.txt",
+    "category": "already_in_corpus"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\WebsitePM Full Session Log - 4.13.26.txt",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_duplicates\\WebsitePM Full Session Log - 4.13.26.txt",
+    "category": "already_in_corpus"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\WorkBench-BrandKit-v1_0.html",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_duplicates\\WorkBench-BrandKit-v1_0.html",
+    "category": "already_in_corpus"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\WorkBench-Favicon-Reference.html",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_duplicates\\WorkBench-Favicon-Reference.html",
+    "category": "already_in_corpus"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\WorkBench-OG-Image.html",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_duplicates\\WorkBench-OG-Image.html",
+    "category": "already_in_corpus"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\Workbench Full Session Log - 4.13.26.txt",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_duplicates\\Workbench Full Session Log - 4.13.26.txt",
+    "category": "already_in_corpus"
+  },
+  {
+    "ts": "2026-04-15T01:15:25Z",
+    "action": "move",
+    "from": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\gridtactics-demo.jsx",
+    "to": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_duplicates\\gridtactics-demo.jsx",
+    "category": "already_in_corpus"
+  }
+]

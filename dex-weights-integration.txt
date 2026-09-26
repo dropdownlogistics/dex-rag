@@ -1,0 +1,156 @@
+=====================================================================
+SOURCE WEIGHTING INTEGRATION PATCH
+dex-weights.py → dex-query.py + dex-bridge.py
+Prepared by: LLM PM (1008)
+Date: 2026-03-07
+=====================================================================
+
+WHAT THIS DOES:
+  Replaces flat ChromaDB queries with weighted queries.
+  Canon outranks archive. Council reviews outrank text messages.
+  Provenance surfaced in every response.
+
+STEP 1 — Copy dex-weights.py to the scripts folder
+  C:\Users\dexjr\dex-rag\dex-weights.py
+
+STEP 2 — Patch dex-query.py
+---------------------------------------------------------------------
+
+ADD at the top of dex-query.py (after existing imports):
+
+  from dex_weights import weighted_query, print_weight_stats
+
+FIND the section that runs the ChromaDB query
+(likely something like):
+
+  results = collection.query(
+      query_embeddings=[embedding],
+      n_results=n_results,
+      include=["documents", "metadatas", "distances"]
+  )
+
+REPLACE with:
+
+  results = weighted_query(
+      query_text=query,
+      n_results=n_results,
+      include_external=args.external if hasattr(args, 'external') else False
+  )
+
+ADD --external flag to dex-query.py argument parser:
+
+  parser.add_argument("--external", action="store_true",
+      help="Include ext_canon and ext_archive in search")
+
+ADD --weight-stats flag:
+
+  parser.add_argument("--weight-stats", action="store_true",
+      help="Show source weight table and exit")
+
+ADD handler early in main():
+
+  if args.weight_stats:
+      print_weight_stats()
+      sys.exit(0)
+
+UPDATE result display to show provenance:
+
+  for r in results:
+      print(f"[{r['label']}] {r['weighted_score']:.4f} — {r['filename']}")
+      print(r['document'][:500])
+      print()
+
+STEP 3 — Patch dex-bridge.py
+---------------------------------------------------------------------
+
+ADD at the top of dex-bridge.py (after existing imports):
+
+  from dex_weights import weighted_query_with_provenance
+
+FIND the RAG retrieval call (likely):
+
+  results = collection.query(...)
+
+REPLACE with:
+
+  rag_results, provenance = weighted_query_with_provenance(
+      query_text=user_query,
+      n_results=5,
+      include_external=args.external if hasattr(args, 'external') else False
+  )
+
+FIND where RAG context is assembled for the prompt:
+
+  context = "\n\n".join([r['document'] for r in results...])
+
+UPDATE to include provenance in the injected context:
+
+  context_chunks = [r['document'] for r in rag_results]
+  context = "\n\n".join(context_chunks)
+  context_with_provenance = f"{provenance}\n\n{context}"
+
+  # Then pass context_with_provenance into the generation prompt
+
+ADD --external flag to dex-bridge.py argument parser:
+
+  parser.add_argument("--external", action="store_true",
+      help="Include external corpus in RAG retrieval")
+
+STEP 4 — Verify
+---------------------------------------------------------------------
+
+  python dex-query.py --weight-stats
+  → Should print the full weight table
+
+  python dex-query.py "council review LLMS security"
+  → Council review chunks should rank above text messages
+
+  python dex-query.py "metacognition David Purifoy"
+  → David Purifoy (council context, governed) should outrank
+    Sarah Watkins (text message) on equal topic ground
+
+  python dex-query.py "Munger cognitive biases" --external
+  → After Tier 1 ingest, ext_canon results should appear
+    below canon but above archive
+
+=====================================================================
+WEIGHT TUNING (if results still feel wrong after patching)
+=====================================================================
+
+Edit these values in dex-weights.py:
+
+  FILE_TYPE_WEIGHTS = {
+      "council_review": 1.10,  # raise if reviews still losing
+      "text_message":   0.90,  # lower if texts still winning
+      "thread_export":  0.88,  # lower if ChatGPT threads dominate
+      ...
+  }
+
+The weights are relative — what matters is the ratio between tiers,
+not the absolute values. Governed docs should be 15-25% heavier
+than casual archive material.
+
+=====================================================================
+WHAT DOESN'T CHANGE
+=====================================================================
+
+  - dex-council.py: Will inherit weighting when it calls bridge/query
+  - dex-deliberate.py: Same
+  - dex-sweep.py: Not a query tool — no change needed
+  - dex-acquire.py: Uses its own fetch/embed pipeline — no change needed
+  - ChromaDB collections: Not modified. Weights are applied at query time.
+
+=====================================================================
+CANONICAL MODULE LOCATION
+=====================================================================
+
+  C:\Users\dexjr\dex-rag\dex-weights.py
+
+Both dex-query.py and dex-bridge.py import from it.
+If weights need tuning, edit dex-weights.py once.
+Both scripts pick up the change immediately.
+
+=====================================================================
+Dropdown Logistics — Chaos -> Structured -> Automated
+Source Weighting Integration Patch v1.0 | 2026-03-07
+=====================================================================

@@ -1,0 +1,452 @@
+[
+  {
+    "term": "Emily",
+    "type": "entity",
+    "canon": 10576,
+    "archive": 11417,
+    "total": 21993,
+    "has_def": true,
+    "def_matches": [
+      "Excerpt_30_emily.txt"
+    ],
+    "recommend": "NONE"
+  },
+  {
+    "term": "Dave Kitchens",
+    "type": "entity",
+    "canon": 2896,
+    "archive": 3139,
+    "total": 6035,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "PROFILE"
+  },
+  {
+    "term": "F1",
+    "type": "fcode",
+    "canon": 2151,
+    "archive": 2927,
+    "total": 5078,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "F5",
+    "type": "fcode",
+    "canon": 2076,
+    "archive": 2831,
+    "total": 4907,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "CottageHumble",
+    "type": "canon",
+    "canon": 2384,
+    "archive": 2127,
+    "total": 4511,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "F4",
+    "type": "fcode",
+    "canon": 1714,
+    "archive": 2185,
+    "total": 3899,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "F2",
+    "type": "fcode",
+    "canon": 1720,
+    "archive": 2095,
+    "total": 3815,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "F3",
+    "type": "fcode",
+    "canon": 1693,
+    "archive": 2108,
+    "total": 3801,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "F6",
+    "type": "fcode",
+    "canon": 1497,
+    "archive": 1701,
+    "total": 3198,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "Connor",
+    "type": "entity",
+    "canon": 1490,
+    "archive": 1471,
+    "total": 2961,
+    "has_def": true,
+    "def_matches": [
+      "Messages - 2026-03-06 20 12 02 - Kelli O\u2019Connor.txt"
+    ],
+    "recommend": "NONE"
+  },
+  {
+    "term": "GK",
+    "type": "entity",
+    "canon": 803,
+    "archive": 1677,
+    "total": 2480,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "PROFILE"
+  },
+  {
+    "term": "Beth Epperson",
+    "type": "entity",
+    "canon": 860,
+    "archive": 810,
+    "total": 1670,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "PROFILE"
+  },
+  {
+    "term": "AutoCouncil",
+    "type": "canon",
+    "canon": 861,
+    "archive": 765,
+    "total": 1626,
+    "has_def": true,
+    "def_matches": [
+      "00_Archive\\DDL-Standards-Canon\\AutoCouncil_CR-CANON-001_20260313_171006.txt"
+    ],
+    "recommend": "NONE"
+  },
+  {
+    "term": "MDN",
+    "type": "canon",
+    "canon": 881,
+    "archive": 247,
+    "total": 1128,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "GroundTune",
+    "type": "canon",
+    "canon": 501,
+    "archive": 261,
+    "total": 762,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "CoherentVelocity",
+    "type": "canon",
+    "canon": 274,
+    "archive": 248,
+    "total": 522,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "Clayton Hotze",
+    "type": "entity",
+    "canon": 237,
+    "archive": 249,
+    "total": 486,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "PROFILE"
+  },
+  {
+    "term": "Bryce",
+    "type": "entity",
+    "canon": 224,
+    "archive": 206,
+    "total": 430,
+    "has_def": true,
+    "def_matches": [
+      "2025-12-05 09 15 13 - Austin Waters - Letter to Bryce.txt"
+    ],
+    "recommend": "NONE"
+  },
+  {
+    "term": "GuidedEmergence",
+    "type": "canon",
+    "canon": 240,
+    "archive": 130,
+    "total": 370,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "OccamsOpposite",
+    "type": "canon",
+    "canon": 239,
+    "archive": 78,
+    "total": 317,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "AccidentalInsight",
+    "type": "canon",
+    "canon": 166,
+    "archive": 144,
+    "total": 310,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "AcceptableArrogance",
+    "type": "canon",
+    "canon": 163,
+    "archive": 137,
+    "total": 300,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "Jennifer Parker",
+    "type": "entity",
+    "canon": 144,
+    "archive": 134,
+    "total": 278,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "PROFILE"
+  },
+  {
+    "term": "ModelCourtesy",
+    "type": "canon",
+    "canon": 225,
+    "archive": 35,
+    "total": 260,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "TrustANDVerify",
+    "type": "canon",
+    "canon": 162,
+    "archive": 86,
+    "total": 248,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "SideDoor",
+    "type": "canon",
+    "canon": 66,
+    "archive": 96,
+    "total": 162,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "AccidentalIntelligence",
+    "type": "canon",
+    "canon": 121,
+    "archive": 40,
+    "total": 161,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "Graph Holds",
+    "type": "canon",
+    "canon": 72,
+    "archive": 69,
+    "total": 141,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "ExpertiseInvisibility",
+    "type": "canon",
+    "canon": 38,
+    "archive": 40,
+    "total": 78,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "Cara Borkowski",
+    "type": "entity",
+    "canon": 31,
+    "archive": 29,
+    "total": 60,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "PROFILE"
+  },
+  {
+    "term": "Charlie Conway",
+    "type": "canon",
+    "canon": 23,
+    "archive": 24,
+    "total": 47,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "OBS-DJ-004",
+    "type": "obs",
+    "canon": 23,
+    "archive": 24,
+    "total": 47,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "STD"
+  },
+  {
+    "term": "HYFS",
+    "type": "canon",
+    "canon": 34,
+    "archive": 0,
+    "total": 34,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "MetaMeta",
+    "type": "canon",
+    "canon": 8,
+    "archive": 12,
+    "total": 20,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "OBS-DJ-001",
+    "type": "obs",
+    "canon": 5,
+    "archive": 13,
+    "total": 18,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "STD"
+  },
+  {
+    "term": "OBS-AF-001",
+    "type": "obs",
+    "canon": 9,
+    "archive": 0,
+    "total": 9,
+    "has_def": true,
+    "def_matches": [
+      "OBS-AF-001.txt"
+    ],
+    "recommend": "NONE"
+  },
+  {
+    "term": "WanderingDirection",
+    "type": "canon",
+    "canon": 2,
+    "archive": 0,
+    "total": 2,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "AppeaseMent",
+    "type": "canon",
+    "canon": 0,
+    "archive": 0,
+    "total": 0,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "CathedralPlanned",
+    "type": "canon",
+    "canon": 0,
+    "archive": 0,
+    "total": 0,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "SessionAsExemplar",
+    "type": "canon",
+    "canon": 0,
+    "archive": 0,
+    "total": 0,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "BringYourData",
+    "type": "canon",
+    "canon": 0,
+    "archive": 0,
+    "total": 0,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "AccidentalEntity",
+    "type": "canon",
+    "canon": 0,
+    "archive": 0,
+    "total": 0,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "PortableRecord",
+    "type": "canon",
+    "canon": 0,
+    "archive": 0,
+    "total": 0,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  },
+  {
+    "term": "AuditorsEye",
+    "type": "canon",
+    "canon": 0,
+    "archive": 0,
+    "total": 0,
+    "has_def": false,
+    "def_matches": [],
+    "recommend": "GLOSS"
+  }
+]

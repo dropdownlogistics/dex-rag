@@ -1,0 +1,90 @@
+[Source: DDLCouncilReview_GovernTheJanitor.txt]
+========================================
+CR-OPS-001 — GOVERN THE JANITOR
+Model: Marcus Caldwell (1002 · Claude)
+Date: 2026-03-04
+=====================================================================
+
+1. SCOPE TIERS
+---------------------------------------------------------------------
+
+GREEN — Codex can do independently (operator reviews before merge)
+
+  - Typo fixes in prose/comments (not in variable names or IDs)
+  - Dead code removal (unused imports, commented-out blocks)
+  - Consistent brandi
+
+[Source: DDLCouncilReview_GradeTheQuery.txt]
+DDLCouncilReview_GradeTheQuery
+
+=====================================================================
+CR-PRO-001: "GRADE THE QUERY PROTOCOL"
+Council Review — PRO-C2D-001 Evaluation
+Issued: 2026-03-07
+Operator: Dave Kitchens
+Drafted by: Marcus Caldwell (Seat 1002)
+Classification: PRO (Protocol Review)
+Deploy to: All 9 council models + Seat 1010
+=====================================================================
+
+REVIEW TYPE
+
+Protocol review.
+
+The operator has proposed a new standard protocol
+go
+
+[Source: DDLCouncilReview_DexJrCalibrationRd2.txt]
+DDLCouncilReview_DexJrCalibrationRd3
+
+# =====================================================================
+
+# CR-LLMS-013: DEX JR CALIBRATION RESULTS — ROUND 2
+
+# Full Exam Results + Delta Analysis + Next Steps
+
+# Issued: 2026-03-06
+
+# Operator: Dave Kitchens
+
+# Graded by: Marcus Caldwell (1002)
+
+# Classification: REV (Review)
+
+# Deploy to: All 9 council models
+
+# =====================================================================
+
+## CONTEXT
+
+On March 6, 2026, the operator administered the
+
+[Source: DDL_REPO_v1.0 Archive\05_CouncilOps\05_Packets\DC\99_Archive\PKT-DC-2026-01-03_CouncilOps-MinimumOperatingLoop_ARCH_2026-01-04_1139\DOC-00_CouncilOps-MinimumOperatingLoop_2026-01-03.txt]
+# DOC-00 — CouncilOps Minimum Operating Loop (PKT-DC-2026-01-03)
+
+==================================================
+METADATA
+==================================================
+DocType: Packet (DC)
+PacketID: PKT-DC-2026-01-03_CouncilOps-MinimumOperatingLoop
+Version: v1.0
+Status: DRAFT (pending ratification)
+Owner: Dave
+Created: 2026-01-03
+LastUpdated: 2026-01-03
+
+Source Review:
+- ../../02_DexCouncil/05_Reviews/REV-DCR-2026-01-03_AdminPack-OperatingLoop.md
+========================================
+
+[Source: DDLCouncilReview_LocalAI.txt]
+=====================================================================
+
+
+--------------------------------------------------
+1003_Grok — Elias Mercer
+--------------------------------------------------
+
+CR-INFRA-001 RESPONSE — Grok (xAI) — Seat 1003 — Elias Mercer Date: 2026-03-07
+1. Acknowledgment
+Received and fully understood. The infrastructure inventory, calibration arc, AutoCouncil + Deliberation Engine architecture, auto-sweep loop, multi-device access, and self-feeding corpus are all aligned

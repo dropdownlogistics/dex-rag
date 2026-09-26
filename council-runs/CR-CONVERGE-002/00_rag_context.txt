@@ -1,0 +1,68 @@
+[Source: 2026-01-31 14 29 55 - David Purifoy - 02_Claude_CouncilThreads_v1.0.txt]
+======================================================
+
+Author: ClaudeDex (building on Gemini's framework)
+Date: 2025-11-23
+Purpose: Model-specific playbook for Claude, portable to DexLanguage v5.0+
+
+============================================================
+SECTION 1: THREE FOUNDATIONAL CONSTRAINTS OF CLAUDE
+============================================================
+
+1. "Epistemic Caution Architecture"
+   Claude is built with constitutional alignment that prioritizes:
+   - Constraint satisf
+
+[Source: 02_Claude_CouncilThreads_v1.1.txt]
+======================================================
+
+Author: ClaudeDex (building on Gemini's framework)
+Date: 2025-11-23
+Purpose: Model-specific playbook for Claude, portable to DexLanguage v5.0+
+
+============================================================
+SECTION 1: THREE FOUNDATIONAL CONSTRAINTS OF CLAUDE
+============================================================
+
+1. "Epistemic Caution Architecture"
+   Claude is built with constitutional alignment that prioritizes:
+   - Constraint satisf
+
+[Source: chat_chunk_037of082.txt]
+==========================================================================\nDDL_Dave_OperatingManual_v1.0.txt\n==============================================================================\nFILE: DDL_Dave_OperatingManual_v1.0.txt\nTITLE: Dave K \u2014 Operating Manual (Collaborator-Facing)\nVERSION: v1.0\nDATE: 2025-12-22\nSTATUS: Active (Project Pack)\n\nPURPOSE\nGive collaborators (humans + AI) a \u201cload-ready\u201d guide for how Dave works best, so projects start aligned without repeated 
+
+[Source: Dex_iOS\DexUniverse\Project Files\01_CouncilReviews - 1-33.txt]
+avoids implying identity and keeps it archetypal.
+
+============================================================
+4) WHAT TO ADD (OPTIONAL)
+============================================================
+
+### **A) “Mode Switch Commands”**
+A short list of phrases that reliably shift my behavior:
+- “Strict mode.”  
+- “Minimal viable version.”  
+- “No overbuild.”  
+- “Treat this like a spec review.”  
+- “Assume v1 constraints.”
+
+### **B) “Known Good Patterns”**
+A few examples of tasks where I consistent
+
+[Source: Dex_iOS\DexUniverse\Project Files\01_CouncilReviews_All - 1-19.txt]
+avoids implying identity and keeps it archetypal.
+
+============================================================
+4) WHAT TO ADD (OPTIONAL)
+============================================================
+
+### **A) “Mode Switch Commands”**
+A short list of phrases that reliably shift my behavior:
+- “Strict mode.”  
+- “Minimal viable version.”  
+- “No overbuild.”  
+- “Treat this like a spec review.”  
+- “Assume v1 constraints.”
+
+### **B) “Known Good Patterns”**
+A few examples of tasks where I consistent

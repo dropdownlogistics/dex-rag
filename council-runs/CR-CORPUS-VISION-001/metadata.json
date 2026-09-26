@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-03-14T12:10:00.926333",
+  "version": "3.0",
+  "prompt": "﻿=====================================================================\nCR-CORPUS-VISION-001\nDDL Corpus Architecture — Cathedral Vision Request\nOperator: Dave Kitchens\nDate: 2026-03-14\nDistribution: All Council Seats (1001-1010)\nClassification: Strategic — Long Horizon — No Immediate Verdict\n=====================================================================\n\nCONTEXT — WHAT HAPPENED TODAY\n=====================================================================\n\nToday was one of the highest-output infrastructure sessions\nin DDL history. Here is the full state of the corpus.\n\nCORPUS STATE (end of session)\n  dex_canon        226,314 chunks\n  ddl_archive      271,627 chunks\n  Total:           497,941 chunks\n\nWHAT WAS BUILT TODAY\n  Modelfile v4.1 to v4.5 — two confirmed fixes\n  dex-ingest.py — 23 extensions, --collection flag,\n    --ext-filter, --nominated-by, phantom count fixed\n  dex-bridge.py v1.2 — auto-ingest every query+response\n  dex-sweep.py — full extensions, bug fixed, nightly reports\n  Archive ingest — 99_DexUniverseArchive fully ingested\n    +172,796 new RAW chunks (code corpus now in)\n  CR-CANON-001 — OperatorManifest LOCKED 5/5\n  CR-CORPUS-NOMINATIONS-001 — 6 ext_reference + 9 ext_creator approved\n  STD-VAULT-002 — 20 document types, full template architecture\n\nTHE ARCHITECTURE WE ARE BUILDING\n=====================================================================\n\nCONSTITUTIONAL HIERARCHY (immovable)\n  dex_canon > ext_canon > ddl_archive > ext_[tier]\n\nCOLLECTION REGISTRY\n  dex_canon        1.00    Ratified DDL governance (live)\n  ddl_archive      0.65    Full historical RAW (live)\n  dex_lore         0.95    Origin documents (building)\n  dex_code         0.85    All DDL code (building)\n  dex_canonpress   0.85    CanonPress articles (building)\n  dex_auditforge   0.85    AuditForge schema and API (building)\n  dex_blindspot    0.85    BlindSpot schema (building)\n  dex_site         0.80    JSX/TSX components (building)\n  dex_dave         0.90    Operator voice — iMessages, TikToks,\n                           emails, memoir, Reddit, Google data\n  ext_reference    0.75    Kimball, DDD, Kleppmann, NIST, PCAOB\n  ext_creator      0.60    Benn Stancil, Gwern, Simon Willison,\n                           Simon Wardley, John Cutler, Greg Wilson,\n                           patio11, Maggie Appleton, Tiago Forte\n\nTHE QUESTION FOR THE COUNCIL\n=====================================================================\n\nWhat we want is cathedral vision. Not a verdict on what we\nhave. What does the corpus look like when it is done?\n\nAnswer these five questions:\n\n1. COMPLETENESS\n   What sources or knowledge domains are missing that would\n   make Dex Jr. genuinely irreplaceable — not just useful?\n\n2. RETRIEVAL VISION\n   When the full corpus is live, what queries should Dex Jr.\n   answer that no cloud model can answer?\n\n3. THE DAVE CORPUS\n   dex_dave contains 26 months of one person's life across\n   every medium. What does that actually enable? What is the\n   highest-value use case the operator has not thought of?\n\n4. ARCHITECTURE GAPS\n   Looking at the constitutional hierarchy and collection\n   registry — what is the weakest link? What breaks first?\n\n5. THE CATHEDRAL QUESTION\n   If you could add one thing the operator has not thought of\n   — one collection, protocol, governance rule, or retrieval\n   pattern — what would it be and why?\n\nVERDICT FORMAT\n=====================================================================\n\nNo LOCK/REVISE/REJECT required. Vision prompt only.\n\n  COMPLETENESS:     [what is missing]\n  RETRIEVAL VISION: [what becomes possible]\n  DAVE CORPUS:      [highest-value use case]\n  ARCHITECTURE GAP: [weakest link]\n  CATHEDRAL ADD:    [your one addition]\n\nBe specific. Be honest. No filler.\nThe operator built half a million chunks today.\nHe can handle your real answer.\n\n=====================================================================\nDropdown Logistics — Chaos -> Structured -> Automated\nCR-CORPUS-VISION-001 | What does it look like when it is done?\n=====================================================================",
+  "model_count": 5,
+  "successful": 5,
+  "failed": 0,
+  "models": [
+    {
+      "name": "Qwen (Code Specialist)",
+      "provider": "local",
+      "model_id": "qwen2.5-coder:7b",
+      "elapsed": 15.9,
+      "error": null,
+      "response_length": 2142
+    },
+    {
+      "name": "Llama (General Reasoning)",
+      "provider": "local",
+      "model_id": "llama3.1:8b",
+      "elapsed": 58.0,
+      "error": null,
+      "response_length": 3242
+    },
+    {
+      "name": "DeepSeek-Local (Chain-of-Thought)",
+      "provider": "local",
+      "model_id": "deepseek-r1:8b",
+      "elapsed": 85.2,
+      "error": null,
+      "response_length": 3646
+    },
+    {
+      "name": "Gemini (Google)",
+      "provider": "gemini",
+      "model_id": "gemini-2.5-flash",
+      "elapsed": 29.1,
+      "error": null,
+      "response_length": 5006
+    },
+    {
+      "name": "Mistral/LeChat (European)",
+      "provider": "mistral",
+      "model_id": "mistral-small-latest",
+      "elapsed": 5.5,
+      "error": null,
+      "response_length": 3125
+    }
+  ],
+  "synthesis_elapsed": 23.7
+}

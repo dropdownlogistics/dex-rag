@@ -1,0 +1,311 @@
+Migration start: 2026-04-12T22:49:04.068670+00:00
+Checkpoint: _step33b_checkpoint.json
+
+============================================================
+ext_creator -> ext_creator_v2  total=922
+============================================================
+  [fresh] created ext_creator_v2
+       922/922  rate=33.9 c/s  eta=0.0m  skipped=0
+  DONE  922 migrated  0 skipped  elapsed=0.5m  rate=33.9 c/s
+
+============================================================
+dex_code -> dex_code_v2  total=20,384
+============================================================
+  [fresh] created dex_code_v2
+     2,000/20,384  rate=33.1 c/s  eta=9.3m  skipped=0
+     4,000/20,384  rate=34.6 c/s  eta=7.9m  skipped=0
+     6,000/20,384  rate=34.2 c/s  eta=7.0m  skipped=0
+     8,000/20,384  rate=34.6 c/s  eta=6.0m  skipped=0
+    10,000/20,384  rate=34.6 c/s  eta=5.0m  skipped=0
+    12,000/20,384  rate=34.7 c/s  eta=4.0m  skipped=0
+    14,000/20,384  rate=34.7 c/s  eta=3.1m  skipped=0
+    16,000/20,384  rate=34.8 c/s  eta=2.1m  skipped=0
+    18,000/20,384  rate=35.0 c/s  eta=1.1m  skipped=0
+    20,000/20,384  rate=34.9 c/s  eta=0.2m  skipped=0
+    20,384/20,384  rate=34.9 c/s  eta=0.0m  skipped=0
+  DONE  20,384 migrated  0 skipped  elapsed=9.7m  rate=34.9 c/s
+
+============================================================
+dex_canon -> dex_canon_v2  total=245,633
+============================================================
+  [fresh] created dex_canon_v2
+     2,000/245,633  rate=25.8 c/s  eta=157.4m  skipped=0
+     4,000/245,633  rate=28.0 c/s  eta=143.8m  skipped=0
+     6,000/245,633  rate=28.8 c/s  eta=138.6m  skipped=0
+     8,000/245,633  rate=28.0 c/s  eta=141.5m  skipped=0
+    10,000/245,633  rate=27.9 c/s  eta=140.8m  skipped=0
+    12,000/245,633  rate=28.0 c/s  eta=139.1m  skipped=0
+    14,000/245,633  rate=28.4 c/s  eta=136.1m  skipped=0
+    16,000/245,633  rate=28.4 c/s  eta=134.6m  skipped=0
+    18,000/245,633  rate=28.1 c/s  eta=134.9m  skipped=0
+    20,000/245,633  rate=27.2 c/s  eta=138.3m  skipped=0
+    22,000/245,633  rate=26.3 c/s  eta=141.9m  skipped=0
+    24,000/245,633  rate=25.6 c/s  eta=144.5m  skipped=0
+    26,000/245,633  rate=25.5 c/s  eta=143.8m  skipped=0
+    28,000/245,633  rate=25.1 c/s  eta=144.3m  skipped=0
+    30,000/245,633  rate=24.9 c/s  eta=144.4m  skipped=0
+    32,000/245,633  rate=24.7 c/s  eta=144.3m  skipped=0
+    34,000/245,633  rate=24.4 c/s  eta=144.6m  skipped=0
+    36,000/245,633  rate=24.3 c/s  eta=143.7m  skipped=0
+    38,000/245,633  rate=24.4 c/s  eta=142.0m  skipped=0
+    40,000/245,633  rate=24.4 c/s  eta=140.4m  skipped=0
+    42,000/245,633  rate=24.6 c/s  eta=137.7m  skipped=0
+    44,000/245,633  rate=24.8 c/s  eta=135.6m  skipped=0
+    46,000/245,633  rate=24.8 c/s  eta=134.1m  skipped=0
+    48,000/245,633  rate=24.9 c/s  eta=132.4m  skipped=0
+    50,000/245,633  rate=25.0 c/s  eta=130.3m  skipped=0
+    52,000/245,633  rate=25.2 c/s  eta=127.9m  skipped=0
+    54,000/245,633  rate=25.4 c/s  eta=125.9m  skipped=0
+    56,000/245,633  rate=25.6 c/s  eta=123.7m  skipped=0
+    58,000/245,633  rate=25.7 c/s  eta=121.7m  skipped=0
+    60,000/245,633  rate=25.9 c/s  eta=119.4m  skipped=0
+    62,000/245,633  rate=26.0 c/s  eta=117.5m  skipped=0
+    64,000/245,633  rate=26.2 c/s  eta=115.6m  skipped=0
+    66,000/245,633  rate=26.3 c/s  eta=113.8m  skipped=0
+    68,000/245,633  rate=26.4 c/s  eta=112.2m  skipped=0
+    70,000/245,633  rate=26.5 c/s  eta=110.6m  skipped=0
+    72,000/245,633  rate=26.6 c/s  eta=108.8m  skipped=0
+    74,000/245,633  rate=26.7 c/s  eta=107.2m  skipped=0
+    76,000/245,633  rate=26.8 c/s  eta=105.5m  skipped=0
+    78,000/245,633  rate=26.9 c/s  eta=103.9m  skipped=0
+    80,000/245,633  rate=27.0 c/s  eta=102.2m  skipped=0
+    82,000/245,633  rate=27.1 c/s  eta=100.6m  skipped=0
+    84,000/245,633  rate=27.2 c/s  eta=99.0m  skipped=0
+    86,000/245,633  rate=27.3 c/s  eta=97.4m  skipped=0
+    88,000/245,633  rate=27.4 c/s  eta=95.7m  skipped=0
+    90,000/245,633  rate=27.5 c/s  eta=94.2m  skipped=0
+    92,000/245,633  rate=27.6 c/s  eta=92.7m  skipped=0
+    94,000/245,633  rate=27.7 c/s  eta=91.2m  skipped=0
+    96,000/245,633  rate=27.8 c/s  eta=89.7m  skipped=0
+    98,000/245,633  rate=27.8 c/s  eta=88.4m  skipped=0
+   100,000/245,633  rate=27.9 c/s  eta=87.0m  skipped=0
+   102,000/245,633  rate=27.9 c/s  eta=85.7m  skipped=0
+   104,000/245,633  rate=28.0 c/s  eta=84.3m  skipped=0
+   106,000/245,633  rate=28.0 c/s  eta=83.0m  skipped=0
+   108,000/245,633  rate=28.1 c/s  eta=81.7m  skipped=0
+   110,000/245,633  rate=28.1 c/s  eta=80.4m  skipped=0
+   112,000/245,633  rate=28.2 c/s  eta=79.1m  skipped=0
+   114,000/245,633  rate=28.2 c/s  eta=77.8m  skipped=0
+   116,000/245,633  rate=28.2 c/s  eta=76.6m  skipped=0
+   118,000/245,633  rate=28.3 c/s  eta=75.3m  skipped=0
+   120,000/245,633  rate=28.3 c/s  eta=74.0m  skipped=0
+   122,000/245,633  rate=28.3 c/s  eta=72.8m  skipped=0
+   124,000/245,633  rate=28.3 c/s  eta=71.5m  skipped=0
+   126,000/245,633  rate=28.4 c/s  eta=70.3m  skipped=0
+   128,000/245,633  rate=28.4 c/s  eta=69.1m  skipped=0
+   130,000/245,633  rate=28.4 c/s  eta=67.8m  skipped=0
+   132,000/245,633  rate=28.5 c/s  eta=66.5m  skipped=0
+   134,000/245,633  rate=28.5 c/s  eta=65.3m  skipped=0
+   136,000/245,633  rate=28.5 c/s  eta=64.1m  skipped=0
+   138,000/245,633  rate=28.5 c/s  eta=63.0m  skipped=0
+   140,000/245,633  rate=28.5 c/s  eta=61.9m  skipped=0
+   142,000/245,633  rate=28.4 c/s  eta=60.7m  skipped=0
+   144,000/245,633  rate=28.4 c/s  eta=59.6m  skipped=0
+   146,000/245,633  rate=28.4 c/s  eta=58.4m  skipped=0
+   148,000/245,633  rate=28.4 c/s  eta=57.3m  skipped=0
+   150,000/245,633  rate=28.4 c/s  eta=56.1m  skipped=0
+   152,000/245,633  rate=28.4 c/s  eta=54.9m  skipped=0
+   154,000/245,633  rate=28.4 c/s  eta=53.8m  skipped=0
+   156,000/245,633  rate=28.4 c/s  eta=52.5m  skipped=0
+   158,000/245,633  rate=28.5 c/s  eta=51.3m  skipped=0
+   160,000/245,633  rate=28.5 c/s  eta=50.1m  skipped=0
+   162,000/245,633  rate=28.5 c/s  eta=49.0m  skipped=0
+   164,000/245,633  rate=28.5 c/s  eta=47.8m  skipped=0
+   166,000/245,633  rate=28.5 c/s  eta=46.6m  skipped=0
+   168,000/245,633  rate=28.5 c/s  eta=45.4m  skipped=0
+   170,000/245,633  rate=28.4 c/s  eta=44.4m  skipped=0
+   172,000/245,633  rate=28.3 c/s  eta=43.3m  skipped=0
+   174,000/245,633  rate=28.3 c/s  eta=42.1m  skipped=0
+   176,000/245,633  rate=28.3 c/s  eta=41.0m  skipped=0
+   178,000/245,633  rate=28.2 c/s  eta=39.9m  skipped=0
+   180,000/245,633  rate=28.2 c/s  eta=38.8m  skipped=0
+   182,000/245,633  rate=28.2 c/s  eta=37.6m  skipped=0
+   184,000/245,633  rate=28.2 c/s  eta=36.4m  skipped=0
+   186,000/245,633  rate=28.3 c/s  eta=35.1m  skipped=0
+   188,000/245,633  rate=28.4 c/s  eta=33.9m  skipped=0
+   190,000/245,633  rate=28.4 c/s  eta=32.6m  skipped=0
+   192,000/245,633  rate=28.5 c/s  eta=31.4m  skipped=0
+   194,000/245,633  rate=28.5 c/s  eta=30.1m  skipped=0
+   196,000/245,633  rate=28.6 c/s  eta=28.9m  skipped=0
+   198,000/245,633  rate=28.7 c/s  eta=27.7m  skipped=0
+   200,000/245,633  rate=28.7 c/s  eta=26.5m  skipped=0
+   202,000/245,633  rate=28.6 c/s  eta=25.4m  skipped=0
+   204,000/245,633  rate=28.6 c/s  eta=24.3m  skipped=0
+   206,000/245,633  rate=28.6 c/s  eta=23.1m  skipped=0
+   208,000/245,633  rate=28.6 c/s  eta=21.9m  skipped=0
+   210,000/245,633  rate=28.6 c/s  eta=20.8m  skipped=0
+   212,000/245,633  rate=28.6 c/s  eta=19.6m  skipped=0
+   214,000/245,633  rate=28.5 c/s  eta=18.5m  skipped=0
+   216,000/245,633  rate=28.5 c/s  eta=17.3m  skipped=0
+   218,000/245,633  rate=28.5 c/s  eta=16.2m  skipped=0
+   220,000/245,633  rate=28.5 c/s  eta=15.0m  skipped=0
+   222,000/245,633  rate=28.5 c/s  eta=13.8m  skipped=0
+   224,000/245,633  rate=28.5 c/s  eta=12.7m  skipped=0
+   226,000/245,633  rate=28.5 c/s  eta=11.5m  skipped=0
+   228,000/245,633  rate=28.5 c/s  eta=10.3m  skipped=0
+   230,000/245,633  rate=28.5 c/s  eta=9.1m  skipped=0
+   232,000/245,633  rate=28.6 c/s  eta=8.0m  skipped=0
+   234,000/245,633  rate=28.6 c/s  eta=6.8m  skipped=0
+   236,000/245,633  rate=28.6 c/s  eta=5.6m  skipped=0
+   238,000/245,633  rate=28.6 c/s  eta=4.4m  skipped=0
+   240,000/245,633  rate=28.6 c/s  eta=3.3m  skipped=0
+   242,000/245,633  rate=28.6 c/s  eta=2.1m  skipped=0
+   244,000/245,633  rate=28.6 c/s  eta=1.0m  skipped=0
+   245,633/245,633  rate=28.6 c/s  eta=0.0m  skipped=0
+  DONE  245,633 migrated  0 skipped  elapsed=143.0m  rate=28.6 c/s
+
+============================================================
+ddl_archive -> ddl_archive_v2  total=291,520
+============================================================
+  [fresh] created ddl_archive_v2
+     2,000/291,520  rate=24.9 c/s  eta=194.2m  skipped=0
+     4,000/291,520  rate=28.4 c/s  eta=168.7m  skipped=0
+     6,000/291,520  rate=29.8 c/s  eta=159.7m  skipped=0
+     8,000/291,520  rate=30.9 c/s  eta=153.0m  skipped=0
+    10,000/291,520  rate=31.3 c/s  eta=149.7m  skipped=0
+    12,000/291,520  rate=31.2 c/s  eta=149.1m  skipped=0
+    14,000/291,520  rate=31.4 c/s  eta=147.4m  skipped=0
+    16,000/291,520  rate=31.7 c/s  eta=145.0m  skipped=0
+    18,000/291,520  rate=31.6 c/s  eta=144.3m  skipped=0
+    20,000/291,520  rate=31.6 c/s  eta=143.2m  skipped=0
+    22,000/291,520  rate=31.6 c/s  eta=142.2m  skipped=0
+    24,000/291,520  rate=31.6 c/s  eta=141.1m  skipped=0
+    26,000/291,520  rate=31.5 c/s  eta=140.3m  skipped=0
+    28,000/291,520  rate=31.3 c/s  eta=140.1m  skipped=0
+    30,000/291,520  rate=31.3 c/s  eta=139.2m  skipped=0
+    32,000/291,520  rate=31.4 c/s  eta=137.6m  skipped=0
+    34,000/291,520  rate=31.4 c/s  eta=136.7m  skipped=0
+    36,000/291,520  rate=31.4 c/s  eta=135.4m  skipped=0
+    38,000/291,520  rate=31.4 c/s  eta=134.4m  skipped=0
+    40,000/291,520  rate=31.4 c/s  eta=133.6m  skipped=0
+    42,000/291,520  rate=31.4 c/s  eta=132.5m  skipped=0
+    44,000/291,520  rate=31.4 c/s  eta=131.2m  skipped=0
+    46,000/291,520  rate=31.5 c/s  eta=130.0m  skipped=0
+    48,000/291,520  rate=31.5 c/s  eta=128.8m  skipped=0
+    50,000/291,520  rate=31.6 c/s  eta=127.6m  skipped=0
+    52,000/291,520  rate=31.6 c/s  eta=126.3m  skipped=0
+    54,000/291,520  rate=31.7 c/s  eta=125.0m  skipped=0
+    56,000/291,520  rate=31.7 c/s  eta=123.9m  skipped=0
+    58,000/291,520  rate=31.7 c/s  eta=122.8m  skipped=0
+    60,000/291,520  rate=31.5 c/s  eta=122.6m  skipped=0
+    62,000/291,520  rate=31.5 c/s  eta=121.4m  skipped=0
+    64,000/291,520  rate=31.5 c/s  eta=120.3m  skipped=0
+    66,000/291,520  rate=31.6 c/s  eta=119.0m  skipped=0
+    68,000/291,520  rate=31.6 c/s  eta=117.9m  skipped=0
+    70,000/291,520  rate=31.6 c/s  eta=116.8m  skipped=0
+    72,000/291,520  rate=31.6 c/s  eta=115.7m  skipped=0
+    74,000/291,520  rate=31.6 c/s  eta=114.6m  skipped=0
+    76,000/291,520  rate=31.7 c/s  eta=113.4m  skipped=0
+    78,000/291,520  rate=31.7 c/s  eta=112.2m  skipped=0
+    80,000/291,520  rate=31.8 c/s  eta=111.0m  skipped=0
+    82,000/291,520  rate=31.6 c/s  eta=110.6m  skipped=0
+    84,000/291,520  rate=31.5 c/s  eta=109.9m  skipped=0
+    86,000/291,520  rate=31.4 c/s  eta=108.9m  skipped=0
+    88,000/291,520  rate=31.5 c/s  eta=107.6m  skipped=0
+    90,000/291,520  rate=31.4 c/s  eta=106.9m  skipped=0
+    92,000/291,520  rate=31.4 c/s  eta=106.0m  skipped=0
+    94,000/291,520  rate=31.3 c/s  eta=105.2m  skipped=0
+    96,000/291,520  rate=31.3 c/s  eta=104.1m  skipped=0
+    98,000/291,520  rate=31.3 c/s  eta=103.1m  skipped=0
+   100,000/291,520  rate=31.2 c/s  eta=102.2m  skipped=0
+   102,000/291,520  rate=31.2 c/s  eta=101.1m  skipped=0
+   104,000/291,520  rate=31.2 c/s  eta=100.1m  skipped=0
+   106,000/291,520  rate=31.2 c/s  eta=99.1m  skipped=0
+   108,000/291,520  rate=31.2 c/s  eta=98.1m  skipped=0
+   110,000/291,520  rate=31.1 c/s  eta=97.1m  skipped=0
+   112,000/291,520  rate=31.1 c/s  eta=96.1m  skipped=0
+   114,000/291,520  rate=31.1 c/s  eta=95.1m  skipped=0
+   116,000/291,520  rate=31.1 c/s  eta=94.2m  skipped=0
+   118,000/291,520  rate=31.1 c/s  eta=93.1m  skipped=0
+   120,000/291,520  rate=31.0 c/s  eta=92.1m  skipped=0
+   122,000/291,520  rate=31.0 c/s  eta=91.1m  skipped=0
+   124,000/291,520  rate=31.0 c/s  eta=90.0m  skipped=0
+   126,000/291,520  rate=31.0 c/s  eta=89.0m  skipped=0
+   128,000/291,520  rate=31.0 c/s  eta=88.0m  skipped=0
+   130,000/291,520  rate=31.0 c/s  eta=86.9m  skipped=0
+   132,000/291,520  rate=30.9 c/s  eta=85.9m  skipped=0
+   134,000/291,520  rate=30.9 c/s  eta=84.9m  skipped=0
+   136,000/291,520  rate=30.9 c/s  eta=83.8m  skipped=0
+   138,000/291,520  rate=30.9 c/s  eta=82.8m  skipped=0
+   140,000/291,520  rate=30.8 c/s  eta=81.9m  skipped=0
+   142,000/291,520  rate=30.8 c/s  eta=80.9m  skipped=0
+   144,000/291,520  rate=30.8 c/s  eta=79.9m  skipped=0
+   146,000/291,520  rate=30.7 c/s  eta=79.0m  skipped=0
+   148,000/291,520  rate=30.7 c/s  eta=78.0m  skipped=0
+   150,000/291,520  rate=30.6 c/s  eta=77.0m  skipped=0
+   152,000/291,520  rate=30.6 c/s  eta=76.0m  skipped=0
+   154,000/291,520  rate=30.6 c/s  eta=75.0m  skipped=0
+   156,000/291,520  rate=30.5 c/s  eta=73.9m  skipped=0
+   158,000/291,520  rate=30.5 c/s  eta=72.9m  skipped=0
+   160,000/291,520  rate=30.5 c/s  eta=71.8m  skipped=0
+   162,000/291,520  rate=30.5 c/s  eta=70.8m  skipped=0
+   164,000/291,520  rate=30.5 c/s  eta=69.8m  skipped=0
+   166,000/291,520  rate=30.4 c/s  eta=68.7m  skipped=0
+   168,000/291,520  rate=30.4 c/s  eta=67.7m  skipped=0
+   170,000/291,520  rate=30.4 c/s  eta=66.6m  skipped=0
+   172,000/291,520  rate=30.3 c/s  eta=65.7m  skipped=0
+   174,000/291,520  rate=30.2 c/s  eta=64.8m  skipped=0
+   176,000/291,520  rate=30.2 c/s  eta=63.8m  skipped=0
+   178,000/291,520  rate=30.1 c/s  eta=62.8m  skipped=0
+   180,000/291,520  rate=30.0 c/s  eta=61.9m  skipped=0
+   182,000/291,520  rate=30.0 c/s  eta=60.8m  skipped=0
+   184,000/291,520  rate=30.0 c/s  eta=59.7m  skipped=0
+   186,000/291,520  rate=30.1 c/s  eta=58.5m  skipped=0
+   188,000/291,520  rate=30.1 c/s  eta=57.3m  skipped=0
+   190,000/291,520  rate=30.2 c/s  eta=56.1m  skipped=0
+   192,000/291,520  rate=30.2 c/s  eta=54.9m  skipped=0
+   194,000/291,520  rate=30.3 c/s  eta=53.7m  skipped=0
+   196,000/291,520  rate=30.3 c/s  eta=52.5m  skipped=0
+   198,000/291,520  rate=30.3 c/s  eta=51.4m  skipped=0
+   200,000/291,520  rate=30.3 c/s  eta=50.4m  skipped=0
+   202,000/291,520  rate=30.3 c/s  eta=49.3m  skipped=0
+   204,000/291,520  rate=30.2 c/s  eta=48.3m  skipped=0
+   206,000/291,520  rate=30.1 c/s  eta=47.3m  skipped=0
+   208,000/291,520  rate=30.0 c/s  eta=46.4m  skipped=0
+   210,000/291,520  rate=29.9 c/s  eta=45.5m  skipped=0
+   212,000/291,520  rate=29.8 c/s  eta=44.5m  skipped=0
+   214,000/291,520  rate=29.7 c/s  eta=43.5m  skipped=0
+   216,000/291,520  rate=29.6 c/s  eta=42.5m  skipped=0
+   218,000/291,520  rate=29.5 c/s  eta=41.5m  skipped=0
+   220,000/291,520  rate=29.4 c/s  eta=40.5m  skipped=0
+   222,000/291,520  rate=29.3 c/s  eta=39.5m  skipped=0
+   224,000/291,520  rate=29.3 c/s  eta=38.4m  skipped=0
+   226,000/291,520  rate=29.3 c/s  eta=37.3m  skipped=0
+   228,000/291,520  rate=29.3 c/s  eta=36.2m  skipped=0
+   230,000/291,520  rate=29.3 c/s  eta=35.0m  skipped=0
+   232,000/291,520  rate=29.3 c/s  eta=33.9m  skipped=0
+   234,000/291,520  rate=29.2 c/s  eta=32.8m  skipped=0
+   236,000/291,520  rate=29.3 c/s  eta=31.6m  skipped=0
+   238,000/291,520  rate=29.2 c/s  eta=30.5m  skipped=0
+   240,000/291,520  rate=29.2 c/s  eta=29.4m  skipped=0
+   242,000/291,520  rate=29.2 c/s  eta=28.3m  skipped=0
+   244,000/291,520  rate=29.2 c/s  eta=27.1m  skipped=0
+   246,000/291,520  rate=29.3 c/s  eta=25.9m  skipped=0
+   248,000/291,520  rate=29.3 c/s  eta=24.7m  skipped=0
+   250,000/291,520  rate=29.4 c/s  eta=23.6m  skipped=0
+   252,000/291,520  rate=29.4 c/s  eta=22.4m  skipped=0
+   254,000/291,520  rate=29.4 c/s  eta=21.2m  skipped=0
+   256,000/291,520  rate=29.5 c/s  eta=20.1m  skipped=0
+   258,000/291,520  rate=29.5 c/s  eta=18.9m  skipped=0
+   260,000/291,520  rate=29.5 c/s  eta=17.8m  skipped=0
+   262,000/291,520  rate=29.6 c/s  eta=16.6m  skipped=0
+   264,000/291,520  rate=29.6 c/s  eta=15.5m  skipped=0
+   266,000/291,520  rate=29.6 c/s  eta=14.4m  skipped=0
+   268,000/291,520  rate=29.5 c/s  eta=13.3m  skipped=0
+   270,000/291,520  rate=29.5 c/s  eta=12.1m  skipped=0
+   272,000/291,520  rate=29.5 c/s  eta=11.0m  skipped=0
+   274,000/291,520  rate=29.5 c/s  eta=9.9m  skipped=0
+   276,000/291,520  rate=29.5 c/s  eta=8.8m  skipped=0
+   278,000/291,520  rate=29.5 c/s  eta=7.6m  skipped=0
+   280,000/291,520  rate=29.5 c/s  eta=6.5m  skipped=0
+   282,000/291,520  rate=29.5 c/s  eta=5.4m  skipped=0
+   284,000/291,520  rate=29.5 c/s  eta=4.2m  skipped=0
+   286,000/291,520  rate=29.5 c/s  eta=3.1m  skipped=0
+   288,000/291,520  rate=29.4 c/s  eta=2.0m  skipped=0
+   290,000/291,520  rate=29.4 c/s  eta=0.9m  skipped=0
+   291,520/291,520  rate=29.4 c/s  eta=0.0m  skipped=0
+  DONE  291,520 migrated  0 skipped  elapsed=165.1m  rate=29.4 c/s
+
+============================================================
+ALL COLLECTIONS MIGRATED  total elapsed=318.4m
+============================================================

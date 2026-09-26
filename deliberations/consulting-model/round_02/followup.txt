@@ -1,0 +1,7 @@
+1. **Unresolved Disagreement:** Qwen and DeepSeek argue against charging for consulting services, while Llama and Mistral support charging, with Mistral advocating for free services. Which model can provide a detailed example of a successful client engagement that demonstrates the value of DDL's consulting services without compromising its core mission?
+
+2. **Open Question:** How can DDL ensure that consulting services remain aligned with its core mission of automated, structured decision-making tools, and what measures can be implemented to prevent conflicts of interest?
+
+3. **Claim Without Evidence:** Llama's position states that consulting services will provide a new revenue stream for DDL, allowing the council to sustain its operations and invest in its growth. Can Llama provide specific data or case studies to support this claim?
+
+4. **Devil's Advocate Angle:** Mistral suggests limiting consulting revenue to ≤20% of total income to prevent DDL from becoming a service provider. How might this limit affect the quality and effectiveness of DDL's consulting services, and what are the potential long-term consequences for DDL's reputation and client relationships?

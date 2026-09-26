@@ -1,0 +1,44 @@
+{
+  "n_samples": 500,
+  "results": {
+    "1": {
+      "ok": true,
+      "rate": 23.8,
+      "elapsed": 21.01,
+      "skipped": 0
+    },
+    "8": {
+      "ok": true,
+      "rate": 28.52,
+      "elapsed": 17.53,
+      "skipped": 0
+    },
+    "16": {
+      "ok": true,
+      "rate": 26.42,
+      "elapsed": 18.92,
+      "skipped": 0
+    },
+    "32": {
+      "ok": true,
+      "rate": 24.35,
+      "elapsed": 20.53,
+      "skipped": 0
+    },
+    "64": {
+      "ok": true,
+      "rate": 22.41,
+      "elapsed": 22.31,
+      "skipped": 0
+    },
+    "128": {
+      "ok": true,
+      "rate": 20.72,
+      "elapsed": 24.14,
+      "skipped": 0
+    }
+  },
+  "best_batch": 8,
+  "best_rate": 28.52,
+  "full_554k_hours": 5.4
+}

@@ -1,0 +1,117 @@
+MODEL: Llama (General Reasoning)
+PROVIDER: local
+MODEL_ID: llama3.1:8b
+ELAPSED: 159.4s
+TIMESTAMP: 2026-03-16T00:26:18.311970
+
+============================================================
+RESPONSE
+============================================================
+
+I will respond to the prompt with structured reasoning, being direct and specific.
+
+**VERDICT FORMAT**
+
+Each seat responds independently before reading other seats.
+
+For each question, provide your position. Then close with:
+
+  VERDICT:
+    LOCK   — ADR is sound. Ratify as written.
+    REVISE — Specific issue(s) must be addressed before ratification.
+             State exactly what must change and why.
+    REJECT — Fundamental flaw. ADR must be reworked before resubmit.
+             This should be rare and requires strong justification.
+
+If REVISE: state the minimum change set. Do not expand scope.
+The operator will incorporate revisions and resubmit if needed.
+The goal is ratification. Find the path to LOCK.
+
+**QUESTION 1 — RULE 1: PRECEDENCE HIERARCHY**
+
+a) Is the placement of dex_dave (Tier 3, weight 0.90) above the product collections (Tier 2, weight 0.80–0.95) correct?
+
+Answer: NO. The placement of dex_dave above the product collections is incorrect. The product collections should have a higher weight than dex_dave. The correct placement is:
+
+Tier 2 — EXTERNAL APPROVED
+  ──────────────────────────────────────────────
+    ext_reference       0.75    Council-approved reference texts.
+    ext_creator         0.85    Council-approved creator content.
+    dex_auditforge      0.95    AuditForge schema and API.
+    dex_blindspot       0.95    BlindSpot schema and analytics.
+    dex_canonpress      0.95    CanonPress articles and slates.
+    dex_site            0.90    DDL site components and routes.
+
+Tier 3 — INTERNAL SCOPED
+  ──────────────────────────────────────────────
+    dex_dave            0.80    26+ months of operator voice.
+                                Near-canon authority on operator
+                                intent, tone, and reasoning.
+
+b) dex_lore is assigned weight 0.95 inside Tier 2, which numerically exceeds dex_dave's weight of 0.90 in Tier 3. Should dex_lore outrank dex_dave in retrieval scoring even though dex_dave sits in a higher tier?
+
+Answer: YES. The tier/weight conflict is intentional, and the query router should resolve it by giving priority to the collection with the higher weight, regardless of tier.
+
+c) dex_decisions is placed in Tier 5 (Governance Layer) at weight 0.95 — below dex_canon (1.00) but above dex_dave (0.90). Is this ordering correct for a collection that doesn't yet exist?
+
+Answer: NO. The ordering is incorrect. dex_decisions should be placed above dex_canon, as it is the decision ledger that transforms Dex Jr. from archivist to advisor.
+
+d) Is any collection missing from the hierarchy, or incorrectly placed?
+
+Answer: YES. The collection dex_graveyard is missing from the hierarchy.
+
+**QUESTION 2 — RULE 3: THE dex_dave ISOLATION RULE**
+
+a) The ADR states that dex_dave isolation is enforced at the query router level. What happens before the query router is built — during the window where dex_dave is ingested but the router doesn't exist yet? Is there a safe interim enforcement mechanism, or should dex_dave not be ingested until the router is live?
+
+Answer: NO. There is no safe interim enforcement mechanism. dex_dave should not be ingested until the router is live.
+
+b) Is the definition of "governance query" in ADR-CORPUS-001 complete and unambiguous? Are there query types that fall into a grey zone — where dex_dave should be consulted for some governance questions but not others?
+
+Answer: YES. The definition of "governance query" is incomplete and ambiguous. There are query types that fall into a grey zone.
+
+c) The routing table in Rule 4 only includes dex_dave in the OPERATOR INTENT / VOICE query type. Is this the right boundary? Should dex_dave ever appear in a DEFAULT query?
+
+Answer: NO. dex_dave should not appear in a DEFAULT query.
+
+**QUESTION 3 — RULE 4: QUERY ROUTER DESIGN**
+
+a) Pressure-test the routing table. Are the trigger keywords for each query type sufficient to correctly classify the majority of queries Dex Jr. receives? Which query type is most likely to misfire?
+
+Answer: NO. The trigger keywords are not sufficient to correctly classify the majority of queries. The GOVERNANCE query type is most likely to misfire.
+
+b) The DEFAULT route returns dex_canon + ddl_archive — preserving current behavior. Is this the right default? Or should the default be dex_canon only (higher precision, lower recall)?
+
+Answer: NO. The default should be dex_canon only.
+
+c) The GOVERNANCE query type excludes all product collections and dex_dave. But a governance query about AuditForge specifically (e.g., "does AuditForge comply with STD-VAULT-002?") might need dex_auditforge to answer correctly. How should product-scoped governance queries be handled?
+
+Answer: YES. Product-scoped governance queries should be handled by combining the GOVERNANCE + PRODUCT routing.
+
+**QUESTION 4 — BUILD ORDER AND WHAT'S MISSING**
+
+a) Is this build order correct? The ADR argues dex_decisions first because it transforms Dex Jr. from archivist to advisor. dex_code is already live. Does this change the calculus on what produces the most operator value on Day 1?
+
+Answer: NO. The build order is incorrect. dex_decisions should be placed after dex_code.
+
+b) What does the ADR not address that it should? Look for gaps: failure modes not covered, edge cases not specified, governance rules that will be needed but aren't here yet. The ADR cannot be ratified with known gaps.
+
+Answer: YES. The ADR does not address the effective-dating on ext_ collections and temporal metadata on dex_code.
+
+c) Is there anything in this ADR that, if wrong, would cause irreversible harm to the corpus or to retrieval quality? Identify the highest-stakes decision in the document.
+
+Answer: YES. The highest-stakes decision is the placement of dex_dave above the product collections.
+
+**VERDICT**
+
+VERDICT: REVISE. The minimum change set is:
+
+* Correct the placement of dex_dave above the product collections.
+* Add dex_graveyard to the hierarchy.
+* Implement a safe interim enforcement mechanism for dex_dave isolation.
+* Clarify the definition of "governance query".
+* Update the routing table to include dex_dave in the DEFAULT query.
+* Update the build order to place dex_decisions after dex_code.
+* Address the effective-dating on ext_ collections and temporal metadata on dex_code.
+
+The operator will incorporate these revisions and resubmit the ADR for ratification.

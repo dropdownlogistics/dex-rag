@@ -1,0 +1,19 @@
+{
+  "test_collection": "dex_canon_mxbai_test",
+  "chunks": 2500,
+  "seed_term_counts": {
+    "CottageHumble": 200,
+    "AccidentalIntelligence": 121,
+    "GuidedEmergence": 164,
+    "Charlie Conway": 23,
+    "Beth Epperson": 200,
+    "Mithril": 200,
+    "STD-DDL-PRIVACY-001": 14,
+    "STD-DDL-SWEEPREPORT-001": 33,
+    "STD-DDL-BACKUP-001": 105
+  },
+  "elapsed_sec": 115.4,
+  "chunks_per_sec": 21.67,
+  "extrap_full_reembed_hours": 7.1,
+  "model": "mxbai-embed-large"
+}

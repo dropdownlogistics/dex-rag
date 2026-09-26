@@ -2,7 +2,7 @@
 fetch_leila_gharani.py
 Fetches Leila Gharani YouTube video transcripts for DDL ext_creator corpus.
 Nominated by: Operator (Dave Kitchens) — Excel/data domain
-Target: C:\Users\dkitc\DDL_External\nominations\ext_creator\operator_LeilaGharani\
+Target: C:/Users/dkitc/DDL_External/nominations/ext_creator/operator_LeilaGharani\
 
 Uses youtube-transcript-api for fast caption extraction.
 No audio download required.
@@ -32,17 +32,7 @@ PLAYLIST_IDS = [
 ]
 
 # Also seed with known high-value video IDs directly
-SEED_VIDEO_IDS = [
-    "0uqAVWOk_Vg",  # XLOOKUP
-    "oCkj4k3mNak",  # LAMBDA
-    "4-_YN0Z-TcE",  # LET function
-    "eBnkGzIkLV0",  # Dynamic arrays
-    "8cFoZbVDctQ",  # Power Query intro
-    "2U4nNZKOy6E",  # Dashboard tips
-    "bE8Tz1RYaOo",  # Advanced Excel tips
-    "6oHVl99lkuQ",  # Excel tables
-    "m3P3WRJRNCE",  # MAKEARRAY
-]
+SEED_VIDEO_IDS = ["4S8ljn8Pawk", "pIh0dzyz2bw", "oAbLb-K8VZo", "WRoVgUD3tBU", "GP1W4fKWUrA", "lkG1283Ev78", "p7_VEAziL2I", "ofL-YUcMNxw", "xWs0ZXY7gTY", "CGxt_ENdsvE", "x7mzOYEn0XA", "5PB4yeZucUk", "FicDbWkofnI", "ije_fF8SWcw", "5h4wRTbmsSw", "yhppTEj5wqs", "4eeSlyGwUzg", "0Ti5CKsQLts", "6WEqOrx6_Rg", "YOeW8UIWJRQ", "3mkfF1pNw0U", "ShlArTuHKQ8", "VjMCsHT2pAY", "vOeD8C_5o04", "AQgVr4euJ4U", "xd64E5JwQps", "UCO80F8_uOs", "YFnXV2be9eg", "TDphx23AtqM", "-Pi68IkutaQ", "wP8NWRR0Fdg", "UaCGZIlvoRg", "WY6oELnrSLk", "mCJzhCxEQlM", "EOhSODFLqic", "lHk6MdGAfw8", "DNl9DzNwjv8", "9uIxy9auP_o", "bO-us8IX3Wo", "wBAnCMA98ls", "kIWRKdapx08", "FbBXtqtRnWU", "QKjV_GdkTTw", "UnU81ITTsHU", "zjiVqlVTq_8", "WNrB1Q9Rry0", "-BiZjkqgaHc", "8hjgmJk5RiA", "yxHPScN_ct4", "z66-6WVZSFY"]
 
 
 def get_video_ids_from_playlist(playlist_id, max_videos=30):
@@ -71,7 +61,7 @@ def get_video_ids_from_playlist(playlist_id, max_videos=30):
 def get_transcript(video_id):
     """Fetch transcript for a YouTube video."""
     try:
-        transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+        ytt_api = YouTubeTranscriptApi(); transcript_list = ytt_api.fetch(video_id, languages=['en'])
         # Combine all segments into clean text
         full_text = ' '.join([seg['text'] for seg in transcript_list])
         # Clean up
@@ -188,3 +178,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+

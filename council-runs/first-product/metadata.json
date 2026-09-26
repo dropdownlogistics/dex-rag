@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-03-06T20:35:54.013223",
+  "version": "3.0",
+  "prompt": "What should DDL's first consulting product be?",
+  "model_count": 5,
+  "successful": 4,
+  "failed": 1,
+  "models": [
+    {
+      "name": "Qwen (Code Specialist)",
+      "provider": "local",
+      "model_id": "qwen2.5-coder:7b",
+      "elapsed": 10.7,
+      "error": null,
+      "response_length": 1404
+    },
+    {
+      "name": "Llama (General Reasoning)",
+      "provider": "local",
+      "model_id": "llama3.1:8b",
+      "elapsed": 37.7,
+      "error": null,
+      "response_length": 2251
+    },
+    {
+      "name": "DeepSeek-Local (Chain-of-Thought)",
+      "provider": "local",
+      "model_id": "deepseek-r1:8b",
+      "elapsed": 0,
+      "error": "HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=180)",
+      "response_length": 0
+    },
+    {
+      "name": "Gemini (Google)",
+      "provider": "gemini",
+      "model_id": "gemini-2.5-flash",
+      "elapsed": 11.0,
+      "error": null,
+      "response_length": 3517
+    },
+    {
+      "name": "Mistral/LeChat (European)",
+      "provider": "mistral",
+      "model_id": "mistral-small-latest",
+      "elapsed": 6.2,
+      "error": null,
+      "response_length": 4583
+    }
+  ],
+  "synthesis_elapsed": 20.0
+}

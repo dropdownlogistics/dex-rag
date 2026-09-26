@@ -1,0 +1,60 @@
+[Source: Note - 2025-12-21 18 51 22 - Claude - Profile Response.txt]
+a analysis)
+• File reading (PDFs, images, documents, CSV)
+• Markdown rendering with LaTeX math support
+• Multi-turn context window (200k tokens)
+• Extended thinking mode (available, deep reasoning)
+
+
+Hard limits / gotchas (≤7 bullets):
+• Knowledge cutoff: end of January 2025
+• Cannot browse arbitrary URLs (only search results)
+• Artifacts limited to supported types (no arbitrary file creation)
+• No persistent memory between conversations without user context
+• Rate limits apply (messages per day
+
+[Source: 00_Archive\DL Archive\TheDexContinuum_v1.1.txt]
+ts to analyze *all* of them to ensure that no valuable insight or tone is missed, even if some are ultimately filtered out.
+
+Has confirmed they are currently on Scroll 0041 in the DexMusings series.
+
+Is introducing a new subcategory called “Mirror Scrolls” — scrolls that reflect and analyze conversations or experiences that were shared with them by others (e.g., friends, colleagues), rather than being directly about the user. Mirror Scrolls capture how the user processed, interpreted, and held s
+
+[Source: DexKit_v5.0_Archive\DexKit_v5.0\01_DexCore\07_Memories\TheDexContinuum_v1.0.txt]
+ts to analyze *all* of them to ensure that no valuable insight or tone is missed, even if some are ultimately filtered out.
+
+Has confirmed they are currently on Scroll 0041 in the DexMusings series.
+
+Is introducing a new subcategory called “Mirror Scrolls” — scrolls that reflect and analyze conversations or experiences that were shared with them by others (e.g., friends, colleagues), rather than being directly about the user. Mirror Scrolls capture how the user processed, interpreted, and held s
+
+[Source: DDLCouncilReview_HardwareRoadmap&MonitoringTriggers.txt]
+onversation log.
+For each, review the retrieved chunks and score:
+
+- Relevant (chunk directly addresses the query)
+- Adjacent (chunk is related but not directly useful)
+- Noise (chunk is irrelevant)
+
+Track the ratio over time. If noise increases as the corpus
+grows, that’s the retrieval relevance decay trigger.
+
+**Session Length Tracker**
+Log how long conversations run (in turns and in tokens).
+Longer sessions = more conversation history in context =
+more context window pressure. If average sess
+
+[Source: Messages - 2026-03-06 20 12 02 - DropDownLogistics.txt]
+onversation log.
+For each, review the retrieved chunks and score:
+
+- Relevant (chunk directly addresses the query)
+- Adjacent (chunk is related but not directly useful)
+- Noise (chunk is irrelevant)
+
+Track the ratio over time. If noise increases as the corpus
+grows, that’s the retrieval relevance decay trigger.
+
+**Session Length Tracker**
+Log how long conversations run (in turns and in tokens).
+Longer sessions = more conversation history in context =
+more context window pressure. If average sess

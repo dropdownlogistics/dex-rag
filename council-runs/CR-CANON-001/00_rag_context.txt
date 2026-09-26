@@ -1,0 +1,39 @@
+[Source: DDLCouncilReview_LocalAI.txt]
+sure it complies with AEN and references past CRs on corpus expansion." --rag --save council-runs/corpus-expansion --ingest
+  ```
+- **Output:** A **governance-compliant CR-** ready for ratification.
+
+#### **2. Wire the RAG Bridge for "I Don’t Know"**
+- **Task:** Build the **auto-retrieval script** for when Dex Jr. hits uncertainty.
+- **Why:** Turns **"I don’t know"** into **"Here’s what the corpus says."**
+- **How:**
+  ```python
+  # dex-bridge.py (pseudo-code)
+  if "I don’t know" in response:
+  
+
+[Source: WebFetch_www.dropdownlogistics.com_council_1010_20260307_235843.txt]
+thon dex-council.py --all --rag "your question"
+→ 5 models respond independently
+→ Dexcell synthesizes convergence + divergence
+→ LOCK / REVISE / REJECT verdict
+→ Auto-saved and ingested into corpus
+
+$ python dex-deliberate.py "your topic" --rounds 3 --all
+→ 3 rounds of multi-model debate
+→ Automatic follow-up generation
+→ Position evolution across rounds
+→ Final synthesis with full arc analysis 
+
+ RAG Pipeline 
+
+ ChromaDB vector database with 130,000+ searchable chunks spanning 28 months of wor
+
+[Source: chat_chunk_066of082.txt]
+python -m dexverse.ingest path/to/file.pdf\n  Handles files and directories, detects source\n  type from extension, auto-generates titles,\n  catches duplicates by content hash, logs every\n  action. Supports --tags, --method, --confidence,\n  --parent, --dry-run\n- Registry CLI: list, search, stats, show, review,\n  archive, log. Full artifact lifecycle.\n  draft \u2192 reviewed/active \u2192 archived\n\nTest results: 5 documents ingested from actual\nDDL corpus archetypes (Assurance Map spec, 
+
+[Source: chat_chunk_067of082.txt]
+python -m dexverse.ingest path/to/file.pdf\n  Handles files and directories, detects source\n  type from extension, auto-generates titles,\n  catches duplicates by content hash, logs every\n  action. Supports --tags, --method, --confidence,\n  --parent, --dry-run\n- Registry CLI: list, search, stats, show, review,\n  archive, log. Full artifact lifecycle.\n  draft \u2192 reviewed/active \u2192 archived\n\nTest results: 5 documents ingested from actual\nDDL corpus archetypes (Assurance Map spec, 
+
+[Source: chat_chunk_075of082.txt]
+alCount 200\n```\n\nExplanation:\n\n- `.\\` means **\u201cin this current folder.\u201d**\n- Since you're already in `C:\\Users\\dexjr\\dex-rag`, it will read the README right there.\n\nYour archive path (`C:\\Users\\dexjr\\99_DexUniverseArchive`) will only be used **later when we run `dex-ingest.py`**.\n\nSo right now the flow is:\n\n```\ndex-rag/\n  dex-setup.py\n  dex-ingest.py\n  dex-query.py\n  DEX-RAG-README.md  \u2190 read this now\n```\n\nPaste the output and we\u2019ll follow **Step 1 e

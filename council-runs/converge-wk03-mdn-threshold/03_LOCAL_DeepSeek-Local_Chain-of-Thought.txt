@@ -1,0 +1,29 @@
+MODEL: DeepSeek-Local (Chain-of-Thought)
+PROVIDER: local
+MODEL_ID: deepseek-r1:8b
+ELAPSED: 52.2s
+TIMESTAMP: 2026-03-26T13:41:42.796397
+
+============================================================
+RESPONSE
+============================================================
+
+**PRO-DDL-MDN-001 Deliberation**  
+**POSITION**: Recurring MDN patterns must meet a dual threshold—**statistical significance** and **structural impact**—to qualify for Building Block elevation. Below this, classify as **Pattern Observation (OBS-)**.  
+
+**CRITERIA**:  
+1. **Data Sufficiency**: Minimum of 100 observed instances across 3 distinct datasets (n ≥ 100).  
+2. **Structural Significance**: Demonstrated cross-domain utility (e.g., ≥3 operational systems leverage the pattern).  
+3. **Validation**: Peer-reviewed by ≥2 council models (seats 1001-1009) with ≥75% consensus.  
+
+**THRESHOLD**:  
+- **Elevation Trigger**: n ≥ 100 AND cross-domain utility ≥3.  
+- **OBS- Classification**: n < 100 OR utility <3.  
+
+**PREDICTION**:  
+Persisting OBS- patterns may evolve into Building Blocks if unvalidated. Monitor for drift via periodic re-evaluation (Q1) and cluster variance alerts.  
+
+**CONFIDENCE**:  
+High (90%) based on statistical layer protocols (minimum-n gate). Low (60%) on predictive accuracy due to emergent complexity.  
+
+**Governance Note**: Escalate to Safety & Ethics if threshold breaches exceed 10% of observed MDNs.

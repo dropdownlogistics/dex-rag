@@ -1,0 +1,143 @@
+MODEL: Mistral/LeChat (European)
+PROVIDER: mistral
+MODEL_ID: mistral-small-latest
+ELAPSED: 7.0s
+TIMESTAMP: 2026-03-07T17:05:40.879730
+
+============================================================
+RESPONSE
+============================================================
+
+# **Anaplan Platform Architecture Reference**
+**For: D.K. Hale (CPA, Dimensional Modeler)**
+**Last Updated: [Date]**
+**Governance Status: Draft (PRO-2024-001)**
+
+---
+
+## **1. Core Object Model**
+Anaplan’s architecture is built around a **dimensional modeling** approach, where objects are structured hierarchically to enable scalable, multi-dimensional planning.
+
+### **1.1 Workspaces**
+- **Definition**: A container for related models (e.g., "Finance Planning," "Sales Forecasting").
+- **Key Properties**:
+  - Access-controlled (user/role permissions).
+  - Can host multiple models.
+
+### **1.2 Models**
+- **Definition**: A self-contained planning environment (e.g., "Budget 2024," "Headcount Planning").
+- **Key Properties**:
+  - Contains modules, lists, and line items.
+  - Can be linked to other models via imports/exports.
+
+### **1.3 Lists (Dimension Tables)**
+- **Definition**: A collection of unique items (e.g., "Products," "Regions," "Time").
+- **Types**:
+  - **Flat**: Simple lists (e.g., "Product Codes").
+  - **Hierarchical**: Parent-child relationships (e.g., "Region → Country → City").
+  - **Numbered**: Auto-generated IDs (e.g., "Employee IDs").
+
+### **1.4 Modules (Fact Tables)**
+- **Definition**: A grid of data structured by dimensions (lists) and measures (line items).
+- **Key Properties**:
+  - **Dimensions**: Lists applied to the module (e.g., "Time," "Product").
+  - **Line Items**: Measures/attributes (e.g., "Revenue," "Cost").
+
+### **1.5 Line Items (Measures/Attributes)**
+- **Definition**: The data fields in a module (e.g., "Sales," "Headcount").
+- **Types**:
+  - **Number**: Numeric values (e.g., "Revenue").
+  - **Text**: Descriptive fields (e.g., "Comments").
+  - **Boolean**: True/False flags (e.g., "Is Active?").
+
+### **1.6 Relationships**
+- **Lists → Modules**: Modules are "sliced" by lists (e.g., a "Sales" module may use "Time" and "Product" lists).
+- **Line Items → Other Line Items**: Formulas reference other line items (e.g., `Revenue = Price * Quantity`).
+
+---
+
+## **2. Dimensional Modeling in Anaplan**
+Anaplan’s architecture aligns with **star schema** principles:
+
+| **Anaplan Object** | **Dimensional Modeling Equivalent** |
+|---------------------|-----------------------------------|
+| **Lists**           | Dimension tables (e.g., "Time," "Product") |
+| **Modules**         | Fact tables (e.g., "Sales Data") |
+| **Line Items**      | Measures (e.g., "Revenue") or attributes (e.g., "Product Category") |
+
+### **Example: Sales Planning Model**
+- **Lists**:
+  - `Time` (Year → Month)
+  - `Product` (Category → SKU)
+- **Module**: `Sales Forecast`
+  - **Dimensions**: `Time`, `Product`
+  - **Line Items**: `Units Sold`, `Price`, `Revenue` (calculated as `Units Sold * Price`)
+
+---
+
+## **3. Formula Syntax Basics**
+Anaplan uses a **spreadsheet-like** formula language with dimensional awareness.
+
+### **3.1 Common Functions**
+| **Function**       | **Purpose**                          | **Example**                          |
+|--------------------|-------------------------------------|------------------------------------|
+| `SUM`             | Aggregates values across dimensions | `SUM(Revenue)`                     |
+| `LOOKUP`          | Retrieves data from another module | `LOOKUP(Price, Product, SKU)`      |
+| `IF`              | Conditional logic                   | `IF(Revenue > 1000, "High", "Low")` |
+| `TIMESUM`         | Aggregates over time periods        | `TIMESUM(Revenue, Month, Year)`     |
+
+### **3.2 Line Item References**
+- **Same Module**: `Revenue = Price * Quantity`
+- **Cross-Module**: `LOOKUP(Price, Product, SKU)`
+
+---
+
+## **4. Best Practices for Model Design**
+### **4.1 Lists: Flat vs. Hierarchical**
+- **Flat Lists**: Use for simple, non-hierarchical data (e.g., "Employee IDs").
+- **Hierarchical Lists**: Use for rollups (e.g., "Region → Country → City").
+
+### **4.2 Module Granularity**
+- **Avoid Over-Granularity**: Too many modules increase complexity.
+- **Use Submodules**: For logical separation (e.g., "Sales" vs. "Costs").
+
+### **4.3 Avoiding Circular References**
+- **Rule**: Never have a line item reference itself directly or indirectly.
+- **Example of Bad Design**:
+  - `A = B + 1`
+  - `B = A - 1`
+  - **Fix**: Restructure to remove dependency loops.
+
+---
+
+## **5. Common Design Patterns**
+### **5.1 Allocation Models**
+- **Use Case**: Distributing costs/revenue across dimensions (e.g., "Allocate Corporate Overhead to Departments").
+- **Implementation**:
+  - Use `LOOKUP` to reference allocation rules.
+  - Apply `SUM` to aggregate results.
+
+### **5.2 Driver-Based Planning**
+- **Use Case**: Forecasting based on key drivers (e.g., "Sales = Price * Volume").
+- **Implementation**:
+  - Define drivers as line items.
+  - Use formulas to link them (e.g., `Revenue = Price * Units Sold`).
+
+### **5.3 Rolling Forecasts**
+- **Use Case**: Dynamic forecasting (e.g., "12-month rolling budget").
+- **Implementation**:
+  - Use `TIMESUM` to aggregate over rolling periods.
+  - Automate updates via imports.
+
+---
+
+## **6. Governance Notes**
+- **RED Zone**: Any deviation from dimensional modeling principles must be flagged for review.
+- **Silent Fixes**: Never modify architecture without operator approval.
+- **Canon > Archive**: Prefer ratified standards over drafts.
+
+**Next Steps**:
+- Review with DDL AutoCouncil (CR-2024-001).
+- Finalize as PRO-2024-001.
+
+**End of Document**

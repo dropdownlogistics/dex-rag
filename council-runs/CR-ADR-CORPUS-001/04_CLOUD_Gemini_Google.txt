@@ -1,0 +1,118 @@
+MODEL: Gemini (Google)
+PROVIDER: gemini
+MODEL_ID: gemini-2.5-flash
+ELAPSED: 64.4s
+TIMESTAMP: 2026-03-16T00:26:18.311970
+
+============================================================
+RESPONSE
+============================================================
+
+**DDL AutoCouncil Review — CR-ADR-CORPUS-001**
+
+**Council Member Seat:** [Your Seat Number, e.g., 1001]
+
+My assessment of ADR-CORPUS-001 follows, with structured reasoning for each question.
+
+---
+
+**QUESTION 1 — RULE 1: PRECEDENCE HIERARCHY**
+
+**a) Is the placement of dex_dave (Tier 3, weight 0.90) above the product collections (Tier 2, weight 0.80–0.95) correct?**
+
+The prompt references `dex_dave` in Tier 3 and product collections in Tier 2. However, ADR-CORPUS-001, Rule 1, places `dex_dave` in **Tier 4** (OPERATOR VOICE) with weight 0.90, and product collections (e.g., `dex_auditforge`) in **Tier 3** (INTERNAL SCOPED) with weights 0.80–0.95.
+
+Assuming the question refers to the hierarchy as defined in the ADR (Tier 4 `dex_dave` > Tier 3 product collections), then **yes, this placement is correct.** For DDL, a one-person governance operation, the operator's voice represents near-canon authority on intent and reasoning. While product collections contain the "actual governed build artifacts," the `dex_dave` collection (as operator intent) provides the foundational "why" and "what Dave meant." This level of foundational intent is a higher-order form of truth than the specific implementation details for many types of queries. Rule 3 correctly isolates `dex_dave` from governance queries, which is the critical safeguard where specific artifact-level truth must prevail. For all other query types, the operator's intent guiding the creation of those artifacts holds a higher general precedence.
+
+**b) dex_lore is assigned weight 0.95 inside Tier 2, which numerically exceeds dex_dave's weight of 0.90 in Tier 3. Should dex_lore outrank dex_dave in retrieval scoring even though dex_dave sits in a higher tier? Is the tier/weight conflict intentional, and if so, how should the query router resolve it?**
+
+Again, the prompt's tier numbers for `dex_lore` and `dex_dave` are inconsistent with ADR-CORPUS-001. The ADR places `dex_lore` in **Tier 3** (weight 0.95) and `dex_dave` in **Tier 4** (weight 0.90).
+
+**Yes, the ADR explicitly states this conflict is intentional.** ADR-CORPUS-001, Rule 1 (Tier 3 Note) clarifies: "Resolution: tier gates collection eligibility; weight governs scoring within the eligible set." This means the query router first determines which collections are `eligible` based on the query type and their respective tiers. If both `dex_lore` and `dex_dave` are deemed eligible for a given query (e.g., if a general query is not filtered by Rule 3 and no specific routing rule excludes either), then `dex_lore` would outrank `dex_dave` in retrieval scoring due to its higher weight (0.95 vs 0.90). This resolution mechanism is clear and appropriate for differentiating between collection selection and in-set ranking.
+
+**c) dex_decisions is placed in Tier 5 (Governance Layer) at weight 0.95 — below dex_canon (1.00) but above dex_dave (0.90). Is this ordering correct for a collection that doesn't yet exist? Does assigning it Tier 5 governance authority before it has any content create risk?**
+
+**Yes, this ordering is correct.** `dex_canon` (1.00) is rightly placed as the absolute, unconditional source of truth. `dex_decisions` (0.95), described as the "Ratified decision ledger," logically belongs directly below `dex_canon` as the highest form of DDL's documented, binding governance beyond the foundational canon itself. Its placement above `dex_dave` (operator voice) correctly prioritizes formal, ratified decisions over personal intent.
+
+**No, assigning it Tier 5 governance authority before content exists does not create undue risk.** The ADR clearly defines `dex_decisions`'s purpose: "Why DDL built what it built. Ratified decision ledger." The build order specifies it as the first collection to be built, with content sourced from `01_GOVERNANCE/decisions/`. This proactive definition of its authority and scope, coupled with the commitment to rigorous content, establishes its role upfront, minimizing the risk of misinterpretation or inappropriate content ingestion. This aligns with DDL's "Structured -> Automated" methodology by formalizing the conceptual model before full content population.
+
+**d) Is any collection missing from the hierarchy, or incorrectly placed?**
+
+**No.** The ADR-CORPUS-001 comprehensively lists all known and planned collections, including special/meta collections like `dex_graveyard` and `Fact_QueryLog`, with explicit notes regarding their current status or deferral. The hierarchy's structure and weighting are consistently justified within the context of DDL's operator-centric governance model, and the ADR explicitly addresses potential ambiguities (e.g., `dex_lore` vs `dex_dave` weight/tier conflict). No obvious collections are missing, and the placements appear logically sound for DDL's operational methodology.
+
+---
+
+**QUESTION 2 — RULE 3: THE dex_dave ISOLATION RULE**
+
+**a) The ADR states that dex_dave isolation is enforced at the query router level. What happens before the query router is built — during the window where dex_dave is ingested but the router doesn't exist yet? Is there a safe interim enforcement mechanism, or should dex_dave not be ingested until the router is live?**
+
+ADR-CORPUS-001 directly and unambiguously addresses this in Rule 3, under "Pre-router interim rule." It states: "**dex_dave MUST NOT be ingested before the query router is live.** The isolation rule has no enforcement mechanism without the router. Ingesting dex_dave into a routerless corpus creates an uncontrolled contamination window. This is the ADR's highest-stakes sequencing constraint."
+
+This is the only safe interim enforcement mechanism. The ADR correctly identifies this as the "highest-stakes operational question" and provides the critical hard gate to prevent uncontrolled contamination.
+
+**b) Is the definition of "governance query" in ADR-CORPUS-001 complete and unambiguous? Are there query types that fall into a grey zone — where dex_dave should be consulted for some governance questions but not others?**
+
+**Yes, the definition of "governance query" is complete and unambiguous** for the explicit purpose of `dex_dave` isolation. The definition clearly covers interpretation, application, evaluation, compliance assessment, and description of DDL's formal standards and protocols. The rationale provided – preventing confabulation risk by separating operator opinion from ratified governance – is robust and critical.
+
+The examples of when `dex_dave` *is* consulted (operator intent, tone calibration, historical context, personal projects) provide a clear counter-boundary. While a query might blend intent with a governance artifact (e.g., "What was Dave's *intent* when drafting STD-X-001?"), such queries are designed to be routed by keywords (Rule 4). A query about `intent` would trigger `OPERATOR INTENT / VOICE`, distinct from a query asking to `interpret` or `apply` the standard itself, which would trigger `GOVERNANCE`. This clear delineation, enforced by the router, effectively mitigates significant grey zones.
+
+**c) The routing table in Rule 4 only includes dex_dave in the OPERATOR INTENT / VOICE query type. Is this the right boundary? Should dex_dave ever appear in a DEFAULT query?**
+
+**Yes, limiting `dex_dave` to only the OPERATOR INTENT / VOICE query type is the correct boundary.** This strict isolation reinforces Rule 3's objective: `dex_dave` provides specialized context (operator voice and intent), not general truth or foundational governance. Including it in other query types without explicit intent keywords would reintroduce the risk of conflating operator opinion with other forms of DDL knowledge.
+
+**No, `dex_dave` should not appear in a DEFAULT query.** The DEFAULT route (`dex_canon + ddl_archive`) is designed to provide broad, reliable context from ratified sources and historical records for unclassified queries. Injecting operator voice (`dex_dave`) into this general path would compromise the precision and authoritative nature of default retrieval, increasing confabulation risk for queries not specifically asking for the operator's perspective.
+
+---
+
+**QUESTION 3 — RULE 4: QUERY ROUTER DESIGN**
+
+**a) Pressure-test the routing table. Are the trigger keywords for each query type sufficient to correctly classify the majority of queries Dex Jr. receives? Which query type is most likely to misfire?**
+
+The trigger keywords are generally **sufficient for an MVP** keyword-based router, as intended by the ADR. They are specific and align well with the defined purpose of each query type.
+
+The **PRODUCT / DOMAIN QUERY** type is most likely to misfire or require refinement. Its trigger keywords include both specific product names (e.g., `AuditForge`, `BlindSpot`) and more general terms (e.g., `schema`, `control`, `risk`, `bet`, `token`). These general terms are susceptible to ambiguity and overlap. For instance, `schema` also appears in `CODE / TECHNICAL QUERY`. `control`, `risk`, `bet`, `token` could relate to operator intent (in `dex_dave`), governance (in `dex_decisions`), or general archive content (in `ddl_archive`), depending on context not fully captured by simple keywords. This ambiguity means queries using these general terms might not always be correctly routed to the specific product collection or could fall to the `DEFAULT` route, reducing precision where product-specific context is crucial. The reliance on explicit product names for "product-specific collection" routing (as clarified in the ADR's note) also means queries that abstractly refer to a product (e.g., "our vaulting system") without naming `AuditForge` might also misfire.
+
+**b) The DEFAULT route returns dex_canon + ddl_archive — preserving current behavior. Is this the right default? Or should the default be dex_canon only (higher precision, lower recall)?**
+
+**Yes, the DEFAULT route of `dex_canon + ddl_archive` is the right default for the MVP.** The ADR's rationale that `ddl_archive` (271K+ chunks) provides "necessary context for many general queries" is sound. For a keyword-based MVP, prioritizing recall (ensuring broad coverage for unclassified queries) over immediate high precision is a pragmatic choice. This approach aligns with the "observe its failure modes, upgrade when those modes are documented" methodology, allowing DDL to capture a wider range of queries and then refine the router based on actual usage patterns. `dex_canon` ensures authoritative baseline, and `ddl_archive` provides valuable historical depth for general inquiries.
+
+**c) The GOVERNANCE query type excludes all product collections and dex_dave. But a governance query about AuditForge specifically (e.g., "does AuditForge comply with STD-VAULT-002?") might need dex_auditforge to answer correctly. How should product-scoped governance queries be handled?**
+
+ADR-CORPUS-001 explicitly addresses this scenario under Rule 4, in the "GOVERNANCE QUERY" note. It states: "Product-scoped governance queries... should combine GOVERNANCE + PRODUCT routing. The router detects both governance keywords AND a product name, and returns `dex_canon` + `dex_decisions` + the relevant product collection." This defines a **compound route** for such queries. The ADR provides a clear and robust mechanism for handling these specific and critical query types.
+
+---
+
+**QUESTION 4 — BUILD ORDER AND WHAT'S MISSING**
+
+**a) Is this build order correct? The ADR argues dex_decisions first because it transforms Dex Jr. from archivist to advisor. dex_code is already live. Does this change the calculus on what produces the most operator value on Day 1?**
+
+**Yes, the build order is correct.** `dex_code` being live provides a technical foundation, but `dex_decisions` is strategically more important for DDL's immediate operational governance and transformation. The argument that `dex_decisions` transforms Dex Jr. from archivist to advisor (from CR-CORPUS-VISION-001) is paramount. This shifts Dex Jr.'s utility from retrieval of existing facts to enabling higher-level reasoning and advice, directly supporting the "Structured -> Automated" methodology. Prioritizing this foundational governance knowledge over other collections (especially gating `dex_dave` until router enforcement is live) ensures the integrity and reliability of Dex Jr.'s advisory capabilities from Day 1, which represents the highest operator value.
+
+**b) What does the ADR not address that it should? Look for gaps: failure modes not covered, edge cases not specified, governance rules that will be needed but aren't here yet. The ADR cannot be ratified with known gaps.**
+
+The ADR's "WHAT THIS DOES NOT DECIDE" section appropriately scopes out several items for future consideration or separate artifacts. However, there are a few gaps related to the implementation details of *this ADR's* rules, particularly concerning the Query Router, that should be clarified or explicitly delegated to a specific future artifact:
+
+1.  **Compound Query Resolution Logic (General):** While a compound route is defined for `GOVERNANCE + PRODUCT` queries, the ADR does not specify the router's behavior when a query triggers *multiple other* query types simultaneously (e.g., `OPERATOR INTENT / VOICE` + `PRODUCT / DOMAIN`). A clear rule is needed to define how the router aggregates eligible collections from different triggered types and how their relative precedence (tier/weight) is then applied in such multi-type scenarios.
+2.  **Product-Specific Collection Identification Mechanism:** For the `PRODUCT / DOMAIN QUERY` type, the routing table specifies "product-specific collection + dex_canon." The mechanism by which the router identifies the "relevant product collection" needs further explicit definition. Is it an exact keyword match, a lookup against a product registry, or another method?
+3.  **Collection Weight Adjustment Protocol:** The ADR mentions `ext_creator`'s weight was adjusted after "retrieval testing confirmed Canon dominance." While this implies an empirical process, the ADR does not define a formal protocol (e.g., a PRO- or STD- artifact) for how collection weights are reviewed, tested, and adjusted in the future. This is a critical governance rule for maintaining the integrity and accuracy of Rule 1's precedence hierarchy.
+
+**c) Is there anything in this ADR that, if wrong, would cause irreversible harm to the corpus or to retrieval quality? Identify the highest-stakes decision in the document.**
+
+**Yes.** The highest-stakes decision, correctly identified in ADR-CORPUS-001 (Rule 3, "Pre-router interim rule"), is the requirement that "`dex_dave` MUST NOT be ingested before the query router is live."
+
+If this rule were to be ignored or implemented incorrectly, `dex_dave` (operator's personal voice, thoughts, etc.) would contaminate the entire corpus without a control mechanism to filter it from governance queries. This would lead to irreversible harm by fundamentally undermining the authority and reliability of Dex Jr.'s responses to governance-critical questions. Dex Jr. could confabulate or present informal opinions as ratified DDL governance, eroding trust, leading to incorrect decisions, and requiring extensive, costly manual remediation or even a re-ingestion of the corpus to restore integrity. This directly compromises the "Safety & Ethics" governance hierarchy.
+
+---
+
+**VERDICT:** REVISE
+
+The ADR is well-considered, addresses critical issues, and correctly identifies its highest-stakes elements. However, the implementation-level gaps identified in **Question 4b** require clarification to ensure the ADR is fully sound and unambiguous for ratification. These are not fundamental flaws requiring a full rework, but rather specific details that must be addressed for robust and predictable system behavior.
+
+**Minimum Change Set:**
+
+1.  **ADR-CORPUS-001, Rule 4 — Query Router Design:**
+    *   Add a new sub-section or explicit note within Rule 4 that defines the router's conflict resolution logic for compound queries that trigger *multiple* non-`GOVERNANCE + PRODUCT` query types. This rule should specify how the eligible collection set is formed from different triggered types and how their precedence is applied.
+    *   Under `PRODUCT / DOMAIN QUERY` in the routing table, clarify the mechanism for how the "product-specific collection" is identified (e.g., explicit keyword match from a registry of product names, or a lookup based on derived context).
+
+2.  **ADR-CORPUS-001, Rule 1 — Collection Precedence Hierarchy / "WHAT THIS DOES NOT DECIDE" section:**
+    *   Add an explicit item to "WHAT THIS DOES NOT DECIDE" or "CONSEQUENCES" that delegates the creation of a `PRO-` or `STD-` artifact defining the process for reviewing, testing, and adjusting collection weights over time (e.g., an "Collection Weight Audit Protocol"). This ensures the long-term governance of the precedence model defined in Rule 1.

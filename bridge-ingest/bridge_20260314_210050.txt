@@ -1,0 +1,12 @@
+DEX JR RAG BRIDGE - Query Transcript
+============================================================
+TIMESTAMP: 2026-03-14T21:00:50.373372
+PROVENANCE: [Sources: 10×Canon]
+SOURCES: 2025-11-23 12 26 04 - David Purifoy - 01_DexProjectSummary - AI Platforms_v1.0.txt, 19_CognitiveArchitecture.txt, group_chats_chunk_004of012.txt, group_chats_chunk_004of012.txt, group_chats_chunk_011of012.txt, group_chats_chunk_004of012.txt, group_chats_chunk_004of012.txt, group_chats_chunk_011of012.txt, Dex_iOS\ProjectFiles\DexOS_TestNet_v2.0_AllFilesMerged.txt, Dex_iOS\ProjectFiles\DexOS_TestNet_v2.0_AllFilesMerged.txt
+============================================================
+
+QUERY:
+What is Eugene Wei Status as a Service framework?
+
+RESPONSE:
+I don't have enough in the retrieved chunks to answer this. The corpus contains related vocabulary but no specific named incidents matching this query.

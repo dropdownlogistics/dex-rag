@@ -1,0 +1,56 @@
+SYNTHESIZER: dexjr
+ELAPSED: 35.7s
+TIMESTAMP: 2026-03-26T13:41:42.797429
+
+============================================================
+SYNTHESIS
+============================================================
+
+### CONVERGENCE:
+All models agreed that recurring MDN patterns should be elevated to Building Blocks based on specific criteria and thresholds. The key points of convergence include:
+
+- **Recurring Patterns:** Identification of consistent and repeatable patterns.
+- **Thresholds for Elevation:** Minimum number of occurrences, impact score, complexity index, frequency, magnitude, data sufficiency, cross-domain utility, etc.
+- **Classification of Non-Elevated Patterns:** Persistent patterns that do not meet the threshold should be classified as Best Practices or Pattern Observations (OBS-).
+
+### DIVERGENCE:
+There were some differences in the specific criteria and thresholds proposed by each model:
+
+- **Frequency and Magnitude Criteria:**
+  - Qwen: Frequency of at least 10 occurrences, impact score, complexity index.
+  - Llama: Frequency of at least 80% within a rolling 3-month window, magnitude of at least 10% MoM change.
+  - Gemini: Observation count in >=5 unique governance artifacts, impact metric (e.g., saving ≥1 hour of manual effort).
+  - Mistral/LeChat: ≥3 distinct instances across ≥2 domains with ≥70% semantic similarity.
+
+- **Complexity and Impact Metrics:**
+  - Qwen: Complexity index greater than 3.
+  - Llama: Consistency across multiple domains and datasets.
+  - Gemini: Cross-domain applicability, stability & repeatability.
+  - Mistral/LeChat: No RED-zone violations, heuristic friction reduction.
+
+- **Validation and Governance Alignment:**
+  - Qwen: Not explicitly mentioned.
+  - Llama: Not explicitly mentioned.
+  - Gemini: Cross-domain applicability, governance alignment with STD-, PRO-, or llms.txt artifacts.
+  - Mistral/LeChat: Compliance with governance artifacts without divergence.
+
+### UNIQUE INSIGHTS:
+- **Gemini's Focus on Impact Metrics:** The emphasis on quantifiable reduction in manual effort and improvement in system metrics is unique. This approach aligns well with DDL’s goal of "Structured -> Automated."
+- **DeepSeek's Statistical Sufficiency:** The requirement for peer-reviewed validation by at least 2 council models with ≥75% consensus adds an additional layer of rigor.
+
+### LOCAL vs CLOUD:
+There were no significant quality or speed differences noted between the local and cloud models. All responses were timely and consistent in their approach to convergence and divergence.
+
+### RECOMMENDED ACTIONS:
+1. **Convergence on Criteria:** The operator should adopt a hybrid approach that incorporates elements from all models, focusing on frequency, impact, complexity, and cross-domain applicability.
+2. **Thresholds for Elevation:** Set thresholds based on the most stringent criteria (e.g., ≥3 distinct instances across ≥2 domains with ≥70% semantic similarity).
+3. **Classification of Patterns:** Establish a clear classification system for both elevated Building Blocks and persistent Pattern Observations (OBS-).
+
+### CONFIDENCE:
+High. The convergence on key criteria and thresholds is strong, supported by multiple models.
+
+### VERDICT:
+LOCK
+
+### ESCALATION:
+No. The council review process will handle the detailed implementation and validation of these criteria based on the hybrid approach recommended.

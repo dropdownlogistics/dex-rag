@@ -1,0 +1,103 @@
+﻿=====================================================================
+CR-CORPUS-VISION-001
+DDL Corpus Architecture — Cathedral Vision Request
+Operator: Dave Kitchens
+Date: 2026-03-14
+Distribution: All Council Seats (1001-1010)
+Classification: Strategic — Long Horizon — No Immediate Verdict
+=====================================================================
+
+CONTEXT — WHAT HAPPENED TODAY
+=====================================================================
+
+Today was one of the highest-output infrastructure sessions
+in DDL history. Here is the full state of the corpus.
+
+CORPUS STATE (end of session)
+  dex_canon        226,314 chunks
+  ddl_archive      271,627 chunks
+  Total:           497,941 chunks
+
+WHAT WAS BUILT TODAY
+  Modelfile v4.1 to v4.5 — two confirmed fixes
+  dex-ingest.py — 23 extensions, --collection flag,
+    --ext-filter, --nominated-by, phantom count fixed
+  dex-bridge.py v1.2 — auto-ingest every query+response
+  dex-sweep.py — full extensions, bug fixed, nightly reports
+  Archive ingest — 99_DexUniverseArchive fully ingested
+    +172,796 new RAW chunks (code corpus now in)
+  CR-CANON-001 — OperatorManifest LOCKED 5/5
+  CR-CORPUS-NOMINATIONS-001 — 6 ext_reference + 9 ext_creator approved
+  STD-VAULT-002 — 20 document types, full template architecture
+
+THE ARCHITECTURE WE ARE BUILDING
+=====================================================================
+
+CONSTITUTIONAL HIERARCHY (immovable)
+  dex_canon > ext_canon > ddl_archive > ext_[tier]
+
+COLLECTION REGISTRY
+  dex_canon        1.00    Ratified DDL governance (live)
+  ddl_archive      0.65    Full historical RAW (live)
+  dex_lore         0.95    Origin documents (building)
+  dex_code         0.85    All DDL code (building)
+  dex_canonpress   0.85    CanonPress articles (building)
+  dex_auditforge   0.85    AuditForge schema and API (building)
+  dex_blindspot    0.85    BlindSpot schema (building)
+  dex_site         0.80    JSX/TSX components (building)
+  dex_dave         0.90    Operator voice — iMessages, TikToks,
+                           emails, memoir, Reddit, Google data
+  ext_reference    0.75    Kimball, DDD, Kleppmann, NIST, PCAOB
+  ext_creator      0.60    Benn Stancil, Gwern, Simon Willison,
+                           Simon Wardley, John Cutler, Greg Wilson,
+                           patio11, Maggie Appleton, Tiago Forte
+
+THE QUESTION FOR THE COUNCIL
+=====================================================================
+
+What we want is cathedral vision. Not a verdict on what we
+have. What does the corpus look like when it is done?
+
+Answer these five questions:
+
+1. COMPLETENESS
+   What sources or knowledge domains are missing that would
+   make Dex Jr. genuinely irreplaceable — not just useful?
+
+2. RETRIEVAL VISION
+   When the full corpus is live, what queries should Dex Jr.
+   answer that no cloud model can answer?
+
+3. THE DAVE CORPUS
+   dex_dave contains 26 months of one person's life across
+   every medium. What does that actually enable? What is the
+   highest-value use case the operator has not thought of?
+
+4. ARCHITECTURE GAPS
+   Looking at the constitutional hierarchy and collection
+   registry — what is the weakest link? What breaks first?
+
+5. THE CATHEDRAL QUESTION
+   If you could add one thing the operator has not thought of
+   — one collection, protocol, governance rule, or retrieval
+   pattern — what would it be and why?
+
+VERDICT FORMAT
+=====================================================================
+
+No LOCK/REVISE/REJECT required. Vision prompt only.
+
+  COMPLETENESS:     [what is missing]
+  RETRIEVAL VISION: [what becomes possible]
+  DAVE CORPUS:      [highest-value use case]
+  ARCHITECTURE GAP: [weakest link]
+  CATHEDRAL ADD:    [your one addition]
+
+Be specific. Be honest. No filler.
+The operator built half a million chunks today.
+He can handle your real answer.
+
+=====================================================================
+Dropdown Logistics — Chaos -> Structured -> Automated
+CR-CORPUS-VISION-001 | What does it look like when it is done?
+=====================================================================

@@ -1,0 +1,13 @@
+**Follow-Up Prompt for Round 2:**
+
+1. **Unresolved Disagreement:** Both Qwen and DeepSeek argue against Dex Jr. self-modifying the Modelfile, citing risks of governance drift and lack of domain expertise. Llama and Groq-Llama, however, suggest that Dex Jr. should be allowed to self-modify based on calibration results, arguing that self-improvement is beneficial. 
+
+   **Follow-Up Question:** What specific scenarios or examples can illustrate the potential benefits of Dex Jr. self-modifying the Modelfile based on calibration results, and how can these be mitigated to minimize the risks of governance drift?
+
+2. **Open Question:** Mistral and Llama both emphasize the importance of adhering to the Governance Hierarchy, particularly the **Safety > Operator** rule. However, they do not provide concrete examples of how Dex Jr. can self-modify without violating this hierarchy.
+
+   **Follow-Up Question:** How can Dex Jr. be designed to ensure that any self-modifications are reviewed and approved by the operator, thereby maintaining the **Safety > Operator** hierarchy and preventing governance drift?
+
+3. **Claim Without Evidence:** DeepSeek mentions the importance of maintaining system integrity and coherence but does not provide specific examples of how Dex Jr. self-modification could compromise these aspects.
+
+   **Follow-Up Question:** Can you provide concrete examples of how Dex Jr. self-modification could potentially compromise system integrity and coherence, and what measures can be taken to prevent such risks?

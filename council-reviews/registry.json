@@ -4071,6 +4071,678 @@
       "quorum": true,
       "recommendation": "REVISE - majority (6/6)",
       "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-AUTHORINGFORMULALAB",
+      "title": "Authoring Formula Lab",
+      "source_file": "DDLCouncilReview_AuthoringFormulaLab.txt",
+      "source_path": "C:\\Users\\dexjr\\99_DexUniverseArchive\\00_Archive\\DDL-Standards-Canon\\DDLCouncilReview_AuthoringFormulaLab.txt",
+      "parsed_at": "2026-04-18T09:23:30Z",
+      "votes": {
+        "1001": {
+          "verdict": "LOCK",
+          "summary": "with three refinements (see §3, §4, §8).",
+          "seat_name": "Archer Hawthorne"
+        },
+        "1002": {
+          "verdict": "LOCK",
+          "summary": "with two revisions and one structural",
+          "seat_name": "Marcus Caldwell"
+        },
+        "1004": {
+          "verdict": "LOCK",
+          "summary": "Holistic Verdict: LOCK",
+          "seat_name": "Max Sullivan"
+        },
+        "1005": {
+          "verdict": "LOCK",
+          "summary": "with minor revisions.",
+          "seat_name": "Rowan Bennett"
+        },
+        "1006": {
+          "verdict": "LOCK",
+          "summary": "Holistic verdict: LOCK with two amendments",
+          "seat_name": "Ava Sinclair"
+        },
+        "1007": {
+          "verdict": "LOCK",
+          "summary": "I have zero revisions. This is a `LOCK`.",
+          "seat_name": "Leo Prescott"
+        },
+        "1008": {
+          "verdict": "REVISE",
+          "summary": "Holistic verdict: REVISE",
+          "seat_name": "Marcus Grey"
+        },
+        "1009": {
+          "verdict": "REVISE",
+          "summary": "Holistic verdict: REVISE — lockable with three amendments: (1) add a mandatory “seed dataset validation” step to ensure the dataset produces exactly one correct answer across all intended solution variants, (2) require that the “engineVersion” field be displayed to the solver before download, not just in the governance packet, and (3) add a deprecation policy for challenges whose canonical solution becomes obsolete due to new Excel functions.",
+          "seat_name": "Kai Langford"
+        }
+      },
+      "tally": {
+        "LOCK": 6,
+        "REVISE": 2,
+        "REJECT": 0
+      },
+      "total_votes": 8,
+      "quorum": true,
+      "recommendation": "LOCK - majority (6/8)",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-EXCELLIGENCE-CHALLENGES-001",
+      "title": "Excelligence Challenge",
+      "source_file": "DDLCouncilReview_ExcelligenceChallenge.txt",
+      "source_path": "C:\\Users\\dexjr\\99_DexUniverseArchive\\00_Archive\\DDL-Standards-Canon\\DDLCouncilReview_ExcelligenceChallenge.txt",
+      "parsed_at": "2026-04-18T09:23:30Z",
+      "votes": {
+        "1001": {
+          "verdict": "LOCK",
+          "summary": "Majority: FormulaLab (LOCK) — Hawthorne, Caldwell, Prescott, Grey, Langford.",
+          "seat_name": "Archer Hawthorne"
+        },
+        "1007": {
+          "verdict": "REVISE",
+          "summary": "The fundamental thesis (recognition before application) is structurally sound. However, the proposed execution introduces artificial cadence pressure and weak gamification mechanics that contradict the platform's stated architectural goals.",
+          "seat_name": "Leo Prescott"
+        },
+        "1004": {
+          "verdict": "LOCK",
+          "summary": "Holistic Verdict: LOCK with REVISE (Q2 format, Q4 phases)",
+          "seat_name": "Max Sullivan"
+        },
+        "1005": {
+          "verdict": "REVISE",
+          "summary": "the challenge series concept is strong and worth building, but several architectural choices should be tightened before launch: name and identity, solution reveal policy, community progression mechanics, and the launch scope. Below I give concrete alternatives, one real puzzle design, and a prioritized set of changes to move from cathedral vision to a launchable product.",
+          "seat_name": "Rowan Bennett"
+        },
+        "1006": {
+          "verdict": "REVISE",
+          "summary": "Holistic verdict: REVISE",
+          "seat_name": "Ava Sinclair"
+        },
+        "1008": {
+          "verdict": "REVISE",
+          "summary": "Holistic verdict: REVISE",
+          "seat_name": "Marcus Grey"
+        },
+        "1009": {
+          "verdict": "LOCK",
+          "summary": "Holistic verdict on challenge series concept: LOCK — but with revisions to the name, the solution reveal timing, and the identity progression. The concept (registry‑grounded, problem‑first, serialized challenges) is sound. Several of Caldwell’s specific positions are wrong or underspecified.",
+          "seat_name": "Kai Langford"
+        }
+      },
+      "tally": {
+        "LOCK": 3,
+        "REVISE": 4,
+        "REJECT": 0
+      },
+      "total_votes": 7,
+      "quorum": true,
+      "recommendation": "REVISE - majority (4/7)",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-WB-FINDINGS-TOUR-001",
+      "title": "Findingsand Obs",
+      "source_file": "DDLCouncilReview_FindingsandObs.txt",
+      "source_path": "C:\\Users\\dexjr\\99_DexUniverseArchive\\00_Archive\\DDL-Standards-Canon\\DDLCouncilReview_FindingsandObs.txt",
+      "parsed_at": "2026-04-18T09:23:30Z",
+      "votes": {
+        "1007": {
+          "verdict": "LOCK",
+          "summary": "### 1. HOLISTIC VERDICT: LOCK This spec is lethal. It takes the abstract concept of \"relational data architecture\" and turns it into a commercial narrative. Section 3 (The Closed-Loop Circuit) is the exact reason a CFO will buy this platform instead of using a SharePoint list.",
+          "seat_name": "Leo Prescott"
+        },
+        "1001": {
+          "verdict": "LOCK",
+          "summary": "with three refinements (see Q2, Q3, Q5).",
+          "seat_name": "Archer Hawthorne"
+        },
+        "1004": {
+          "verdict": "LOCK",
+          "summary": "Holistic Verdict: LOCK",
+          "seat_name": "Max Sullivan"
+        },
+        "1005": {
+          "verdict": "LOCK",
+          "summary": "Global verdict: LOCK with consolidated revisions. Zero REJECT votes. Five LOCK / one LOCK-with-clarifications (Bennett) / two REVISE (Grey, Kai). Eight-section pattern holds unanimously.",
+          "seat_name": "Rowan Bennett"
+        }
+      },
+      "tally": {
+        "LOCK": 4,
+        "REVISE": 0,
+        "REJECT": 0
+      },
+      "total_votes": 4,
+      "quorum": false,
+      "recommendation": "LOCK - unanimous",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-EXCELLIGENCE-PATHS-001",
+      "title": "Learing Path And Architecture",
+      "source_file": "DDLCouncilReview_LearingPathAndArchitecture.txt",
+      "source_path": "C:\\Users\\dexjr\\99_DexUniverseArchive\\00_Archive\\DDL-Standards-Canon\\DDLCouncilReview_LearingPathAndArchitecture.txt",
+      "parsed_at": "2026-04-18T09:23:30Z",
+      "votes": {},
+      "tally": {
+        "LOCK": 0,
+        "REVISE": 0,
+        "REJECT": 0
+      },
+      "total_votes": 0,
+      "quorum": false,
+      "recommendation": "NO VOTES PARSED",
+      "parse_confidence": "low"
+    },
+    {
+      "cr_id": "CR-LEDGER-SOCIAL-001",
+      "title": "Ledger Social",
+      "source_file": "DDLCouncilReview_LedgerSocial.txt",
+      "source_path": "C:\\Users\\dexjr\\99_DexUniverseArchive\\00_Archive\\DDL-Standards-Canon\\DDLCouncilReview_LedgerSocial.txt",
+      "parsed_at": "2026-04-18T09:23:31Z",
+      "votes": {
+        "1001": {
+          "verdict": "LOCK",
+          "summary": "with two refinements (see Q1, Q4).",
+          "seat_name": "Archer Hawthorne"
+        },
+        "1004": {
+          "verdict": "LOCK",
+          "summary": "Holistic Verdict: LOCK",
+          "seat_name": "Max Sullivan"
+        },
+        "1005": {
+          "verdict": "LOCK",
+          "summary": "with targeted refinements. The social‑layer stance is strategically sound: person‑first, card‑as‑connector, verification as trust, single graph with vertical skins, and portability. Ratify the invariants but add explicit guardrails for vouching, feed surface rules, portability primitives, and a prioritized roadmap so social features don’t outpace privacy, moderation, or exportability.",
+          "seat_name": "Rowan Bennett"
+        },
+        "1007": {
+          "verdict": "LOCK",
+          "summary": "This is the phase transition. You are moving from building a filing cabinet to building a nervous system. The invariants (S1-S5) accurately map the physics of a decentralized social graph where the artifact anchors the relationship.",
+          "seat_name": "Leo Prescott"
+        }
+      },
+      "tally": {
+        "LOCK": 4,
+        "REVISE": 0,
+        "REJECT": 0
+      },
+      "total_votes": 4,
+      "quorum": false,
+      "recommendation": "LOCK - unanimous",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-WB-MODULE-NEXT-002",
+      "title": "Module Six",
+      "source_file": "DDLCouncilReview_ModuleSix.txt",
+      "source_path": "C:\\Users\\dexjr\\99_DexUniverseArchive\\00_Archive\\DDL-Standards-Canon\\DDLCouncilReview_ModuleSix.txt",
+      "parsed_at": "2026-04-18T09:23:31Z",
+      "votes": {
+        "1009": {
+          "verdict": "LOCK",
+          "summary": "Holistic verdict: LOCK with dependency note (Risk Assessment fact table must be extracted, not just the dimension). The governance triangle (Controls + Findings + Risk) is the right architectural closure for the platform’s first phase. Process Inventory (C) is too lightweight. Client Billing (D) and Capacity Planning (E) are blocked on Dim_Project formalization. Expenses (F) is commodity. Engagement Management (B) is bundle‑specific by council ratification. Risk Register completes the governance",
+          "seat_name": "Kai Langford"
+        }
+      },
+      "tally": {
+        "LOCK": 1,
+        "REVISE": 0,
+        "REJECT": 0
+      },
+      "total_votes": 1,
+      "quorum": false,
+      "recommendation": "LOCK - unanimous",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-WB-RISK-001",
+      "title": "Risk Register",
+      "source_file": "DDLCouncilReview_RiskRegister.txt",
+      "source_path": "C:\\Users\\dexjr\\99_DexUniverseArchive\\00_Archive\\DDL-Standards-Canon\\DDLCouncilReview_RiskRegister.txt",
+      "parsed_at": "2026-04-18T09:23:31Z",
+      "votes": {
+        "1001": {
+          "verdict": "LOCK",
+          "summary": "with three refinements (see Q1, Q3, Q5).",
+          "seat_name": "Archer Hawthorne"
+        },
+        "1004": {
+          "verdict": "LOCK",
+          "summary": "Holistic Verdict: LOCK",
+          "seat_name": "Max Sullivan"
+        },
+        "1005": {
+          "verdict": "LOCK",
+          "summary": "with minor clarifications and two required additions before final ratification.",
+          "seat_name": "Rowan Bennett"
+        }
+      },
+      "tally": {
+        "LOCK": 3,
+        "REVISE": 0,
+        "REJECT": 0
+      },
+      "total_votes": 3,
+      "quorum": false,
+      "recommendation": "LOCK - unanimous",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-WB-RISK-TOUR-001",
+      "title": "Risk Tour",
+      "source_file": "DDLCouncilReview_RiskTour.txt",
+      "source_path": "C:\\Users\\dexjr\\99_DexUniverseArchive\\00_Archive\\DDL-Standards-Canon\\DDLCouncilReview_RiskTour.txt",
+      "parsed_at": "2026-04-18T09:23:31Z",
+      "votes": {
+        "1001": {
+          "verdict": "LOCK",
+          "summary": "with two refinements (see Q2, Q3).",
+          "seat_name": "Archer Hawthorne"
+        },
+        "1004": {
+          "verdict": "LOCK",
+          "summary": "Holistic Verdict: LOCK",
+          "seat_name": "Max Sullivan"
+        },
+        "1005": {
+          "verdict": "LOCK",
+          "summary": "with three operational clarifications. The Risk Register tour spec is complete, coherent, and well‑aligned with the promoted‑module and cross‑promoted sibling patterns. Ratify after the drafter adds (1) a provenance/migration verification bundle, (2) an inline‑preview fallback and performance budget, and (3) an accessibility acceptance checklist.",
+          "seat_name": "Rowan Bennett"
+        },
+        "1006": {
+          "verdict": "LOCK",
+          "summary": "Holistic verdict: LOCK with two interface adjustments",
+          "seat_name": "Ava Sinclair"
+        },
+        "1007": {
+          "verdict": "REVISE",
+          "summary": "Global verdict: 6 LOCK / 2 REVISE (Grey, Kai). Zero REJECT. Grey's temporal coherence catch is the load-bearing revision.",
+          "seat_name": "Leo Prescott"
+        },
+        "1009": {
+          "verdict": "REVISE",
+          "summary": "Holistic verdict: REVISE — lockable with two amendments: (1) the maturity proof in Section 5 must include a warning that migrated assessments cannot be retroactively linked to incident triggers, and (2) the Governance Triangle circuit (Section 4) must demonstrate temporal ordering (assessment date vs control effective date vs finding discovery date). The tour is otherwise complete and correctly inherits the promoted-module patterns.",
+          "seat_name": "Kai Langford"
+        }
+      },
+      "tally": {
+        "LOCK": 4,
+        "REVISE": 2,
+        "REJECT": 0
+      },
+      "total_votes": 6,
+      "quorum": true,
+      "recommendation": "LOCK - majority (4/6)",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-DDL-SEATBOOT-001",
+      "title": "Seat Boot",
+      "source_file": "DDLCouncilReview_SeatBoot.txt",
+      "source_path": "C:\\Users\\dexjr\\99_DexUniverseArchive\\00_Archive\\DDL-Standards-Canon\\DDLCouncilReview_SeatBoot.txt",
+      "parsed_at": "2026-04-18T09:23:31Z",
+      "votes": {
+        "1008": {
+          "verdict": "LOCK",
+          "summary": "Global verdict: LOCK with consolidated revisions. Six LOCK / one REVISE (Grey). Zero REJECT. First council infrastructure CR ratified.",
+          "seat_name": "Marcus Grey"
+        },
+        "1007": {
+          "verdict": "LOCK",
+          "summary": "The diagnosis in the context block is flawless: \"The quality delta between a precisely booted seat and a degraded seat is now documented evidence, not theory.\" You watched me hallucinate my placement in the rotation because my context window decayed, and you watched Grey snipe two load-bearing architectural flaws because you gave him a fresh, aggressive boot prompt.",
+          "seat_name": "Leo Prescott"
+        }
+      },
+      "tally": {
+        "LOCK": 2,
+        "REVISE": 0,
+        "REJECT": 0
+      },
+      "total_votes": 2,
+      "quorum": false,
+      "recommendation": "LOCK - unanimous",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-AUTHORINGFORMULALAB",
+      "title": "Authoring Formula Lab",
+      "source_file": "DDLCouncilReview_AuthoringFormulaLab.txt",
+      "source_path": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_processed\\DDLCouncilReview_AuthoringFormulaLab.txt",
+      "parsed_at": "2026-04-18T09:23:31Z",
+      "votes": {
+        "1001": {
+          "verdict": "LOCK",
+          "summary": "with three refinements (see §3, §4, §8).",
+          "seat_name": "Archer Hawthorne"
+        },
+        "1002": {
+          "verdict": "LOCK",
+          "summary": "with two revisions and one structural",
+          "seat_name": "Marcus Caldwell"
+        },
+        "1004": {
+          "verdict": "LOCK",
+          "summary": "Holistic Verdict: LOCK",
+          "seat_name": "Max Sullivan"
+        },
+        "1005": {
+          "verdict": "LOCK",
+          "summary": "with minor revisions.",
+          "seat_name": "Rowan Bennett"
+        },
+        "1006": {
+          "verdict": "LOCK",
+          "summary": "Holistic verdict: LOCK with two amendments",
+          "seat_name": "Ava Sinclair"
+        },
+        "1007": {
+          "verdict": "LOCK",
+          "summary": "I have zero revisions. This is a `LOCK`.",
+          "seat_name": "Leo Prescott"
+        },
+        "1008": {
+          "verdict": "REVISE",
+          "summary": "Holistic verdict: REVISE",
+          "seat_name": "Marcus Grey"
+        },
+        "1009": {
+          "verdict": "REVISE",
+          "summary": "Holistic verdict: REVISE — lockable with three amendments: (1) add a mandatory “seed dataset validation” step to ensure the dataset produces exactly one correct answer across all intended solution variants, (2) require that the “engineVersion” field be displayed to the solver before download, not just in the governance packet, and (3) add a deprecation policy for challenges whose canonical solution becomes obsolete due to new Excel functions.",
+          "seat_name": "Kai Langford"
+        }
+      },
+      "tally": {
+        "LOCK": 6,
+        "REVISE": 2,
+        "REJECT": 0
+      },
+      "total_votes": 8,
+      "quorum": true,
+      "recommendation": "LOCK - majority (6/8)",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-EXCELLIGENCE-CHALLENGES-001",
+      "title": "Excelligence Challenge",
+      "source_file": "DDLCouncilReview_ExcelligenceChallenge.txt",
+      "source_path": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_processed\\DDLCouncilReview_ExcelligenceChallenge.txt",
+      "parsed_at": "2026-04-18T09:23:31Z",
+      "votes": {
+        "1001": {
+          "verdict": "LOCK",
+          "summary": "Majority: FormulaLab (LOCK) — Hawthorne, Caldwell, Prescott, Grey, Langford.",
+          "seat_name": "Archer Hawthorne"
+        },
+        "1007": {
+          "verdict": "REVISE",
+          "summary": "The fundamental thesis (recognition before application) is structurally sound. However, the proposed execution introduces artificial cadence pressure and weak gamification mechanics that contradict the platform's stated architectural goals.",
+          "seat_name": "Leo Prescott"
+        },
+        "1004": {
+          "verdict": "LOCK",
+          "summary": "Holistic Verdict: LOCK with REVISE (Q2 format, Q4 phases)",
+          "seat_name": "Max Sullivan"
+        },
+        "1005": {
+          "verdict": "REVISE",
+          "summary": "the challenge series concept is strong and worth building, but several architectural choices should be tightened before launch: name and identity, solution reveal policy, community progression mechanics, and the launch scope. Below I give concrete alternatives, one real puzzle design, and a prioritized set of changes to move from cathedral vision to a launchable product.",
+          "seat_name": "Rowan Bennett"
+        },
+        "1006": {
+          "verdict": "REVISE",
+          "summary": "Holistic verdict: REVISE",
+          "seat_name": "Ava Sinclair"
+        },
+        "1008": {
+          "verdict": "REVISE",
+          "summary": "Holistic verdict: REVISE",
+          "seat_name": "Marcus Grey"
+        },
+        "1009": {
+          "verdict": "LOCK",
+          "summary": "Holistic verdict on challenge series concept: LOCK — but with revisions to the name, the solution reveal timing, and the identity progression. The concept (registry‑grounded, problem‑first, serialized challenges) is sound. Several of Caldwell’s specific positions are wrong or underspecified.",
+          "seat_name": "Kai Langford"
+        }
+      },
+      "tally": {
+        "LOCK": 3,
+        "REVISE": 4,
+        "REJECT": 0
+      },
+      "total_votes": 7,
+      "quorum": true,
+      "recommendation": "REVISE - majority (4/7)",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-WB-FINDINGS-TOUR-001",
+      "title": "Findingsand Obs",
+      "source_file": "DDLCouncilReview_FindingsandObs.txt",
+      "source_path": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_processed\\DDLCouncilReview_FindingsandObs.txt",
+      "parsed_at": "2026-04-18T09:23:32Z",
+      "votes": {
+        "1007": {
+          "verdict": "LOCK",
+          "summary": "### 1. HOLISTIC VERDICT: LOCK This spec is lethal. It takes the abstract concept of \"relational data architecture\" and turns it into a commercial narrative. Section 3 (The Closed-Loop Circuit) is the exact reason a CFO will buy this platform instead of using a SharePoint list.",
+          "seat_name": "Leo Prescott"
+        },
+        "1001": {
+          "verdict": "LOCK",
+          "summary": "with three refinements (see Q2, Q3, Q5).",
+          "seat_name": "Archer Hawthorne"
+        },
+        "1004": {
+          "verdict": "LOCK",
+          "summary": "Holistic Verdict: LOCK",
+          "seat_name": "Max Sullivan"
+        },
+        "1005": {
+          "verdict": "LOCK",
+          "summary": "Global verdict: LOCK with consolidated revisions. Zero REJECT votes. Five LOCK / one LOCK-with-clarifications (Bennett) / two REVISE (Grey, Kai). Eight-section pattern holds unanimously.",
+          "seat_name": "Rowan Bennett"
+        }
+      },
+      "tally": {
+        "LOCK": 4,
+        "REVISE": 0,
+        "REJECT": 0
+      },
+      "total_votes": 4,
+      "quorum": false,
+      "recommendation": "LOCK - unanimous",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-EXCELLIGENCE-PATHS-001",
+      "title": "Learing Path And Architecture",
+      "source_file": "DDLCouncilReview_LearingPathAndArchitecture.txt",
+      "source_path": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_processed\\DDLCouncilReview_LearingPathAndArchitecture.txt",
+      "parsed_at": "2026-04-18T09:23:32Z",
+      "votes": {},
+      "tally": {
+        "LOCK": 0,
+        "REVISE": 0,
+        "REJECT": 0
+      },
+      "total_votes": 0,
+      "quorum": false,
+      "recommendation": "NO VOTES PARSED",
+      "parse_confidence": "low"
+    },
+    {
+      "cr_id": "CR-LEDGER-SOCIAL-001",
+      "title": "Ledger Social",
+      "source_file": "DDLCouncilReview_LedgerSocial.txt",
+      "source_path": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_processed\\DDLCouncilReview_LedgerSocial.txt",
+      "parsed_at": "2026-04-18T09:23:32Z",
+      "votes": {
+        "1001": {
+          "verdict": "LOCK",
+          "summary": "with two refinements (see Q1, Q4).",
+          "seat_name": "Archer Hawthorne"
+        },
+        "1004": {
+          "verdict": "LOCK",
+          "summary": "Holistic Verdict: LOCK",
+          "seat_name": "Max Sullivan"
+        },
+        "1005": {
+          "verdict": "LOCK",
+          "summary": "with targeted refinements. The social‑layer stance is strategically sound: person‑first, card‑as‑connector, verification as trust, single graph with vertical skins, and portability. Ratify the invariants but add explicit guardrails for vouching, feed surface rules, portability primitives, and a prioritized roadmap so social features don’t outpace privacy, moderation, or exportability.",
+          "seat_name": "Rowan Bennett"
+        },
+        "1007": {
+          "verdict": "LOCK",
+          "summary": "This is the phase transition. You are moving from building a filing cabinet to building a nervous system. The invariants (S1-S5) accurately map the physics of a decentralized social graph where the artifact anchors the relationship.",
+          "seat_name": "Leo Prescott"
+        }
+      },
+      "tally": {
+        "LOCK": 4,
+        "REVISE": 0,
+        "REJECT": 0
+      },
+      "total_votes": 4,
+      "quorum": false,
+      "recommendation": "LOCK - unanimous",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-WB-MODULE-NEXT-002",
+      "title": "Module Six",
+      "source_file": "DDLCouncilReview_ModuleSix.txt",
+      "source_path": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_processed\\DDLCouncilReview_ModuleSix.txt",
+      "parsed_at": "2026-04-18T09:23:32Z",
+      "votes": {
+        "1009": {
+          "verdict": "LOCK",
+          "summary": "Holistic verdict: LOCK with dependency note (Risk Assessment fact table must be extracted, not just the dimension). The governance triangle (Controls + Findings + Risk) is the right architectural closure for the platform’s first phase. Process Inventory (C) is too lightweight. Client Billing (D) and Capacity Planning (E) are blocked on Dim_Project formalization. Expenses (F) is commodity. Engagement Management (B) is bundle‑specific by council ratification. Risk Register completes the governance",
+          "seat_name": "Kai Langford"
+        }
+      },
+      "tally": {
+        "LOCK": 1,
+        "REVISE": 0,
+        "REJECT": 0
+      },
+      "total_votes": 1,
+      "quorum": false,
+      "recommendation": "LOCK - unanimous",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-WB-RISK-001",
+      "title": "Risk Register",
+      "source_file": "DDLCouncilReview_RiskRegister.txt",
+      "source_path": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_processed\\DDLCouncilReview_RiskRegister.txt",
+      "parsed_at": "2026-04-18T09:23:32Z",
+      "votes": {
+        "1001": {
+          "verdict": "LOCK",
+          "summary": "with three refinements (see Q1, Q3, Q5).",
+          "seat_name": "Archer Hawthorne"
+        },
+        "1004": {
+          "verdict": "LOCK",
+          "summary": "Holistic Verdict: LOCK",
+          "seat_name": "Max Sullivan"
+        },
+        "1005": {
+          "verdict": "LOCK",
+          "summary": "with minor clarifications and two required additions before final ratification.",
+          "seat_name": "Rowan Bennett"
+        }
+      },
+      "tally": {
+        "LOCK": 3,
+        "REVISE": 0,
+        "REJECT": 0
+      },
+      "total_votes": 3,
+      "quorum": false,
+      "recommendation": "LOCK - unanimous",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-WB-RISK-TOUR-001",
+      "title": "Risk Tour",
+      "source_file": "DDLCouncilReview_RiskTour.txt",
+      "source_path": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_processed\\DDLCouncilReview_RiskTour.txt",
+      "parsed_at": "2026-04-18T09:23:32Z",
+      "votes": {
+        "1001": {
+          "verdict": "LOCK",
+          "summary": "with two refinements (see Q2, Q3).",
+          "seat_name": "Archer Hawthorne"
+        },
+        "1004": {
+          "verdict": "LOCK",
+          "summary": "Holistic Verdict: LOCK",
+          "seat_name": "Max Sullivan"
+        },
+        "1005": {
+          "verdict": "LOCK",
+          "summary": "with three operational clarifications. The Risk Register tour spec is complete, coherent, and well‑aligned with the promoted‑module and cross‑promoted sibling patterns. Ratify after the drafter adds (1) a provenance/migration verification bundle, (2) an inline‑preview fallback and performance budget, and (3) an accessibility acceptance checklist.",
+          "seat_name": "Rowan Bennett"
+        },
+        "1006": {
+          "verdict": "LOCK",
+          "summary": "Holistic verdict: LOCK with two interface adjustments",
+          "seat_name": "Ava Sinclair"
+        },
+        "1007": {
+          "verdict": "REVISE",
+          "summary": "Global verdict: 6 LOCK / 2 REVISE (Grey, Kai). Zero REJECT. Grey's temporal coherence catch is the load-bearing revision.",
+          "seat_name": "Leo Prescott"
+        },
+        "1009": {
+          "verdict": "REVISE",
+          "summary": "Holistic verdict: REVISE — lockable with two amendments: (1) the maturity proof in Section 5 must include a warning that migrated assessments cannot be retroactively linked to incident triggers, and (2) the Governance Triangle circuit (Section 4) must demonstrate temporal ordering (assessment date vs control effective date vs finding discovery date). The tour is otherwise complete and correctly inherits the promoted-module patterns.",
+          "seat_name": "Kai Langford"
+        }
+      },
+      "tally": {
+        "LOCK": 4,
+        "REVISE": 2,
+        "REJECT": 0
+      },
+      "total_votes": 6,
+      "quorum": true,
+      "recommendation": "LOCK - majority (4/6)",
+      "parse_confidence": "high"
+    },
+    {
+      "cr_id": "CR-DDL-SEATBOOT-001",
+      "title": "Seat Boot",
+      "source_file": "DDLCouncilReview_SeatBoot.txt",
+      "source_path": "C:\\Users\\dkitc\\OneDrive\\DDL_Ingest\\_processed\\DDLCouncilReview_SeatBoot.txt",
+      "parsed_at": "2026-04-18T09:23:32Z",
+      "votes": {
+        "1008": {
+          "verdict": "LOCK",
+          "summary": "Global verdict: LOCK with consolidated revisions. Six LOCK / one REVISE (Grey). Zero REJECT. First council infrastructure CR ratified.",
+          "seat_name": "Marcus Grey"
+        },
+        "1007": {
+          "verdict": "LOCK",
+          "summary": "The diagnosis in the context block is flawless: \"The quality delta between a precisely booted seat and a degraded seat is now documented evidence, not theory.\" You watched me hallucinate my placement in the rotation because my context window decayed, and you watched Grey snipe two load-bearing architectural flaws because you gave him a fresh, aggressive boot prompt.",
+          "seat_name": "Leo Prescott"
+        }
+      },
+      "tally": {
+        "LOCK": 2,
+        "REVISE": 0,
+        "REJECT": 0
+      },
+      "total_votes": 2,
+      "quorum": false,
+      "recommendation": "LOCK - unanimous",
+      "parse_confidence": "high"
     }
   ]
 }

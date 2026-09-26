@@ -1,0 +1,28 @@
+MODEL: Mistral/LeChat (European)
+PROVIDER: mistral
+MODEL_ID: mistral-small-latest
+ELAPSED: 2.6s
+TIMESTAMP: 2026-03-26T13:41:42.796913
+
+============================================================
+RESPONSE
+============================================================
+
+**POSITION:**
+MDN patterns should be elevated to Building Blocks only when they demonstrate **systemic utility** and **governance stability**—not merely persistence.
+
+**CRITERIA:**
+1. **Recurrence Frequency:** ≥3 distinct instances across ≥2 domains with ≥70% semantic similarity.
+2. **Governance Alignment:** Must comply with STD-, PRO-, or llms.txt artifacts without divergence.
+3. **Operational Impact:** Reduces heuristic friction (e.g., eliminates 2+ manual interventions/quarter).
+4. **Risk Mitigation:** No RED-zone violations (e.g., layout/design token conflicts).
+
+**THRESHOLD:**
+**Explicit:** 5+ documented instances with ≥80% consensus in CR- reviews *and* a PRO- protocol draft approved by ≥2 governance seats.
+
+**PREDICTION:**
+Patterns failing the threshold but persisting for >90 days will either:
+- **Converge** into a REC- (recommendation) with a sunset clause, or
+- **Diverge** into a SYS- (system) if heuristic judgment overrides governance.
+
+**CONFIDENCE:** 92% (governance artifacts + empirical precedent from DDLCouncilReview_AnalyticalWorkbookStandards.txt).

@@ -1,0 +1,12 @@
+DEX JR RAG BRIDGE - Query Transcript
+============================================================
+TIMESTAMP: 2026-03-23T06:23:10.359461
+PROVENANCE: [Sources: 5×Canon]
+SOURCES: Reddit_comments_converted.txt, Messages - 2026-03-06 20 12 02 - Olga Busby.txt, Messages - 2026-03-06 20 12 02 - Austin Waters.txt, Reddit_comments_converted.txt, Reddit_comments_converted.txt
+============================================================
+
+QUERY:
+tell me about Dave's life in March to May 2023
+
+RESPONSE:
+I don't have enough in the retrieved chunks to answer this. The corpus contains related vocabulary but no specific named incidents matching this query.

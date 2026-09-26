@@ -1,0 +1,12 @@
+DEX JR RAG BRIDGE - Query Transcript
+============================================================
+TIMESTAMP: 2026-03-23T06:14:23.595042
+PROVENANCE: [Sources: 5×Canon]
+SOURCES: XLSX_December ICP_20260307_073810.txt, XLSX_December ICP_20260307_073810.txt, XLSX_December ICP_20260307_073810.txt, Dex_iOS\DexOS_v3.0_CorePack\00_DexOS_v3.0_README.txt, conversations_chunk_034of091.txt
+============================================================
+
+QUERY:
+Am I Crazy 4.3.23
+
+RESPONSE:
+I don't have enough in the retrieved chunks to answer this.

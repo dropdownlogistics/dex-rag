@@ -1,0 +1,107 @@
+MODEL: Mistral/LeChat (European)
+PROVIDER: mistral
+MODEL_ID: mistral-small-latest
+ELAPSED: 11.2s
+TIMESTAMP: 2026-03-16T00:26:18.312973
+
+============================================================
+RESPONSE
+============================================================
+
+### **Structured Council Review: CR-ADR-CORPUS-001**
+
+#### **Verdict: LOCK**
+The ADR is sound and aligns with prior council findings. No fundamental flaws are identified. The following notes clarify intent and resolve minor ambiguities.
+
+---
+
+### **Question 1 — Rule 1: Precedence Hierarchy**
+#### **a) Placement of `dex_dave` (Tier 3, weight 0.90) vs. Product Collections (Tier 2, 0.80–0.95)**
+**Position:** **LOCK**
+- **Rationale:** `dex_dave` (operator voice) should outrank product collections for intent/voice queries but not for domain-specific governance. The tier/weight distinction is intentional:
+  - **Tier 3** ensures `dex_dave` is excluded from governance queries (Rule 3).
+  - **Weight 0.90** ensures it scores higher than product collections (0.80–0.95) for non-governance queries.
+  - **Edge Case:** For schema-specific queries (e.g., "AuditForge schema"), the product collection (e.g., `dex_auditforge`) will win due to Rule 4’s compound routing (GOVERNANCE + PRODUCT).
+
+#### **b) `dex_lore` (0.95, Tier 2) vs. `dex_dave` (0.90, Tier 3)**
+**Position:** **LOCK**
+- **Rationale:** The conflict is intentional. Tier gates eligibility; weight governs scoring within eligible collections. For lore-adjacent queries, `dex_lore` (0.95) will outscore `dex_dave` (0.90). For operator-voice queries, `dex_dave` is the only eligible collection (Rule 4).
+
+#### **c) `dex_decisions` in Tier 5 (weight 0.95) before it exists**
+**Position:** **LOCK**
+- **Rationale:** Pre-emptive authority is justified because:
+  - It will contain ratified decisions (e.g., this ADR).
+  - `dex_canon` (1.00) already exists and will outrank it.
+  - Risk is mitigated by Rule 3 (governance isolation).
+
+#### **d) Missing/Incorrectly Placed Collections**
+**Position:** **REVISE**
+- **Issue:** `dex_graveyard` (Tier 0) is not in the default retrieval path, but its weight (0.80) suggests it could be consulted for anti-patterns. Clarify:
+  - **Proposed Fix:** Add a note that `dex_graveyard` is **never** included in default retrieval, even for anti-pattern queries. Use only via explicit `--collection dex_graveyard` flag.
+
+---
+
+### **Question 2 — Rule 3: `dex_dave` Isolation Rule**
+#### **a) Interim Enforcement Before Query Router is Live**
+**Position:** **LOCK**
+- **Rationale:** The ADR correctly blocks `dex_dave` ingestion until the router is live. No interim mechanism is needed; the gate is absolute.
+
+#### **b) Definition of "Governance Query"**
+**Position:** **LOCK**
+- **Rationale:** The definition is complete. Grey zones (e.g., "historical governance context") are covered by Rule 4’s compound routing (e.g., `dex_decisions` + `dex_lore`).
+
+#### **c) `dex_dave` in DEFAULT Query Type**
+**Position:** **LOCK**
+- **Rationale:** `dex_dave` is correctly excluded from DEFAULT. It only appears in OPERATOR INTENT queries, which are explicitly scoped.
+
+---
+
+### **Question 3 — Rule 4: Query Router Design**
+#### **a) Routing Table Keyword Sufficiency**
+**Position:** **LOCK**
+- **Rationale:** Keyword-based MVP is sufficient. Most failure modes will involve ambiguous queries (e.g., "what’s the rule for X?"), which the compound route (GOVERNANCE + PRODUCT) resolves.
+
+#### **b) DEFAULT Route (`dex_canon` + `ddl_archive`)**
+**Position:** **LOCK**
+- **Rationale:** Including `ddl_archive` preserves recall. Precision trade-offs are acceptable until failure modes are documented.
+
+#### **c) Product-Scoped Governance Queries**
+**Position:** **LOCK**
+- **Rationale:** The compound route (GOVERNANCE + PRODUCT) is correctly specified. Example:
+  - Query: "Does AuditForge comply with STD-VAULT-002?"
+  - Route: `dex_canon` + `dex_decisions` + `dex_auditforge`.
+
+---
+
+### **Question 4 — Build Order and Gaps**
+#### **a) Build Order Correctness**
+**Position:** **LOCK**
+- **Rationale:** `dex_decisions` first is correct. `dex_code` is already live, but it doesn’t change the priority of governance-first architecture.
+
+#### **b) Missing Considerations**
+**Position:** **REVISE**
+- **Issue 1:** No explicit rule for handling **temporal conflicts** (e.g., superseded standards in `ddl_archive` vs. current `dex_canon`).
+  - **Proposed Fix:** Add a note that Rule 2’s artifact type precedence (STD- > session logs) resolves this.
+- **Issue 2:** No handling for **ambiguous queries** (e.g., "what’s the rule for X?" without governance keywords).
+  - **Proposed Fix:** Clarify that DEFAULT route (`dex_canon` + `ddl_archive`) applies, with `dex_canon` winning.
+
+#### **c) Highest-Stakes Decision**
+**Position:** **LOCK**
+- **Rationale:** The `dex_dave` ingestion gate (Rule 3) is the highest-stakes decision. If violated, it risks governance contamination. The ADR correctly enforces this.
+
+---
+
+### **Final Verdict: LOCK**
+The ADR is sound. Minor clarifications (REVISE items) are non-blocking and can be addressed in a future STD.
+
+**Operator Action:**
+- Sign and ratify ADR-CORPUS-001.
+- Address REVISE items in a separate STD (e.g., STD-CORPUS-001 for `dex_graveyard` and temporal conflicts).
+
+**Council Note:**
+This ADR formalizes prior unanimous findings. No new governance conflicts are introduced. Proceed with build order as specified.
+
+---
+**Seat:** 1002 (Marcus Caldwell)
+**Date:** 2026-03-15
+**Verdict:** LOCK

@@ -1,0 +1,17 @@
+MODEL: Qwen (Code Specialist)
+PROVIDER: local
+MODEL_ID: qwen2.5-coder:7b
+ELAPSED: 6.3s
+TIMESTAMP: 2026-03-13T17:10:06.738993
+
+============================================================
+RESPONSE
+============================================================
+
+**VERDICT:** LOCK
+
+**RECOMMENDATION:** OperatorManifest
+
+**RATIONALE:** "OperatorManifest" clearly distinguishes from standard llms.txt spec, reflects its role as a portable AI operating context, is coinable as a DDL canon term, works well as a noun and modifier, and feels consistent with DDL's methodology-grade approach.
+
+**CONCERN:** None

@@ -1,0 +1,53 @@
+MODEL: Mistral/LeChat (European)
+PROVIDER: mistral
+MODEL_ID: mistral-small-latest
+ELAPSED: 4.4s
+TIMESTAMP: 2026-03-14T08:39:52.739451
+
+============================================================
+RESPONSE
+============================================================
+
+### **NOMINATIONS FOR DDL EXTERNAL CORPUS**
+
+#### **SEAT: 1004 - Perplexity (Max Sullivan)**
+**Role:** Research integrity and source grounding specialist
+
+---
+
+### **NOMINATION 1 — ext_reference**
+**Source:** *The Data Warehouse Toolkit: The Definitive Guide to Dimensional Modeling* (3rd Edition)
+**Type:** Book
+**Author:** Ralph Kimball, Margy Ross
+**Rationale:** This is the foundational text for star schema dimensional modeling, which aligns directly with DDL’s core methodology. It provides rigorous, actionable frameworks for structuring data in a way that maximizes analytical utility—a core DDL principle.
+**Relevance:** Dimensional modeling, star schema thinking, analytics, data governance.
+**Caveat:** While comprehensive, some sections may be overly technical for non-data professionals. The operator may wish to prioritize key chapters (e.g., "The Kimball Lifecycle") over full adoption.
+
+---
+
+### **NOMINATION 2 — ext_creator**
+**Creator:** Andy Grove (via *High Output Management* and public writings)
+**Platform:** Books, essays, historical interviews
+**URL:** [N/A, but widely available]
+**Rationale:** Grove’s work on systems thinking, operational rigor, and governance in high-stakes environments (Intel) aligns with DDL’s methodology. His emphasis on "structured chaos" and measurable outcomes mirrors DDL’s "Chaos → Structured → Automated" framework.
+**Relevance:** Systems thinking, methodology, operations, governance.
+**Caveat:** Some of Grove’s insights are dated (pre-AI era), but his core principles remain highly relevant. The operator may wish to cross-reference with modern governance frameworks.
+
+---
+
+### **SYNTHESIS NOTES (for Dex Jr.)**
+- **Reference Nomination:** High relevance to DDL’s core systems (DDL, DexOS). No conflicts anticipated.
+- **Creator Nomination:** Strong fit for governance and operational methodology. No duplicates or weak rationale detected.
+
+**Operator Decision List (Proposed):**
+| **Seat** | **Source** | **Fit Score (1-5)** | **Recommend** | **Notes** |
+|----------|------------|---------------------|--------------|-----------|
+| 1004     | *The Data Warehouse Toolkit* | 5 | APPROVE | Core to DDL’s star schema work |
+| 1004     | Andy Grove | 4 | APPROVE | Governance alignment, minor caveats |
+
+**Flagged Items:**
+- None. Both nominations are intentional and domain-relevant.
+
+---
+**Dropdown Logistics — Chaos → Structured → Automated**
+**CR-CORPUS-NOMINATIONS-001 | The corpus earns its sources.**

@@ -1,0 +1,47 @@
+MODEL: Llama (General Reasoning)
+PROVIDER: local
+MODEL_ID: llama3.1:8b
+ELAPSED: 26.5s
+TIMESTAMP: 2026-03-13T17:10:06.739586
+
+============================================================
+RESPONSE
+============================================================
+
+**Structured Assessment**
+
+**Task:** Name the class of document described in llms.txt.
+
+**Current State:** The document is currently named "llms.txt" but this name does not accurately reflect its purpose as a portable AI operating context.
+
+**Requirements:**
+
+1. Distinguish from standard llms.txt spec
+2. Reflect what it is - portable AI operating context
+3. Coinable as DDL canon term (trademark eligible, not genericized)
+4. Works as noun ("the ___") and modifier ("___ standard", "___ format")
+5. Feels DDL - methodology-grade, not hype
+
+**Candidate Names:**
+
+A. OperatorManifest
+B. ManifestOS
+C. ContextManifest
+D. GroundFile
+E. CanonFile
+F. Open proposal
+
+**Rationale for Recommendation:**
+
+Based on the requirements, I recommend **OperatorManifest** as the preferred term. It is precise, uses DDL vocabulary, and has a clean line from the spec. It also meets the requirements of being coinable as a DDL canon term and working as both a noun and modifier.
+
+**Concern:**
+
+One concern is that the name may not be generic enough to be widely adopted by other organizations. However, this can be mitigated by trademarking the term and making it a standard part of the DDL canon.
+
+**Verdict:**
+
+VERDICT: LOCK
+RECOMMENDATION: OperatorManifest
+RATIONALE: Meets all requirements, precise, and uses DDL vocabulary.
+CONCERN: May not be generic enough for widespread adoption.

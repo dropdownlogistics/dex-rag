@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-03-26T13:41:42.797944",
+  "version": "3.0",
+  "prompt": "CONVERGE WK03 DELIBERATION — PRO-DDL-MDN-001: At what explicit threshold should a recurring MDN pattern be elevated to a Building Block, and what observable signals must be present to justify that transition? How should the system classify MDNs that persist without reaching that threshold? Answer from your own lens. State POSITION, CRITERIA, THRESHOLD, PREDICTION, CONFIDENCE. Under 300 words.",
+  "model_count": 5,
+  "successful": 5,
+  "failed": 0,
+  "models": [
+    {
+      "name": "Qwen (Code Specialist)",
+      "provider": "local",
+      "model_id": "qwen2.5-coder:7b",
+      "elapsed": 18.0,
+      "error": null,
+      "response_length": 1130
+    },
+    {
+      "name": "Llama (General Reasoning)",
+      "provider": "local",
+      "model_id": "llama3.1:8b",
+      "elapsed": 28.6,
+      "error": null,
+      "response_length": 1429
+    },
+    {
+      "name": "DeepSeek-Local (Chain-of-Thought)",
+      "provider": "local",
+      "model_id": "deepseek-r1:8b",
+      "elapsed": 52.2,
+      "error": null,
+      "response_length": 1140
+    },
+    {
+      "name": "Gemini (Google)",
+      "provider": "gemini",
+      "model_id": "gemini-2.5-flash",
+      "elapsed": 14.0,
+      "error": null,
+      "response_length": 2239
+    },
+    {
+      "name": "Mistral/LeChat (European)",
+      "provider": "mistral",
+      "model_id": "mistral-small-latest",
+      "elapsed": 2.6,
+      "error": null,
+      "response_length": 1080
+    }
+  ],
+  "synthesis_elapsed": 35.7
+}

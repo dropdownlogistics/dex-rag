@@ -1,0 +1,21 @@
+DEX JR RAG BRIDGE - Query Transcript
+============================================================
+TIMESTAMP: 2026-03-14T21:56:38.291517
+PROVENANCE: [Sources: 10×ExtCreator]
+SOURCES: EugeneWei_StaaS_clean.txt, EugeneWei_StaaS_clean.txt, EugeneWei_StaaS_clean.txt, EugeneWei_StaaS_clean.txt, EugeneWei_StaaS_clean.txt, EugeneWei_StaaS_clean.txt, EugeneWei_StaaS_clean.txt, EugeneWei_StaaS_clean.txt, EugeneWei_StaaS_clean.txt, EugeneWei_StaaS_clean.txt
+============================================================
+
+QUERY:
+What is proof of work on social platforms and how does social capital accumulate?
+
+RESPONSE:
+Proof of work (PoW) matters for social networks because it ties value to scarcity, which motivates competition for relative status among users. PoW creates a barrier to entry that prevents easy accumulation of social capital. For example, Musical.ly required users to complete tasks to gain followers and status, making it more difficult for many people to achieve high levels of social capital compared to other platforms like Twitter.
+
+Social capital accumulates through various mechanisms on social networks. On live-streaming sites like YY, viewers can earn digital gifts from their creators which cost actual money. This provides a direct conversion of social capital into financial capital without leaving the network. In contrast, on Twitter, if one of your tweets goes viral, you still need to monetize it through external means such as attaching a GoFundMe page.
+
+Social networks also provide mechanisms for accumulating and storing social capital safely. Hipstamatic, which came before Instagram, was an early photo filter app that provided both accumulation and storage mechanisms. This is important because without these mechanisms, value can leak to other social networks.
+
+Sources:
+1. EugeneWei_StaaS_clean.txt (ExtCreator score=0.0053)
+2. EugeneWei_StaaS_clean.txt (ExtCreator score=0.0050)
+3. EugeneWei_StaaS_clean.txt (ExtCreator score=0.0046)

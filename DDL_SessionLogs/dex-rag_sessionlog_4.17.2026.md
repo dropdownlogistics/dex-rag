@@ -221,3 +221,83 @@ Executor: Claude Code (Opus 4.6, 1M context)
 ### Next logical step:
 
 Watch the 4 AM sweep. If the 20 new files ingest cleanly (9 council reviews + 11 session logs), the corpus grows with fresh governed content. Next workstream is product work — AuditForge, WorkBench, Excelligence — not more infrastructure.
+
+---
+
+## CC Session: dex.ps1 quoting fix
+
+Session span: 2026-04-17
+Operator: Dave Kitchens
+Executor: Claude Code (Opus 4.6, 1M context)
+
+### Status: Complete
+
+### Done:
+
+- Fixed all `Write-Host` lines in `dex.ps1` — switched string literals from double quotes to single quotes to prevent PowerShell interpreting `<`, `>`, `()`, `--`, and `[]` as operators/expressions
+- Lines requiring `$t` variable expansion converted to concatenation (`'  [PAUSED] ' + $t`)
+- Fixed mojibake em dash on SEAT 0 FAILSAFE line (`â€"` → `—`)
+- Verified: `dex` with no args renders help menu cleanly
+
+### Flagged:
+
+- `fetch_leila_gharani.py` untouched (Rule 17)
+- `dex.ps1` had pre-existing staged modifications (Rule 17)
+
+### Pending:
+
+- None.
+
+### Decisions needed:
+
+- None.
+
+### Metrics:
+
+- Files touched: 1 (dex.ps1)
+- Lines modified: 21 Write-Host calls
+
+### Next logical step:
+
+Operator decides whether to commit the fix or fold it into a larger changeset.
+
+---
+
+## CC Session: RAG default in dex-council.py
+
+Session span: 2026-04-17
+Operator: Dave Kitchens
+Executor: Claude Code (Opus 4.6, 1M context)
+
+### Status: Complete
+
+### Done:
+
+- Flipped `--rag` (opt-in) to `--no-rag` (opt-out) in `dex-council.py` — RAG is now always-on by default
+- Updated argparse definition (line 752), three `args.rag` → `not args.no_rag` references (lines 809, 813, 916), and usage comments (lines 6-11)
+- Committed and pushed: `348a08bd`
+
+### Flagged:
+
+- `fetch_leila_gharani.py` untouched (Rule 17)
+- `dex.ps1` pre-existing uncommitted modifications untouched (Rule 17)
+- `DDL_SessionLogs/dex-rag_sessionlog_4.17.2026.md` pre-existing staged modifications untouched (Rule 17)
+- None of the other pre-existing uncommitted files were staged or committed
+
+### Pending:
+
+- None.
+
+### Decisions needed:
+
+- None.
+
+### Metrics:
+
+- Files touched: 1 (dex-council.py)
+- Lines added/removed: +8 / -8
+- Commits: 1 (`348a08bd`, pushed)
+
+### Next logical step:
+
+Session closed. RAG-on council runs are the new default.

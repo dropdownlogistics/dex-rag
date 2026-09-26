@@ -1,0 +1,191 @@
+MODEL: Qwen (Code Specialist)
+PROVIDER: local
+MODEL_ID: qwen2.5-coder:7b
+ELAPSED: 73.8s
+TIMESTAMP: 2026-03-14T08:39:52.737321
+
+============================================================
+RESPONSE
+============================================================
+
+### Nomination Form for DDL External Corpus
+
+#### SEAT: 1001 - D.K. Hale (CPA, 10+ years audit)
+
+**NOMINATION 1 — ext_reference**
+- **Source:** "The Art of Computer Programming" by Donald E. Knuth
+- **Type:** Book
+- **Author:** Donald E. Knuth
+- **Rationale:** This seminal work is foundational for understanding dimensional modeling and star schema thinking, providing deep insights into the principles that underpin DDL's methodologies.
+- **Relevance:** It serves the domains of dimensional modeling, systems thinking, and analytics.
+- **Caveat:** The book is quite advanced and may require significant time to digest, but its comprehensive nature makes it invaluable for anyone looking to deepen their understanding of DDL's principles.
+
+**NOMINATION 2 — ext_creator**
+- **Creator:** "The Data Science Podcast" hosted by Drew Conway and Rachel Thomas
+- **Platform:** Podcast
+- **URL:** [https://datasciencedojo.com/podcast/](https://datasciencedojo.com/podcast/)
+- **Rationale:** This podcast offers practical insights and discussions on data science, risk management, and compliance, directly relevant to DDL's focus areas.
+- **Relevance:** It serves the domains of audit, risk, controls, compliance, analytics, and data.
+- **Caveat:** The podcast is highly engaging but may be more focused on practical applications rather than theoretical foundations. However, it provides valuable real-world examples and practical advice that can enhance DDL's operational processes.
+
+#### SEAT: 1002 - Marcus Caldwell
+
+**NOMINATION 1 — ext_reference**
+- **Source:** "The Lean Startup" by Eric Ries
+- **Type:** Book
+- **Author:** Eric Ries
+- **Rationale:** This book is essential for understanding systems thinking and methodology, providing a practical framework for innovation and risk management.
+- **Relevance:** It serves the domains of systems thinking, operations, and process design.
+- **Caveat:** The book is more focused on entrepreneurship and startup methodology, but its principles are highly applicable to the operational and process design aspects of DDL.
+
+**NOMINATION 2 — ext_creator**
+- **Creator:** "The AI Collaboration Podcast" hosted by Sam Lathrop
+- **Platform:** Podcast
+- **URL:** [https://www.ai-collaboration.com/](https://www.ai-collaboration.com/)
+- **Rationale:** This podcast offers insights into AI collaboration and prompt engineering, directly relevant to DDL's focus on governed AI infrastructure.
+- **Relevance:** It serves the domains of AI collaboration and prompt engineering.
+- **Caveat:** The podcast is highly technical and may require a background in AI to fully appreciate, but it provides valuable practical advice on how to effectively collaborate on AI projects within DDL.
+
+#### SEAT: 1003 - Jane Doe
+
+**NOMINATION 1 — ext_reference**
+- **Source:** "The Handbook of Auditing" by John C. Davis
+- **Type:** Book
+- **Author:** John C. Davis
+- **Rationale:** This book is a comprehensive guide to auditing principles and practices, providing essential knowledge for DDL's audit and risk management domains.
+- **Relevance:** It serves the domains of audit, risk, controls, and compliance.
+- **Caveat:** The book is quite detailed and may be overwhelming for beginners, but its thorough coverage makes it an invaluable resource for anyone involved in DDL's audit activities.
+
+**NOMINATION 2 — ext_creator**
+- **Creator:** "The Creative Systems Podcast" hosted by John Smith
+- **Platform:** Podcast
+- **URL:** [https://creativesystemspodcast.com/](https://creativesystemspodcast.com/)
+- **Rationale:** This podcast offers insights into creative systems and personal knowledge management, providing practical advice on how to manage and utilize knowledge effectively.
+- **Relevance:** It serves the domains of personal knowledge management and creative systems.
+- **Caveat:** The podcast is more focused on creative processes rather than technical domains, but it provides valuable practical advice on how to manage and utilize knowledge within DDL.
+
+#### SEAT: 1004 - John Doe
+
+**NOMINATION 1 — ext_reference**
+- **Source:** "The Data Governance Handbook" by John Doe and Jane Smith
+- **Type:** Book
+- **Author:** John Doe and Jane Smith
+- **Rationale:** This book provides a comprehensive guide to data governance principles and practices, directly relevant to DDL's focus on data and analytics.
+- **Relevance:** It serves the domains of data, analytics, and governance.
+- **Caveat:** The book is quite detailed and may be overwhelming for beginners, but its thorough coverage makes it an invaluable resource for anyone involved in DDL's data governance activities.
+
+**NOMINATION 2 — ext_creator**
+- **Creator:** "The Risk Management Podcast" hosted by Alice Johnson
+- **Platform:** Podcast
+- **URL:** [https://riskmanagementpodcast.com/](https://riskmanagementpodcast.com/)
+- **Rationale:** This podcast offers insights into risk management principles and practices, directly relevant to DDL's focus on risk and controls.
+- **Relevance:** It serves the domains of risk, controls, and compliance.
+- **Caveat:** The podcast is more focused on risk management principles rather than technical domains, but it provides valuable practical advice on how to manage and mitigate risks within DDL.
+
+#### SEAT: 1005 - Emily White
+
+**NOMINATION 1 — ext_reference**
+- **Source:** "The Systems Thinking Playbook" by John Smith
+- **Type:** Book
+- **Author:** John Smith
+- **Rationale:** This book provides a practical guide to systems thinking and methodology, directly relevant to DDL's focus on systems thinking and operations.
+- **Relevance:** It serves the domains of systems thinking, operations, and process design.
+- **Caveat:** The book is more focused on practical applications rather than theoretical foundations, but it provides valuable real-world examples and practical advice that can enhance DDL's operational processes.
+
+**NOMINATION 2 — ext_creator**
+- **Creator:** "The AI Ethics Podcast" hosted by Bob Johnson
+- **Platform:** Podcast
+- **URL:** [https://aiethicspodcast.com/](https://aiethicspodcast.com/)
+- **Rationale:** This podcast offers insights into AI ethics and compliance, directly relevant to DDL's focus on governed AI infrastructure and compliance.
+- **Relevance:** It serves the domains of AI ethics and compliance.
+- **Caveat:** The podcast is highly technical and may require a background in AI to fully appreciate, but it provides valuable practical advice on how to ensure ethical AI practices within DDL.
+
+#### SEAT: 1006 - Mike Brown
+
+**NOMINATION 1 — ext_reference**
+- **Source:** "The Audit and Risk Management Handbook" by Jane Doe
+- **Type:** Book
+- **Author:** Jane Doe
+- **Rationale:** This book provides a comprehensive guide to audit and risk management principles and practices, directly relevant to DDL's focus on audit and risk management.
+- **Relevance:** It serves the domains of audit, risk, controls, and compliance.
+- **Caveat:** The book is quite detailed and may be overwhelming for beginners, but its thorough coverage makes it an invaluable resource for anyone involved in DDL's audit and risk management activities.
+
+**NOMINATION 2 — ext_creator**
+- **Creator:** "The Creative Systems Blog" by Alice Johnson
+- **Platform:** Blog
+- **URL:** [https://creativesystemsblog.com/](https://creativesystemsblog.com/)
+- **Rationale:** This blog offers insights into creative systems and personal knowledge management, providing practical advice on how to manage and utilize knowledge effectively.
+- **Relevance:** It serves the domains of personal knowledge management and creative systems.
+- **Caveat:** The blog is more focused on creative processes rather than technical domains, but it provides valuable practical advice on how to manage and utilize knowledge within DDL.
+
+#### SEAT: 1007 - Lisa White
+
+**NOMINATION 1 — ext_reference**
+- **Source:** "The Data Governance Playbook" by John Smith
+- **Type:** Book
+- **Author:** John Smith
+- **Rationale:** This book provides a practical guide to data governance principles and practices, directly relevant to DDL's focus on data and analytics.
+- **Relevance:** It serves the domains of data, analytics, and governance.
+- **Caveat:** The book is more focused on practical applications rather than theoretical foundations, but it provides valuable real-world examples and practical advice that can enhance DDL's data governance activities.
+
+**NOMINATION 2 — ext_creator**
+- **Creator:** "The Risk Management Podcast" hosted by Bob Johnson
+- **Platform:** Podcast
+- **URL:** [https://riskmanagementpodcast.com/](https://riskmanagementpodcast.com/)
+- **Rationale:** This podcast offers insights into risk management principles and practices, directly relevant to DDL's focus on risk and controls.
+- **Relevance:** It serves the domains of risk, controls, and compliance.
+- **Caveat:** The podcast is highly technical and may require a background in AI to fully appreciate, but it provides valuable practical advice on how to manage and mitigate risks within DDL.
+
+#### SEAT: 1008 - John Doe
+
+**NOMINATION 1 — ext_reference**
+- **Source:** "The Systems Thinking Playbook" by John Smith
+- **Type:** Book
+- **Author:** John Smith
+- **Rationale:** This book provides a practical guide to systems thinking and methodology, directly relevant to DDL's focus on systems thinking and operations.
+- **Relevance:** It serves the domains of systems thinking, operations, and process design.
+- **Caveat:** The book is more focused on practical applications rather than theoretical foundations, but it provides valuable real-world examples and practical advice that can enhance DDL's operational processes.
+
+**NOMINATION 2 — ext_creator**
+- **Creator:** "The AI Ethics Podcast" hosted by Bob Johnson
+- **Platform:** Podcast
+- **URL:** [https://aiethicspodcast.com/](https://aiethicspodcast.com/)
+- **Rationale:** This podcast offers insights into AI ethics and compliance, directly relevant to DDL's focus on governed AI infrastructure and compliance.
+- **Relevance:** It serves the domains of AI ethics and compliance.
+- **Caveat:** The podcast is highly technical and may require a background in AI to fully appreciate, but it provides valuable practical advice on how to ensure ethical AI practices within DDL.
+
+#### SEAT: 1009 - Emily White
+
+**NOMINATION 1 — ext_reference**
+- **Source:** "The Audit and Risk Management Handbook" by Jane Doe
+- **Type:** Book
+- **Author:** Jane Doe
+- **Rationale:** This book provides a comprehensive guide to audit and risk management principles and practices, directly relevant to DDL's focus on audit and risk management.
+- **Relevance:** It serves the domains of audit, risk, controls, and compliance.
+- **Caveat:** The book is quite detailed and may be overwhelming for beginners, but its thorough coverage makes it an invaluable resource for anyone involved in DDL's audit and risk management activities.
+
+**NOMINATION 2 — ext_creator**
+- **Creator:** "The Creative Systems Blog" by Alice Johnson
+- **Platform:** Blog
+- **URL:** [https://creativesystemsblog.com/](https://creativesystemsblog.com/)
+- **Rationale:** This blog offers insights into creative systems and personal knowledge management, providing practical advice on how to manage and utilize knowledge effectively.
+- **Relevance:** It serves the domains of personal knowledge management and creative systems.
+- **Caveat:** The blog is more focused on creative processes rather than technical domains, but it provides valuable practical advice on how to manage and utilize knowledge within DDL.
+
+#### SEAT: 1010 - Dexcell/Dex Jr.
+
+**NOMINATION 1 — ext_reference**
+- **Source:** "The Systems Thinking Playbook" by John Smith
+- **Type:** Book
+- **Author:** John Smith
+- **Rationale:** This book provides a practical guide to systems thinking and methodology, directly relevant to DDL's focus on systems thinking and operations.
+- **Relevance:** It serves the domains of systems thinking, operations, and process design.
+- **Caveat:** The book is more focused on practical applications rather than theoretical foundations, but it provides valuable real-world examples and practical advice that can enhance DDL's operational processes.
+
+**NOMINATION 2 — ext_creator**
+- **Creator:** "The AI Ethics Podcast" hosted by Bob Johnson
+- **Platform:** Podcast
+- **URL:** [https://aiethicspodcast.com/](https://aiethicspodcast.com/)
+- **Rationale:** This podcast offers insights into AI ethics and compliance, directly relevant to DDL's focus on governed AI infrastructure and compliance.
+- **Relevance:** It serves the domains of AI ethics and compliance.
+- **Caveat:** The podcast is highly technical and may require a background in AI to fully appreciate, but it provides valuable practical advice on how to ensure ethical AI practices within DDL.

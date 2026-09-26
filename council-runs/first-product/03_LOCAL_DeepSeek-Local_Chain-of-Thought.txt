@@ -1,0 +1,6 @@
+MODEL: DeepSeek-Local (Chain-of-Thought)
+PROVIDER: local
+MODEL_ID: deepseek-r1:8b
+ELAPSED: 0s
+TIMESTAMP: 2026-03-06T20:35:54.012220
+ERROR: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=180)

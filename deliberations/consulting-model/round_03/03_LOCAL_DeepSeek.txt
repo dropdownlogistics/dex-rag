@@ -1,0 +1,5 @@
+MODEL: DeepSeek
+PROVIDER: local
+ELAPSED: 0s
+
+ERROR: HTTPConnectionPool(host='localhost', port=11434): Read timed out. (read timeout=180)

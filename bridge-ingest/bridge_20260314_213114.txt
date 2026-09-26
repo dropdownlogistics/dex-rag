@@ -1,0 +1,12 @@
+DEX JR RAG BRIDGE - Query Transcript
+============================================================
+TIMESTAMP: 2026-03-14T21:31:14.241490
+PROVENANCE: [Sources: 10×Canon]
+SOURCES: 19_CognitiveArchitecture.txt, 2025-11-23 12 26 04 - David Purifoy - 01_DexProjectSummary - AI Platforms_v1.0.txt, DDLCouncilReview_WebsiteDeployment.txt, Note - 2025-12-05 23 07 05 - 02_CouncilReflect_v1.0.txt, 29_ACE.txt, DDLCouncilReview_CorpusSources.txt, 2026-01-31 14 29 55 - David Purifoy - 02_Claude_CouncilThreads_v1.0.txt, 02_Claude_CouncilThreads_v1.1.txt, conversations_chunk_021of091.txt, chat_chunk_004of082.txt
+============================================================
+
+QUERY:
+What is Eugene Wei Status as a Service framework? What is proof of work on social platforms?
+
+RESPONSE:
+I don't have enough in the retrieved chunks to answer this.

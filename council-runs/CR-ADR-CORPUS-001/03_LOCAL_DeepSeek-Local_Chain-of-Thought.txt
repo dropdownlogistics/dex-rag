@@ -1,0 +1,105 @@
+MODEL: DeepSeek-Local (Chain-of-Thought)
+PROVIDER: local
+MODEL_ID: deepseek-r1:8b
+ELAPSED: 174.8s
+TIMESTAMP: 2026-03-16T00:26:18.311970
+
+============================================================
+RESPONSE
+============================================================
+
+### CR-ADR-CORPUS-001  
+**Council Review**  
+**Date:** 2026-03-15  
+**Operator:** Dave Kitchens  
+
+---
+
+#### **Question 1 — RULE 1: PRECEDENCE HIERARCHY**  
+**a) Placement of dex_dave vs. Product Collections**  
+**Verdict:** REVISE  
+**Reasoning:**  
+The placement of `dex_dave` (Tier 4, weight 0.90) above Tier 2 product collections (weight 0.80–0.95) creates ambiguity in retrieval scoring. While `dex_dave` carries operator intent authority, product collections (e.g., `dex_auditforge`) are governed artifacts. Queries about product-specific domains (e.g., "AuditForge schema") should prioritize the governed artifact (`dex_auditforge`) over operator voice (`dex_dave`), even if `dex_dave` has higher tier eligibility. This misalignment risks operator bias overriding formal standards.  
+
+**b) Weight/Tier Conflict (dex_dave vs. dex_lore)**  
+**Verdict:** LOCK  
+**Reasoning:**  
+The conflict is intentional and resolved correctly by tier gates eligibility and weight-based scoring. `dex_lore` (Tier 3, weight 0.95) outranks `dex_dave` (Tier 4, weight 0.90) only when both are eligible (e.g., non-governance queries). Tier eligibility trumps weight, so `dex_lore` is scored higher for lore-adjacent content. The router must enforce this by excluding `dex_dave` from governance queries (Rule 3).  
+
+**c) dex_decisions Placement**  
+**Verdict:** REVISE  
+**Reasoning:**  
+`dex_decisions` (Tier 5, weight 0.95) is not yet built but is assigned governance authority. This creates a governance paradox: a non-existent collection governs retrieval precedence. Ratified standards (`dex_canon`) should not be overridden by non-built collections. Move `dex_decisions` to Tier 0 (meta) or delay its precedence until live.  
+
+**d) Missing/Incorrect Collections**  
+**Verdict:** LOCK  
+**Reasoning:**  
+No collection is missing. `dex_graveyard` is correctly gated (Tier 0). `Fact_QueryLog` is meta and not a retrieval source, so its absence is intentional.  
+
+---
+
+#### **Question 2 — RULE 3: dex_dave ISOLATION**  
+**a) Interim Enforcement**  
+**Verdict:** REVISE  
+**Reasoning:**  
+The interim ingestion gate is incomplete. Without the router, `dex_dave` must be blocked entirely until the router is live. Add a system-level flag (e.g., `INGEST_BLOCKED`) to prevent manual ingestion during the router’s development.  
+
+**b) Governance Query Definition**  
+**Verdict:** REVISE  
+**Reasoning:**  
+The definition is ambiguous. "Governance query" should include queries about *product-specific compliance* (e.g., "Does AuditForge comply with STD-VAULT-002?"). These should route to `dex_canon` + `product_collection` + `dex_decisions` (if live).  
+
+**c) dex_dave in DEFAULT Route**  
+**Verdict:** LOCK  
+**Reasoning:**  
+`dex_dave` should never appear in the DEFAULT route. Operator intent queries require explicit `Dave` keywords. The MVP router must enforce this strictly.  
+
+---
+
+#### **Question 3 — RULE 4: QUERY ROUTER DESIGN**  
+**a) Keyword Triggers**  
+**Verdict:** REVISE  
+**Reasoning:**  
+The "GOVERNANCE" trigger list is incomplete. Add `compliance`, `standard`, and `requirement` to avoid misfires. The "CODE" trigger list lacks `session`, `output`, and `log` for debugging.  
+
+**b) DEFAULT Route**  
+**Verdict:** LOCK  
+**Reasoning:**  
+`ddl_archive` inclusion reduces precision. The DEFAULT route should prioritize `dex_canon` only until archive-specific queries are logged and routed explicitly.  
+
+**c) Product-Scoped Governance**  
+**Verdict:** REVISE  
+**Reasoning:**  
+Product-scoped governance queries (e.g., "AuditForge compliance") should route to `dex_canon` + `product_collection` + `dex_decisions` (if live). The router must detect both governance *and* product keywords.  
+
+---
+
+#### **Question 4 — BUILD ORDER AND WHAT’S MISSING**  
+**a) Build Order**  
+**Verdict:** LOCK  
+**Reasoning:**  
+The order aligns with CR-CORPUS-VISION-001. `dex_decisions` first ensures governance readiness. `dex_dave` last avoids premature contamination.  
+
+**b) Gaps in the ADR**  
+**Verdict:** REVISE  
+**Reasoning:**  
+The ADR does not address:  
+1. Effective-dating for `ext_` collections (valid_from/valid_to).  
+2. Temporal metadata for `dex_code` (version_tags, created_date).  
+3. Fact_QueryLog ingest pipeline (manual vs automated).  
+
+**c) Highest-Stakes Decision**  
+**Verdict:** REVISE  
+**Reasoning:**  
+The interim ingestion gate (Rule 3) is the highest-stakes decision. If `dex_dave` is ingested prematurely, governance queries may return operator opinions as ratified standards.  
+
+---
+
+### **Overall Verdict**  
+**Operator Authority:**  
+**REVISE** the precedence hierarchy (Rule 1c), isolation rule (Rule 3a), router triggers (Rule 4a), and gaps (Rule 4b).  
+**Council Consensus:**  
+**LOCK** all other sections.  
+
+**Operator Note:**  
+The council identified critical gaps in Rule 1c, 3a, 4a, and 4b. Incorporate these revisions and resubmit for a second review.
