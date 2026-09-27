@@ -66,6 +66,9 @@ SKIP_DIRS = {
     ".git", "node_modules", "__pycache__", ".venv", "venv", "AppData",
     ".next", "dist", "build", ".cache", "site-packages", "chroma",
     "chromadb", ".dex-jr", ".pytest_cache", ".mypy_cache", "_lkg",
+    # Graveyard'd copies parked inside iCloud (_catchall/<date>/_graveyard): the survivor
+    # of each group is still indexed; re-ingesting the twins would undo the dedupe.
+    "_graveyard",
     # personnel/ is excluded by the Canon Steward's ruling
     # (DDL-3008:20260813T143000Z-cr02, revised 2026-08-14). The REASON changed
     # in the revision -- relevance, not privacy -- but the exclusion stands.
