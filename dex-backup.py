@@ -546,6 +546,40 @@ def validate_backup(backup_dir: Path, manifest: dict) -> tuple[bool, list[str]]:
     return (len(failures) == 0, failures)
 
 
+_COUNT_SCRIPT = (
+    "import sys, chromadb\n"
+    "from chromadb.config import Settings\n"
+    "c = chromadb.PersistentClient(path=sys.argv[1], settings=Settings(anonymized_telemetry=False))\n"
+    "print(c.get_collection(sys.argv[2]).count())\n"
+)
+
+
+def _scratch_collection_names(scratch_dir: Path) -> list[str]:
+    """Collection names from the scratch copy's SQLite, read-only."""
+    con = sqlite3.connect(f"file:{scratch_dir / 'chroma.sqlite3'}?mode=ro", uri=True)
+    try:
+        return sorted(r[0] for r in con.execute("SELECT name FROM collections"))
+    finally:
+        con.close()
+
+
+def _count_in_subprocess(scratch_dir: Path, name: str, timeout: int = 1800) -> int:
+    """Open the scratch copy in a fresh process and count one collection."""
+    import subprocess
+    try:
+        p = subprocess.run(
+            [sys.executable, "-c", _COUNT_SCRIPT, str(scratch_dir), name],
+            capture_output=True, text=True, timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        raise RestoreTestFailedError(f"{name}: count timed out after {timeout}s")
+    out = p.stdout.strip().splitlines()
+    if p.returncode != 0 or not out or not out[-1].isdigit():
+        err = (p.stderr.strip().splitlines() or ["no output"])[-1]
+        raise RestoreTestFailedError(f"{name}: count failed: {err[:300]}")
+    return int(out[-1])
+
+
 def restore_test(backup_path: "Path | None" = None) -> dict:
     """
     Trigger 6 — post-backup restore verification.
@@ -631,30 +665,25 @@ def restore_test(backup_path: "Path | None" = None) -> dict:
     }
 
     failures: list[str] = []
-    client = None
     try:
         copy_start = datetime.now(timezone.utc)
         shutil.copytree(backup_path, scratch_dir)
         copy_duration = (datetime.now(timezone.utc) - copy_start).total_seconds()
         print(f"  Copy complete ({copy_duration:.1f}s)")
 
-        # Local import to keep chromadb out of the module-load path
-        import chromadb
-        try:
-            from chromadb.config import Settings
-            client = chromadb.PersistentClient(
-                path=str(scratch_dir),
-                settings=Settings(anonymized_telemetry=False),
-            )
-        except Exception:
-            # Fallback if chromadb version differs on the Settings API
-            client = chromadb.PersistentClient(path=str(scratch_dir))
-
+        # 2026-09-27: one process holding every collection's HNSW index (~5.5 GB
+        # with ddl_private_v1) ran Windows out of virtual memory mid-test
+        # ("Error loading hnsw index", uncaught, exit 1). Each count now runs
+        # in its own short-lived process, so memory peaks at the largest
+        # index and no handle is left open on the scratch files.
         verified: dict[str, int] = {}
-        for col in client.list_collections():
-            name = col.name
-            collection = client.get_collection(name)
-            count = collection.count()
+        for name in _scratch_collection_names(scratch_dir):
+            try:
+                count = _count_in_subprocess(scratch_dir, name)
+            except RestoreTestFailedError as e:
+                failures.append(str(e))
+                print(f"  {name:<15} restored=      ERROR  [{e}]")
+                continue
             verified[name] = count
             expected = manifest_counts.get(name)
             if expected is None:
@@ -673,6 +702,8 @@ def restore_test(backup_path: "Path | None" = None) -> dict:
         # Compare: every manifest collection must appear with matching count
         for name, manifest_count in manifest_counts.items():
             if name not in verified:
+                if any(f.startswith(f"{name}:") for f in failures):
+                    continue  # already recorded as a count error
                 failures.append(f"missing collection in restore: {name}")
                 continue
             if verified[name] != manifest_count:
@@ -691,13 +722,9 @@ def restore_test(backup_path: "Path | None" = None) -> dict:
             result["status"] = "PASS"
         else:
             result["status"] = "FAIL"
+    except (OSError, sqlite3.Error) as e:
+        failures.append(f"restore_test could not copy or open the scratch copy: {e}")
     finally:
-        # Release client before tearing down scratch (Windows file locks)
-        if client is not None:
-            try:
-                del client
-            except Exception:
-                pass
         import gc
         gc.collect()
 
