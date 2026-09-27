@@ -40,6 +40,11 @@ BACKUP_LOG = BACKUP_ROOT / "_backup_log.jsonl"
 # crashed-midway backup stays inspectable, and then get deleted from
 # quarantine at a 30-day cadence (>> the active-backup cleanup rhythm).
 QUARANTINE_ROOT = Path(r"D:\DDL_Backup\chromadb_backups_quarantine")
+# Restore-test scratch: a full copy of a backup (34 GB on 2026-09-27). It lived
+# at C:\Users\dexjr\dex-rag-scratch, where C: had 69 GB free and the corpus keeps
+# growing; moved to D: on the Operator's go ("push and move", 2026-09-27).
+# Still outside the repo, OneDrive and the live .dex-jr store.
+SCRATCH_ROOT = Path(r"D:\DDL_Backup\restore_scratch")
 
 # Trigger thresholds per STD-DDL-BACKUP-001
 TRIGGER_DAYS = 3
@@ -84,7 +89,7 @@ def utc_now_compact() -> str:
 
 def cleanup_stale_scratch(max_age_hours: float = 1.0) -> int:
     """
-    Reclaim orphan restore_test_* directories in dex-rag-scratch/ that
+    Reclaim orphan restore_test_* directories in SCRATCH_ROOT that
     are older than max_age_hours.
 
     Exists because restore_test()'s in-process cleanup can fail on
@@ -96,7 +101,7 @@ def cleanup_stale_scratch(max_age_hours: float = 1.0) -> int:
     Tolerates file-lock errors by logging a WARN and continuing.
     Returns the count of directories actually removed.
     """
-    scratch_root = Path(__file__).parent.parent / "dex-rag-scratch"
+    scratch_root = SCRATCH_ROOT
     if not scratch_root.exists():
         return 0
 
@@ -645,7 +650,7 @@ def restore_test(backup_path: "Path | None" = None) -> dict:
         )
 
     # Scratch path: outside repo, outside OneDrive, outside live .dex-jr
-    scratch_root = Path(__file__).parent.parent / "dex-rag-scratch"
+    scratch_root = SCRATCH_ROOT
     scratch_root.mkdir(parents=True, exist_ok=True)
     scratch_dir = scratch_root / f"restore_test_{utc_now_compact()}"
 
