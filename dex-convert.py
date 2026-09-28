@@ -52,6 +52,16 @@ from datetime import datetime
 from pathlib import Path
 
 import dex_ingest_ledger as LED
+
+# A progress line must never fail a conversion. Redirected on Windows, stdout is cp1252, and the
+# "→" in write_output's status line raised after the file was already written: 37/37 .vcf files
+# recorded as failed in the iCloud corpus run (Ellis Cooper, 2026-09-28). Unencodable characters
+# are escaped instead.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(errors="backslashreplace")
+    except (AttributeError, ValueError):
+        pass
 from dex_ingest_ledger import EXIT_CLEAN, EXIT_UNACCOUNTED
 
 # ── Reconciliation ledger (module-global so every converter can record) ──────
