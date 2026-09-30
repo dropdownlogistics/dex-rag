@@ -49,6 +49,9 @@ import requests
 # invisible at ingest and only surfaces at query time as a dimension error --
 # 78,460 chunks were written before it did. Import, never restate.
 from dex_core import CHROMA_DIR, EMBED_MODEL, embed as core_embed
+# Index-side exclusions (vendored code, app/game data, corpus bookkeeping). The paths stay in the
+# corpus and in git; only the index skips them. Import, never restate (test_index_exclusions*.py).
+from index_exclusions import is_index_excluded
 
 COLLECTION = "ddl_everything_v2"
 
@@ -249,7 +252,7 @@ def main():
     stats = {
         "scanned": 0, "ingested": 0, "chunks": 0, "skipped_placeholder": 0,
         "skipped_dupe": 0, "skipped_big": 0, "skipped_unreadable": 0,
-        "skipped_unembeddable": 0,
+        "skipped_unembeddable": 0, "skipped_excluded": 0,
         "by_root": {}, "by_class": {},
     }
 
@@ -314,6 +317,9 @@ def main():
                 if is_placeholder(st):
                     stats["skipped_placeholder"] += 1
                     r_ph += 1
+                    continue
+                if is_index_excluded(p):
+                    stats["skipped_excluded"] += 1
                     continue
                 if st.st_size > MAX_FILE_BYTES or st.st_size == 0:
                     stats["skipped_big"] += 1
@@ -405,7 +411,7 @@ def main():
     print("\n" + "=" * 66)
     for k in ("scanned", "ingested", "chunks", "skipped_placeholder",
               "skipped_dupe", "skipped_big", "skipped_unreadable",
-              "skipped_unembeddable"):
+              "skipped_unembeddable", "skipped_excluded"):
         print(f"  {k:<22} {stats[k]:>10,}")
     print(f"  by injection_class     {stats['by_class']}")
     if not args.dry_run:
