@@ -158,6 +158,17 @@ def is_placeholder(st) -> bool:
     return bool(a & 0x1000 or a & 0x400000)  # OFFLINE | RECALL_ON_DATA_ACCESS
 
 
+def size_skip(size: int):
+    """The stats key a file's size is skipped under, or None to read it. Empty and over-the-cap
+    are counted apart: an empty texty file can be a failed conversion, and folding it into
+    "big" hid it (split 2026-09-30, Silas Reeve / DDL-3004)."""
+    if size == 0:
+        return "skipped_empty"
+    if size > MAX_FILE_BYTES:
+        return "skipped_big"
+    return None
+
+
 def chunk_text(t: str):
     t = (t or "").strip()
     if not t:
@@ -251,7 +262,7 @@ def main():
 
     stats = {
         "scanned": 0, "ingested": 0, "chunks": 0, "skipped_placeholder": 0,
-        "skipped_dupe": 0, "skipped_big": 0, "skipped_unreadable": 0,
+        "skipped_dupe": 0, "skipped_big": 0, "skipped_empty": 0, "skipped_unreadable": 0,
         "skipped_unembeddable": 0, "skipped_excluded": 0,
         "by_root": {}, "by_class": {},
     }
@@ -321,8 +332,9 @@ def main():
                 if is_index_excluded(p):
                     stats["skipped_excluded"] += 1
                     continue
-                if st.st_size > MAX_FILE_BYTES or st.st_size == 0:
-                    stats["skipped_big"] += 1
+                why = size_skip(st.st_size)
+                if why:
+                    stats[why] += 1
                     continue
                 try:
                     raw = p.read_bytes()
@@ -410,7 +422,7 @@ def main():
 
     print("\n" + "=" * 66)
     for k in ("scanned", "ingested", "chunks", "skipped_placeholder",
-              "skipped_dupe", "skipped_big", "skipped_unreadable",
+              "skipped_dupe", "skipped_big", "skipped_empty", "skipped_unreadable",
               "skipped_unembeddable", "skipped_excluded"):
         print(f"  {k:<22} {stats[k]:>10,}")
     print(f"  by injection_class     {stats['by_class']}")
