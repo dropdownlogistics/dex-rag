@@ -109,12 +109,24 @@ REDDIT_CSV_SCHEMAS = {
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def source_header(source_path: str, file_type: str, converted_date: str) -> str:
+def source_header(source_path, file_type: str) -> str:
+    """The provenance line at the top of every converted file.
+
+    It carries only properties of the DOCUMENT: the source file's name and its type. It used to carry three
+    properties of the RUN -- `CONVERTED: <today>`, the ABSOLUTE source path, and `CONVERTED_BY: ... v1.0`
+    (a version string that had also gone stale against the ledger's v1.2). So the same file converted on two
+    days, or from two folders, gave different text, and any hash over that text drifted. FND-0022 (Ellis
+    Cooper, DDL-4008): on two runs of one corpus root a day apart, all 9 converted rows changed their text
+    hash and nothing else in 18,272 rows did. A hash that changes when nothing changed cannot dedupe and
+    cannot answer "has this document changed".
+
+    No date at all, rather than the source's mtime: two byte-identical copies with different mtimes must
+    still convert to the same text. The conversion date and the tool version belong to the run's ledger,
+    which records both. Operator approval 2026-10-01; Silas Reeve / DDL-3004.
+    """
     return (
-        f"SOURCE: {source_path}\n"
+        f"SOURCE: {Path(source_path).name}\n"
         f"TYPE: {file_type}\n"
-        f"CONVERTED: {converted_date}\n"
-        f"CONVERTED_BY: dex-convert.py v1.0\n"
         f"{'='*60}\n\n"
     )
 
@@ -144,8 +156,7 @@ def write_output(content: str, out_path: Path, label: str):
 
 def convert_html(file_path: Path, out_dir: Path, chunk_size: int = 0) -> list[Path]:
     """Strip HTML to clean text. Optionally chunk large files."""
-    converted_date = datetime.now().strftime("%Y-%m-%d")
-    header = source_header(str(file_path), "html", converted_date)
+    header = source_header(str(file_path), "html")
     entry  = LEDGER.begin_file(file_path, "html")
 
     try:
@@ -207,9 +218,8 @@ def detect_reddit_type(filename: str) -> str:
 
 def convert_reddit_csv(file_path: Path, out_dir: Path) -> list[Path]:
     """Convert Reddit CSV export to readable text."""
-    converted_date = datetime.now().strftime("%Y-%m-%d")
     reddit_type    = detect_reddit_type(file_path.stem)
-    header         = source_header(str(file_path), f"reddit-csv-{reddit_type}", converted_date)
+    header         = source_header(str(file_path), f"reddit-csv-{reddit_type}")
     entry          = LEDGER.begin_file(file_path, "reddit-csv")
 
     lines = []
@@ -290,8 +300,7 @@ def convert_reddit_csv(file_path: Path, out_dir: Path) -> list[Path]:
 
 def convert_csv_generic(file_path: Path, out_dir: Path) -> list[Path]:
     """Convert any CSV to readable text format."""
-    converted_date = datetime.now().strftime("%Y-%m-%d")
-    header = source_header(str(file_path), "csv", converted_date)
+    header = source_header(str(file_path), "csv")
     entry  = LEDGER.begin_file(file_path, "csv")
 
     lines = []
@@ -337,8 +346,7 @@ def convert_csv_generic(file_path: Path, out_dir: Path) -> list[Path]:
 
 def convert_json(file_path: Path, out_dir: Path, chunk_size: int = 0) -> list[Path]:
     """Convert JSON to readable text. Handles Chrome history and generic JSON."""
-    converted_date = datetime.now().strftime("%Y-%m-%d")
-    header = source_header(str(file_path), "json", converted_date)
+    header = source_header(str(file_path), "json")
     entry  = LEDGER.begin_file(file_path, "json")
 
     try:
@@ -403,8 +411,7 @@ def convert_json(file_path: Path, out_dir: Path, chunk_size: int = 0) -> list[Pa
 
 def convert_vcf(file_path: Path, out_dir: Path) -> list[Path]:
     """Convert VCF contacts to readable text."""
-    converted_date = datetime.now().strftime("%Y-%m-%d")
-    header = source_header(str(file_path), "vcf-contacts", converted_date)
+    header = source_header(str(file_path), "vcf-contacts")
     entry  = LEDGER.begin_file(file_path, "vcf")
 
     try:
@@ -476,7 +483,6 @@ def convert_vcf(file_path: Path, out_dir: Path) -> list[Path]:
 
 def convert_mbox(file_path: Path, out_dir: Path, max_emails: int = 0) -> list[Path]:
     """Convert MBOX to individual email text files. Groups into chunks."""
-    converted_date = datetime.now().strftime("%Y-%m-%d")
     ensure_dir(out_dir)
     entry = LEDGER.begin_file(file_path, "mbox")
 
@@ -566,8 +572,7 @@ def convert_mbox(file_path: Path, out_dir: Path, max_emails: int = 0) -> list[Pa
         # Write batch
         if len(batch) >= batch_size:
             header = source_header(
-                str(file_path), f"gmail-mbox-batch-{batch_num}", converted_date
-            )
+                str(file_path), f"gmail-mbox-batch-{batch_num}")
             out_path = out_dir / f"Gmail_batch_{batch_num:04d}.txt"
             write_output(header + "\n".join(batch), out_path, f"Gmail batch {batch_num}")
             output_files.append(out_path)
@@ -576,7 +581,7 @@ def convert_mbox(file_path: Path, out_dir: Path, max_emails: int = 0) -> list[Pa
 
     # Final batch
     if batch:
-        header   = source_header(str(file_path), f"gmail-mbox-batch-{batch_num}", converted_date)
+        header   = source_header(str(file_path), f"gmail-mbox-batch-{batch_num}")
         out_path = out_dir / f"Gmail_batch_{batch_num:04d}.txt"
         write_output(header + "\n".join(batch), out_path, f"Gmail batch {batch_num} (final)")
         output_files.append(out_path)
@@ -597,7 +602,6 @@ def convert_mbox(file_path: Path, out_dir: Path, max_emails: int = 0) -> list[Pa
 
 def convert_facebook_messages(fb_dir: Path, out_dir: Path) -> list[Path]:
     """Convert Facebook message JSON exports to text."""
-    converted_date = datetime.now().strftime("%Y-%m-%d")
     output_files   = []
 
     msg_dir = fb_dir / "messages"
@@ -628,7 +632,7 @@ def convert_facebook_messages(fb_dir: Path, out_dir: Path) -> list[Path]:
         messages = data.get("messages", [])
 
         lines = [
-            source_header(str(jf), "facebook-messages", converted_date),
+            source_header(str(jf), "facebook-messages"),
             f"CONVERSATION: {', '.join(participant_names)}",
             f"MESSAGES: {len(messages)}\n",
         ]
