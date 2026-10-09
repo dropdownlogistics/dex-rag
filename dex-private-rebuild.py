@@ -189,16 +189,20 @@ class Store:
 
 
 def main():
+    global CHUNK_CHARS
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--roots", default="all", help=f"comma-separated from {list(ROOTS)}, or 'all'")
     ap.add_argument("--under", default=None, help="only files whose path contains this text")
     ap.add_argument("--limit", type=int, default=0, help="max files (0 = no cap)")
     ap.add_argument("--dry-run", action="store_true", help="scan, chunk and count; embed nothing")
+    ap.add_argument("--chunk-chars", type=int, default=CHUNK_CHARS,
+                    help="target chunk size; recorded in build.json")
     ap.add_argument("--pause", type=float, default=0.0,
                     help="seconds to sleep after each file (leave the GPU room for live answers)")
     args = ap.parse_args()
 
+    CHUNK_CHARS = args.chunk_chars
     selected = list(ROOTS) if args.roots == "all" else [r.strip() for r in args.roots.split(",")]
     unknown = [r for r in selected if r not in ROOTS]
     if unknown:
