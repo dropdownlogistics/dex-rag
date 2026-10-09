@@ -41,6 +41,7 @@ from pathlib import Path
 import numpy as np
 import requests
 
+import memguard
 from dex_core import EMBED_MODEL, OLLAMA_HOST
 
 _spec = importlib.util.spec_from_file_location(
@@ -215,6 +216,14 @@ def main():
         "skipped_unreadable", "skipped_excluded", "skipped_no_text", "skipped_already_built")}
     by_root = {}
 
+    if not args.dry_run:
+        # This job streams, so it needs little itself; the check is that the machine is not
+        # already full when a two-day run starts beside Dex (memguard, the 2026-10-03 outage).
+        try:
+            room = memguard.require(need_gb=1.5, what="private-search rebuild")
+        except memguard.Refused as e:
+            sys.exit(f"REFUSED: {e}")
+        print(f"memory: {room['free_gb']} GiB free of {room['total_gb']}\n")
     store = None if args.dry_run else Store(args.out)
     files_log = args.out / "files.jsonl"
     seen = set()
