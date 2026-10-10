@@ -29,7 +29,10 @@ MIN_HITS = 2
 EXAMPLES = 8
 FOLDER_DEPTH = 4
 FOLDERS_SHOWN = 30
-PILES = ("text", "low-confidence", "no-text", "not-opened")
+PILES = ("text", "low-confidence", "no-text", "not-opened", "set-aside")
+# Set aside by the Operator's word (2026-10-10: "definitely leave out album art"). An image is set
+# aside only if EVERY copy of it sits under one of these folders; a copy anywhere else keeps it in.
+SET_ASIDE = [("album-art", "onedrive/Music/")]
 
 # Order matters only for ties. A signal is matched on word boundaries, case-insensitive.
 BINS = [
@@ -85,6 +88,20 @@ def sort_text(text):
     return best, scores, any(rx.search(t) for rx in _PHONE)
 
 
+def set_aside(paths):
+    """The set-aside name if every path of the image is under one set-aside folder, else None."""
+    for name, prefix in SET_ASIDE:
+        if paths and all(p.startswith(prefix) for p in paths):
+            return name
+    return None
+
+
+def text_key(text):
+    """Two images with the same key show the same words in the same order (case, spacing and
+    punctuation ignored): a re-saved, resized or re-exported copy of one screenshot."""
+    return " ".join(re.findall(r"[a-z0-9]+", text.lower()))
+
+
 def pile_of(cls):
     """The first-layer pile, from what the OCR pass measured."""
     return {"text": "text", "low": "low-confidence", "none": "no-text"}.get(cls, "not-opened")
@@ -101,21 +118,29 @@ def latest(results_path):
 def run(ocr):
     ocr = Path(ocr)
     res = latest(ocr / "results.jsonl")
-    first_path, copies = {}, collections.Counter()
+    first_path, all_paths = {}, collections.defaultdict(list)
     for line in (ocr / "paths.jsonl").open(encoding="utf-8"):
         p = json.loads(line)
         if p["sha256"] is None:
             continue
-        copies[p["sha256"]] += 1
+        all_paths[p["sha256"]].append(p["rel_path"])
         first_path.setdefault(p["sha256"], p["rel_path"])
-    rows, missing_text = [], 0
-    for sha, r in res.items():
+    rows, missing_text, twins = [], 0, {}
+    for sha in sorted(res):                     # sorted, so the same image is the "first" twin on every run
+        r = res[sha]
         row = {"sha256": sha, "pile": pile_of(r["class"]), "bin": None, "scores": {}, "phone": False,
-               "words": r.get("words", 0), "confidence": r.get("confidence", 0.0), "copies": copies.get(sha, 0)}
-        if r["class"] == "text":
+               "words": r.get("words", 0), "confidence": r.get("confidence", 0.0),
+               "copies": len(all_paths.get(sha, [])), "twin_of": None}
+        aside = set_aside(all_paths.get(sha, []))
+        if aside:
+            row["pile"], row["bin"] = "set-aside", aside
+        elif r["class"] == "text":
             f = ocr / "text" / sha[:2] / f"{sha}.txt"
             if f.exists():
-                row["bin"], row["scores"], row["phone"] = sort_text(f.read_text(encoding="utf-8"))
+                text = f.read_text(encoding="utf-8")
+                row["bin"], row["scores"], row["phone"] = sort_text(text)
+                first = twins.setdefault(text_key(text), sha)
+                row["twin_of"] = None if first == sha else first
             else:
                 missing_text += 1               # counted and reported, never silently binned
                 row["bin"] = "text-file-missing"
@@ -137,6 +162,14 @@ def report(ocr, rows, first_path, missing_text):
          f"Distinct images: {len(rows):,}", "", "## Piles (from the OCR pass)", "", "| pile | images |", "|---|---:|"]
     for k, v in piles.most_common():
         L.append(f"| {k} | {v:,} |")
+    files = sum(r["copies"] for r in rows)
+    tw = sum(1 for r in text if r["twin_of"])
+    L += ["", "## Duplicates", "",
+          f"- Files seen: {files:,}. Distinct images (identical bytes counted once): {len(rows):,}. "
+          f"Exact copies: {files - len(rows):,}.",
+          f"- Text twins: {tw:,} of the {len(text):,} text images show the same words in the same order as another "
+          "image (a re-saved or resized copy). Each is marked `twin_of`; none is removed.",
+          "- Not yet looked for: copies that look the same but differ in bytes and carry no text (photos)."]
     L += ["", f"## Bins inside the text pile ({len(text):,})", "",
           "| bin | images | from a phone | median words |", "|---|---:|---:|---:|"]
     for k, v in bins.most_common():
@@ -157,10 +190,11 @@ def report(ocr, rows, first_path, missing_text):
         if r["pile"] == "text":
             where[folder]["unsorted" if r["bin"] == "unsorted" else "binned"] += 1
     L += ["", f"## Where the images came from (first {FOLDER_DEPTH} folder levels, largest {FOLDERS_SHOWN})", "",
-          "| folder | images | text | of which unsorted | low-confidence | no-text | not-opened |", "|---|---:|---:|---:|---:|---:|---:|"]
+          "| folder | images | text | of which unsorted | low-confidence | no-text | not-opened | set-aside |",
+          "|---|---:|---:|---:|---:|---:|---:|---:|"]
     for folder, c in sorted(where.items(), key=lambda kv: -sum(kv[1][p] for p in PILES))[:FOLDERS_SHOWN]:
         L.append(f"| `{folder}` | {sum(c[p] for p in PILES):,} | {c['text']:,} | {c['unsorted']:,} | "
-                 f"{c['low-confidence']:,} | {c['no-text']:,} | {c['not-opened']:,} |")
+                 f"{c['low-confidence']:,} | {c['no-text']:,} | {c['not-opened']:,} | {c['set-aside']:,} |")
     if missing_text:
         L += ["", f"**{missing_text:,} images are classed text but their text file is missing.**"]
     L += ["", "## Example paths per bin (first seen path of each, under D:\\DDL_Corpus\\raw)"]
