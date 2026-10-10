@@ -39,7 +39,9 @@ def test_classify_boundaries():
     assert ob.classify(5, 60.0) == "text"
     assert ob.classify(4, 99.0) == "low"
     assert ob.classify(50, 59.9) == "low"
-    assert ob.classify(1, 10.0) == "low"
+    assert ob.classify(1, 10.0) == "none"          # a stray mark on a photograph
+    assert ob.classify(4, 59.9) == "none"
+    assert ob.classify(5, 10.0) == "low"
 
 
 def test_lines_are_rebuilt_and_layout_rows_are_not_words():

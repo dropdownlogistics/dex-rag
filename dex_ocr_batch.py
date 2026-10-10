@@ -50,8 +50,8 @@ TEXT_MIN_CONF = 60.0
 
 def classify(words, conf):
     """Pure: the class for a word count and a mean confidence."""
-    if words == 0:
-        return "none"
+    if words < TEXT_MIN_WORDS and conf < TEXT_MIN_CONF:
+        return "none"                 # a stray mark or two read as letters on a photograph is not text
     if words >= TEXT_MIN_WORDS and conf >= TEXT_MIN_CONF:
         return "text"
     return "low"
