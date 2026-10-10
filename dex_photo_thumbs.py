@@ -1,14 +1,16 @@
 """
 dex_photo_thumbs.py -- small pictures for the album page, made once from the photo library.
 
-    <out>/thumb/<ab>/<sha256>.webp   every photo, longest side THUMB px, for the grid
+    <out>/thumb/<ab>/<sha256>.webp   every photo, longest side THUMB px, for tiles and the stack behind a card
+    <out>/card/<ab>/<sha256>.webp    every photo, longest side CARD px, for the open card. Never cropped.
     <out>/view/<ab>/<sha256>.jpg     only photos a browser cannot show as they are (HEIC, TIFF, BMP),
                                      longest side VIEW px, for the opened photo
 
 Reads <library>/index.jsonl and the library's images. Writes only under --out. EXIF rotation is
 applied, then the EXIF is dropped (a thumbnail carries no location). Resumable: a file that exists
-is not made again. A STOP file in --out ends the run cleanly. Sizes are parameters; the design may
-ask for others (photo album brief v0.1, question to Iris Wright).
+is not made again. A STOP file in --out ends the run cleanly. Sizes are the design's: 320 and 1024 on
+the long edge, no crops, originals on demand (Iris Wright, D-mail DDL-3015:20261010T183127Z-5dec). The
+first run used 360; --redo-thumbs remakes them at the current size.
 
     python dex_photo_thumbs.py --library D:\\DDL_Corpus\\library --out C:\\Users\\dexjr\\dex-data\\album
 """
@@ -20,7 +22,8 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
-THUMB = 360
+THUMB = 320
+CARD = 1024
 VIEW = 2000
 BROWSER_SHOWS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 MAX_PIXELS = 200_000_000
@@ -32,7 +35,8 @@ def needs_view(ext):
 
 def paths_for(out, sha, ext):
     out = Path(out)
-    return out / "thumb" / sha[:2] / f"{sha}.webp", (out / "view" / sha[:2] / f"{sha}.jpg") if needs_view(ext) else None
+    return (out / "thumb" / sha[:2] / f"{sha}.webp", (out / "view" / sha[:2] / f"{sha}.jpg") if needs_view(ext) else None,
+            out / "card" / sha[:2] / f"{sha}.webp")
 
 
 def _save(im, dest, size, fmt, **kw):
@@ -46,7 +50,7 @@ def _save(im, dest, size, fmt, **kw):
 
 
 def _work(job):
-    src, thumb, view, thumb_size, view_size = job
+    src, thumb, view, card, thumb_size, view_size, card_size, redo = job
     from PIL import Image, ImageOps
     Image.MAX_IMAGE_PIXELS = MAX_PIXELS
     try:
@@ -61,8 +65,11 @@ def _work(job):
             if im.mode not in ("RGB", "RGBA"):
                 im = im.convert("RGBA" if "transparency" in im.info or im.mode in ("LA", "PA") else "RGB")
             made = 0
-            if not thumb.exists():
+            if redo or not thumb.exists():
                 _save(im, thumb, thumb_size, "WEBP", quality=78, method=4)
+                made += 1
+            if not card.exists():
+                _save(im, card, card_size, "WEBP", quality=82, method=4)
                 made += 1
             if view is not None and not view.exists():
                 _save(im.convert("RGB"), view, view_size, "JPEG", quality=88)
@@ -78,7 +85,7 @@ def below_normal():
         ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), 0x4000)
 
 
-def run(library, out, workers=6, thumb_size=THUMB, view_size=VIEW, limit=0, log=print):
+def run(library, out, workers=6, thumb_size=THUMB, view_size=VIEW, card_size=CARD, limit=0, redo_thumbs=False, log=print):
     library, out = Path(library), Path(out)
     jobs = []
     stats = {"photos": 0, "already_made": 0, "made": 0, "failed": 0, "source_missing": 0}
@@ -87,13 +94,13 @@ def run(library, out, workers=6, thumb_size=THUMB, view_size=VIEW, limit=0, log=
         r = json.loads(line)
         stats["photos"] += 1
         src = library / r["file"]
-        thumb, view = paths_for(out, r["sha256"], os.path.splitext(r["file"])[1])
-        if thumb.exists() and (view is None or view.exists()):
+        thumb, view, card = paths_for(out, r["sha256"], os.path.splitext(r["file"])[1])
+        if not redo_thumbs and thumb.exists() and card.exists() and (view is None or view.exists()):
             stats["already_made"] += 1
         elif not src.exists():
             stats["source_missing"] += 1
         else:
-            jobs.append((src, thumb, view, thumb_size, view_size))
+            jobs.append((src, thumb, view, card, thumb_size, view_size, card_size, redo_thumbs))
     if limit:
         jobs = jobs[:limit]
     t0 = time.time()
@@ -126,10 +133,12 @@ def main():
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--thumb", type=int, default=THUMB)
     ap.add_argument("--view", type=int, default=VIEW)
+    ap.add_argument("--card", type=int, default=CARD)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--redo-thumbs", action="store_true", help="remake every thumb at the current size")
     a = ap.parse_args()
     below_normal()
-    for k, v in run(a.library, a.out, a.workers, a.thumb, a.view, a.limit).items():
+    for k, v in run(a.library, a.out, a.workers, a.thumb, a.view, a.card, a.limit, a.redo_thumbs).items():
         print(f"  {k:<18} {v}")
 
 

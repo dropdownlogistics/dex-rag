@@ -38,7 +38,11 @@ def test_run_makes_thumbs_for_all_and_views_only_where_needed(tmp_path):
     assert s["failure_reasons"] == {"UnidentifiedImageError": 1}
     assert sorted(p.relative_to(lib).as_posix() for p in lib.rglob("*")) == before          # the library is untouched
     made = sorted(p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file())
-    assert made == ["thumb/aa/aa1.webp", "thumb/aa/aa2.webp", "thumb/aa/aa3.webp", "view/aa/aa2.jpg"]
+    assert made == ["card/aa/aa1.webp", "card/aa/aa2.webp", "card/aa/aa3.webp",
+                    "thumb/aa/aa1.webp", "thumb/aa/aa2.webp", "thumb/aa/aa3.webp", "view/aa/aa2.jpg"]
+    assert Image.open(out / "card/aa/aa1.webp").size == (1024, 512)                         # the open card: 1024 on the long edge, not cropped
+    assert Image.open(out / "card/aa/aa2.webp").size == (341, 1024)
+    assert Image.open(out / "card/aa/aa3.webp").size == (50, 40)
     assert Image.open(out / "thumb/aa/aa1.webp").size == (200, 100)                          # shape kept, longest side capped
     assert Image.open(out / "thumb/aa/aa2.webp").size == (67, 200)
     assert Image.open(out / "thumb/aa/aa3.webp").size == (50, 40)                            # never enlarged
@@ -50,3 +54,12 @@ def test_a_second_run_makes_nothing(tmp_path):
     th.run(lib, out, workers=2, log=quiet)
     s = th.run(lib, out, workers=2, log=quiet)
     assert (s["already_made"], s["made"], s["failed"]) == (3, 0, 1)                         # the broken one is tried again, and fails again
+
+
+def test_redo_thumbs_remakes_them_at_the_new_size_and_leaves_cards_alone(tmp_path):
+    lib, out = make(tmp_path)
+    th.run(lib, out, workers=2, thumb_size=200, log=quiet)
+    card_time = (out / "card/aa/aa1.webp").stat().st_mtime_ns
+    s = th.run(lib, out, workers=2, thumb_size=100, redo_thumbs=True, log=quiet)
+    assert Image.open(out / "thumb/aa/aa1.webp").size == (100, 50) and s["made"] == 3
+    assert (out / "card/aa/aa1.webp").stat().st_mtime_ns == card_time
