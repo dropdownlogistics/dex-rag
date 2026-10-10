@@ -376,7 +376,13 @@ def ensure_backup_current(
 
     # Step 36: bumped 900 -> 2400 (40m) after 4/13 scale-induced timeout on
     # 18GB backup + restore-test cycle. Observed actual runtime ~14m at new scale.
-    br = subprocess.run(backup_cmd, capture_output=True, text=True, timeout=2400)
+    # FND-0034, 2026-10-10: 2400 -> 5400 (90m). At 48.4 GiB a full backup takes about 54 minutes
+    # end to end (about 24 copying, about 19 in the restore test), measured on five nights from
+    # the 05:30 task, which has no limit. At 2400 the sweep's pre-flight killed every backup it
+    # started, so the 4am sweep failed six nights running (10-04 to 10-09) and ingested nothing.
+    # Operator approved after a dry run. The store grows; when a backup nears 75 minutes this
+    # number is due again, and the morning briefing shows the sweep's result every day.
+    br = subprocess.run(backup_cmd, capture_output=True, text=True, timeout=5400)
     if br.returncode != 0:
         raise BackupFailedError(
             f"dex-backup.py --force exited {br.returncode}\n"
