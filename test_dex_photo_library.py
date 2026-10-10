@@ -23,8 +23,8 @@ def test_album_for_the_other_sources():
     assert pl.album(["icloud/Documents/01_Personal/i.jpg"], "no-text", "2019") == "photos/2019"
     assert pl.album(["icloud/Documents/01_Personal/i.jpg"], "no-text") == "photos/undated"
     assert pl.album(["icloud/Documents/02_Dex/03_iMazingExports/x/i.png"], "text") == "phone-screens"
-    assert pl.album(["google-takeout/Takeout/Google Photos/Photos from 2014/i.jpg"], "text") == "unsorted"
-    assert pl.album(["onedrive/Documents/report/fig.png"], "low-confidence") == "unsorted"
+    assert pl.album(["google-takeout/Takeout/Google Photos/Photos from 2014/i.jpg"], "text") == "unorganized"
+    assert pl.album(["onedrive/Documents/report/fig.png"], "low-confidence") == "unorganized"
 
 
 def test_best_home_prefers_the_deliberate_place_then_the_shorter_path():

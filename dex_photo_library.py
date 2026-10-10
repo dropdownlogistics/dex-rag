@@ -81,7 +81,7 @@ def album(paths, pile, year=None):
         return f"photos/{y}" if y else "photos/undated"
     if any(m in "/" + p for p in paths for m in PHONE_MARKS):
         return "phone-screens"
-    return "unsorted"
+    return "unorganized"
 
 
 def sha256_of(path):
