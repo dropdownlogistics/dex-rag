@@ -13,8 +13,10 @@ BOTH fingerprints nearly match (at most MAX_BITS of 256 differ in each) AND thei
 (width/height within 2%). One fingerprint alone is not trusted: two different mostly-white
 screenshots can share one.
 
-Images whose words were read clearly are left out: for those, the words decide (a chat screen
-with different messages looks the same at 16x16 and is not a duplicate).
+Images whose words were read clearly need MORE than the look: two chat screens with different
+messages look the same at 16x16 and are not duplicates. For a pair of those, the words must agree
+as well (WORDS_AGREE of the distinct words shared). The first run (2026-10-10) left them out
+altogether, which is why re-captured screenshots still showed twice in the album.
 
 Writes under the OCR folder:
     looks.jsonl          one row per image fingerprinted: sha256, the two fingerprints, width, height
@@ -37,7 +39,8 @@ import numpy as np
 MAX_BITS = 10            # of 256, per fingerprint
 SHAPE_TOLERANCE = 0.02
 MAX_PIXELS = 120_000_000
-PILES_COMPARED = ("no-text", "low-confidence")
+PILES_COMPARED = ("no-text", "low-confidence", "text")
+WORDS_AGREE = 0.85
 
 
 def fingerprints(im):
@@ -77,7 +80,16 @@ def bits(hexes):
     return np.unpackbits(raw, axis=1)
 
 
-def groups(rows, max_bits=MAX_BITS, tol=SHAPE_TOLERANCE):
+def words_agree(a, b, need=WORDS_AGREE):
+    """Share of distinct words two texts have in common (of all the distinct words in either). Pure."""
+    import re
+    A, B = set(re.findall(r"[a-z0-9]+", a.lower())), set(re.findall(r"[a-z0-9]+", b.lower()))
+    if not A or not B:
+        return False
+    return len(A & B) / len(A | B) >= need
+
+
+def groups(rows, max_bits=MAX_BITS, tol=SHAPE_TOLERANCE, agree=None):
     """Groups of look-alikes among fingerprint rows: lists of sha256, each list largest image first.
     Two images join a group only when both fingerprints and the shape agree."""
     rows = [r for r in rows if "grad" in r]
@@ -103,7 +115,7 @@ def groups(rows, max_bits=MAX_BITS, tol=SHAPE_TOLERANCE):
         ds = np.abs(shape[i:i + STEP, None] - shape[None, :]) / shape[None, :]
         ii, jj = np.nonzero((dg <= max_bits) & (da <= max_bits) & (ds <= tol))
         for x, y in zip(ii + i, jj):
-            if x < y:
+            if x < y and (agree is None or agree(rows[int(x)]["sha256"], rows[int(y)]["sha256"])):
                 parent[find(int(x))] = find(int(y))
     by = collections.defaultdict(list)
     for k in range(len(rows)):
@@ -163,7 +175,21 @@ def run(ocr, root, workers=6, limit=0, log=print):
                 f.flush()
                 if (i // CHUNK) % 20 == 0:
                     log(f"    ... {stats['opened']:,} of {len(todo):,}, {stats['opened'] / max(time.time() - t0, 1e-9):.1f} images/s")
-    found = groups([done[s] for s in want if s in done])
+    texts = {}
+
+    def text_of(sha):
+        if sha not in texts:
+            f = ocr / "text" / sha[:2] / f"{sha}.txt"
+            texts[sha] = f.read_text(encoding="utf-8") if f.exists() else ""
+        return texts[sha]
+
+    def agree(a, b):
+        # Words are asked for only when BOTH images had their words read clearly.
+        if piles.get(a) == "text" and piles.get(b) == "text":
+            return words_agree(text_of(a), text_of(b))
+        return True
+
+    found = groups([done[s] for s in want if s in done], agree=agree)
     with open(ocr / "looks-groups.jsonl", "w", encoding="utf-8", newline="\n") as f:
         for g in found:
             f.write(json.dumps({"keep_candidate": g[0], "look_alikes": g[1:]}) + "\n")

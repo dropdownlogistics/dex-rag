@@ -125,3 +125,21 @@ def test_a_copy_that_does_not_match_is_removed_and_counted(tmp_path, monkeypatch
     s = pl.run(ocr, str(root), lib, log=quiet)
     assert (s["copy_failed"], s["copied"]) == (1, 2)
     assert not list((lib / "images").rglob("*.part")) and not (lib / "images" / S["one"][:2] / f"{S['one']}.png").exists()
+
+
+def test_copies_file_lists_only_copies_whose_keeper_is_in_the_library(tmp_path):
+    root, ocr, lib, S = make(tmp_path)
+    pl.run(ocr, str(root), lib, log=quiet)                       # library holds one, two, photo
+    bins = [json.loads(x) for x in (ocr / "bins.jsonl").read_text(encoding="utf-8").splitlines()]
+    for b in bins:
+        if b["sha256"] == S["one"]:
+            b["twin_of"] = S["photo"]                            # a twin whose keeper is in the library
+        if b["sha256"] == S["photo"]:
+            b["twin_of"] = S["gone"]                             # a twin whose keeper never reached the library
+    (ocr / "bins.jsonl").write_text("".join(json.dumps(b) + "\n" for b in bins), encoding="utf-8")
+    counts = pl.write_copies(ocr, lib)                           # looks-groups: photo keeps, two looks like it
+    rows = sorted((json.loads(x) for x in (lib / "copies.jsonl").read_text(encoding="utf-8").splitlines()), key=lambda r: r["why"])
+    assert rows == [{"sha256": S["two"], "keeper": S["photo"], "why": "looks-same"},
+                    {"sha256": S["one"], "keeper": S["photo"], "why": "same-words"}]
+    assert counts == {"same-words": 1, "looks-same": 1}
+    assert not (lib / "copies.jsonl.part").exists()

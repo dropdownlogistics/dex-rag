@@ -83,8 +83,34 @@ def test_run_compares_only_the_no_text_and_low_piles_and_resumes(tmp_path):
     (ocr / "paths.jsonl").write_text("".join(json.dumps({"root": "r", "rel_path": p_, "sha256": s}) + "\n" for s, p_ in paths), encoding="utf-8")
     quiet = lambda *a: None
     s = lk.run(ocr, str(root), workers=2, log=quiet)
-    assert (s["compared_piles"], s["opened"], s["failed"], s["groups"], s["extra_copies"]) == (4, 4, 1, 1, 1)
+    assert (s["compared_piles"], s["opened"], s["failed"], s["groups"], s["extra_copies"]) == (5, 5, 1, 1, 2)
     g = [json.loads(x) for x in (ocr / "looks-groups.jsonl").read_text(encoding="utf-8").splitlines()]
-    assert g == [{"keep_candidate": "sa", "look_alikes": ["sb"]}]    # the text image and the set-aside one are not compared
+    assert g == [{"keep_candidate": "sa", "look_alikes": ["st", "sb"]}]   # the set-aside one is not compared; st has no clear-text partner, so its look is enough
     s = lk.run(ocr, str(root), workers=2, log=quiet)
-    assert (s["opened"], s["already_done"], s["groups"]) == (0, 4, 1)
+    assert (s["opened"], s["already_done"], s["groups"]) == (0, 5, 1)
+
+
+def test_words_agree_is_about_shared_distinct_words():
+    a = "Usage limits reset on Tuesday context window sixty two percent used"
+    assert lk.words_agree(a, a.upper() + " !!")
+    assert lk.words_agree(a, a + " extra")                       # 11 of 12
+    assert not lk.words_agree(a, "Usage limits reset on Friday context window ninety percent free today")
+    assert not lk.words_agree(a, "")
+    assert not lk.words_agree("", "")
+
+
+def test_two_clear_text_images_that_look_the_same_need_their_words_to_agree(tmp_path):
+    root, ocr = tmp_path / "root", tmp_path / "ocr"
+    root.mkdir(); (ocr / "text" / "t1").mkdir(parents=True); (ocr / "text" / "t2").mkdir(); (ocr / "text" / "t3").mkdir()
+    p = picture(1)
+    for n in ("t1", "t2", "t3"):
+        p.save(root / f"{n}.png")                                # three images that look identical
+    (ocr / "bins.jsonl").write_text("".join(json.dumps({"sha256": s, "pile": "text"}) + "\n" for s in ("t1", "t2", "t3")), encoding="utf-8")
+    (ocr / "paths.jsonl").write_text("".join(json.dumps({"root": "r", "rel_path": f"{s}.png", "sha256": s}) + "\n" for s in ("t1", "t2", "t3")), encoding="utf-8")
+    same = "the quarterly ledger closes on friday morning at nine"
+    (ocr / "text" / "t1" / "t1.txt").write_text(same, encoding="utf-8")
+    (ocr / "text" / "t2" / "t2.txt").write_text(same.title(), encoding="utf-8")
+    (ocr / "text" / "t3" / "t3.txt").write_text("a completely different message about lunch plans today", encoding="utf-8")
+    s = lk.run(ocr, str(root), workers=2, log=lambda *a: None)
+    g = [json.loads(x) for x in (ocr / "looks-groups.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert g == [{"keep_candidate": "t1", "look_alikes": ["t2"]}] and s["extra_copies"] == 1

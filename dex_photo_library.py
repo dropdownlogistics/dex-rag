@@ -192,6 +192,30 @@ def run(ocr, root, library, limit=0, log=print):
     return stats
 
 
+def write_copies(ocr, library):
+    """<library>/copies.jsonl: which photos are copies of which, as it stands NOW. Rewritten whole each
+    time, because duplicate marks are found by later passes than the one that copied the image. The
+    album reads this file in preference to the marks frozen in index.jsonl.
+    One row per copy: sha256, keeper, why ("same-words" or "looks-same"). Both must be in the library."""
+    _, bins, _, group = load(ocr)
+    library = Path(library)
+    have = {json.loads(line)["sha256"] for line in (library / "index.jsonl").open(encoding="utf-8")}
+    rows = []
+    for sha in sorted(have):
+        twin = bins.get(sha, {}).get("twin_of")
+        look = group.get(sha)
+        if twin and twin != sha and twin in have:
+            rows.append({"sha256": sha, "keeper": twin, "why": "same-words"})
+        elif look and look != sha and look in have:
+            rows.append({"sha256": sha, "keeper": look, "why": "looks-same"})
+    tmp = library / "copies.jsonl.part"
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f:
+        for r in rows:
+            f.write(json.dumps(r) + "\n")
+    os.replace(tmp, library / "copies.jsonl")
+    return collections.Counter(r["why"] for r in rows)
+
+
 def albums(library):
     c = collections.Counter()
     for line in (Path(library) / "index.jsonl").open(encoding="utf-8"):
@@ -205,7 +229,11 @@ def main():
     ap.add_argument("--root", required=True, type=Path)
     ap.add_argument("--library", required=True, type=Path)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--copies-only", action="store_true", help="only rewrite copies.jsonl from the current duplicate marks")
     a = ap.parse_args()
+    if a.copies_only:
+        print("  copies.jsonl:", dict(write_copies(a.ocr, a.library)))
+        return
     if os.name == "nt":
         import ctypes
         ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), 0x4000)
