@@ -113,37 +113,53 @@ def embed_batch(texts):
 def split_piece(piece):
     """Two halves of an over-context piece, broken at whitespace near the middle."""
     mid = len(piece) // 2
-    brk = piece.rfind("\n", mid // 2, mid + mid // 2)
-    if brk <= 0:
-        brk = piece.rfind(" ", mid // 2, mid + mid // 2)
+    brk = -1
+    for sep in ("\n", " "):
+        # the break NEAREST the middle. (Until 2026-10-10 this took the last one in the window,
+        # which sits near the three-quarter mark: lopsided halves, so more splits and more
+        # slivers than needed. Found by test_dex_private_rebuild.py.)
+        before = piece.rfind(sep, mid // 2, mid + 1)
+        after = piece.find(sep, mid, mid + mid // 2)
+        near = [b for b in (before, after) if b > 0]
+        if near:
+            brk = min(near, key=lambda b: abs(b - mid))
+            break
     if brk <= 0:
         brk = mid
     return piece[:brk].strip(), piece[brk:].strip()
 
 
 def embed_pieces(head, pieces, stats):
-    """[(piece, vector)] with every piece embedded whole under its header. A piece the model
-    refuses is split and retried; one too small to split is counted and left out."""
-    out, todo = [], list(pieces)
+    """[(piece, vector, depth)] with every piece embedded whole under its header. A piece the
+    model refuses is split and retried; one too small to split is counted and left out.
+    depth is how many times the piece was halved to fit (0 = the chunker's own piece), so the
+    store records its real chunk sizes and not only the size it aimed for (Wren Keeler, 2026-10-10)."""
+    # Each piece carries its place in the document as a key: (i,) for the chunker's piece i,
+    # key + (0,) and key + (1,) for its halves. Results are returned in key order, so chunk
+    # numbers follow the document even when pieces are retried out of turn. (Until 2026-10-10
+    # they were returned in the order the retries finished, which put a later piece's halves
+    # ahead of an earlier one's. Found by test_dex_private_rebuild.py.)
+    out, todo = [], [(p, 0, (i,)) for i, p in enumerate(pieces)]
     while todo:
         batch, todo = todo[:BATCH], todo[BATCH:]
         try:
-            vecs = embed_batch([head + p for p in batch])
-            out.extend(zip(batch, vecs))
+            vecs = embed_batch([head + p for p, _, _ in batch])
+            out.extend((key, p, v, d) for (p, d, key), v in zip(batch, vecs))
             continue
         except OverContext:
             pass
-        for p in batch:                      # find the long ones one at a time
+        for p, d, key in batch:              # find the long ones one at a time
             try:
-                out.append((p, embed_batch([head + p])[0]))
+                out.append((key, p, embed_batch([head + p])[0], d))
             except OverContext:
                 if len(p) < MIN_SPLIT_CHARS:
                     stats["chunks_unembeddable"] += 1
                     continue
                 a, b = split_piece(p)
                 stats["chunks_split"] += 1
-                todo = [x for x in (a, b) if x] + todo
-    return out
+                todo = [(x, d + 1, key + (h,)) for h, x in enumerate((a, b)) if x] + todo
+    out.sort(key=lambda t: t[0])
+    return [(p, v, d) for _, p, v, d in out]
 
 
 class Store:
@@ -289,8 +305,8 @@ def main():
                     pairs = embed_pieces(header(p.name, rel), pieces, stats)
                     recovered = RECOVERED_MARK in "/" + rel
                     rows = []
-                    for i, (piece, _) in enumerate(pairs):
-                        row = {"id": f"{fhash}_{i}", "text": piece, "filename": p.name,
+                    for i, (piece, _, depth) in enumerate(pairs):
+                        row = {"id": f"{fhash}_{i}", "text": piece, "split": depth, "filename": p.name,
                                "source_root": name, "rel_path": rel, "source_path": str(p),
                                "file_hash": fhash, "chunk_index": i, "total_chunks": len(pairs),
                                "injection_class": ie.injection_class(p),
@@ -299,10 +315,12 @@ def main():
                             row["recovered_approximate"] = True
                         rows.append(row)
                     if rows:
-                        store.add(rows, [v for _, v in pairs])
+                        store.add(rows, [v for _, v, _ in pairs])
                     with open(files_log, "a", encoding="utf-8", newline="\n") as f:
                         f.write(json.dumps({"file_hash": fhash, "source_root": name, "rel_path": rel,
-                                            "chunks": len(rows)}, ensure_ascii=False) + "\n")
+                                            "chunks": len(rows),
+                                            "chars": [len(piece) for piece, _, _ in pairs],
+                                            "split": [d for _, _, d in pairs]}, ensure_ascii=False) + "\n")
                     n = len(rows)
                     if args.pause:
                         time.sleep(args.pause)
