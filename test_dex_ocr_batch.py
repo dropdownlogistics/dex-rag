@@ -151,3 +151,25 @@ def test_cloud_only_and_oversize_files_are_counted_and_not_opened(tree, monkeypa
     s = ob.run([str(root)], out2, workers=2, log=quiet)
     assert s["cloud_only"] == 5 and s["read"] == 0
     assert rows(out2 / "paths.jsonl") == [] and rows(out2 / "results.jsonl") == []
+
+
+def test_retry_reads_a_class_again_and_the_last_row_wins(tree):
+    root, out = tree
+    ob.run([str(root)], out, workers=2, log=quiet)
+    broken = [p for p in rows(out / "paths.jsonl") if p["rel_path"] == "broken.png"][0]["sha256"]
+    assert ob.latest(out / "results.jsonl")[broken]["class"] == "unsupported"
+    s = ob.run([str(root)], out, workers=2, log=quiet, retry=("unsupported",))
+    assert (s["read"], s["unsupported"], s["already_done"]) == (1, 1, 4)      # only that one is read again
+    all_rows = rows(out / "results.jsonl")
+    assert len(all_rows) == 5 and len(ob.latest(out / "results.jsonl")) == 4
+    assert [r["sha256"] for r in all_rows].count(broken) == 2
+
+
+def test_heic_is_read_when_the_opener_is_installed(tmp_path):
+    pillow_heif = pytest.importorskip("pillow_heif")
+    pillow_heif.register_heif_opener()
+    im = Image.new("RGB", (1600, 300), "white")
+    ImageDraw.Draw(im).text((40, 100), SENTENCE, fill="black", font=ImageFont.truetype("arial.ttf", 56))
+    im.save(tmp_path / "shot.heic", quality=95)
+    r = ob.read_image(str(tmp_path / "shot.heic"))
+    assert r["class"] == "text" and r["words"] == 7

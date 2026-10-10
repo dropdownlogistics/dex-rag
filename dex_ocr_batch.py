@@ -19,7 +19,9 @@ Classes:  text   enough confident words to be worth searching
           none   no usable text (a photo, a drawing)
           unsupported / unreadable   the file could not be opened as an image; reason recorded
 
-Resumable: an image whose sha256 is already in results.jsonl is skipped. A file named STOP in
+Resumable: an image whose sha256 is already in results.jsonl is skipped. --retry names classes
+to read again (after adding an image format, say); the new row is appended and the LAST row for
+a sha256 is the current one (use latest()). A file named STOP in
 --out ends the run cleanly.
 
     python dex_ocr_batch.py --root D:\\DDL_Corpus\\raw --out C:\\Users\\dexjr\\dex-data\\ocr --dry-run
@@ -81,6 +83,11 @@ def read_image(path):
     from PIL import Image, ImageOps, UnidentifiedImageError
     pytesseract.pytesseract.tesseract_cmd = TESSERACT
     Image.MAX_IMAGE_PIXELS = MAX_PIXELS
+    try:                                    # iPhone photos (.heic). Optional: without it they are "unsupported".
+        import pillow_heif
+        pillow_heif.register_heif_opener()
+    except ImportError:
+        pass
     t0 = time.time()
     out = {"words": 0, "confidence": 0.0, "_text": ""}
     try:
@@ -159,7 +166,16 @@ def engine_version():
     return f"tesseract {pytesseract.get_tesseract_version()}"
 
 
-def run(roots, out, limit=0, workers=4, dry_run=False, log=print):
+def latest(results_path):
+    """sha256 -> its LAST row in results.jsonl. A retried image has more than one row; the last wins."""
+    rows = {}
+    for line in Path(results_path).open(encoding="utf-8"):
+        r = json.loads(line)
+        rows[r["sha256"]] = r
+    return rows
+
+
+def run(roots, out, limit=0, workers=4, dry_run=False, log=print, retry=()):
     out = Path(out)
     stats = {k: 0 for k in ("seen", "cloud_only", "too_big", "already_done", "duplicate_copy", "read",
                             "text", "low", "none", "unsupported", "unreadable")}
@@ -169,9 +185,9 @@ def run(roots, out, limit=0, workers=4, dry_run=False, log=print):
     if not dry_run:
         (out / "text").mkdir(parents=True, exist_ok=True)
         if results.exists():
-            for line in results.open(encoding="utf-8"):
-                r = json.loads(line)
-                done[r["sha256"]] = r["class"]
+            for sha, r in latest(results).items():
+                if r["class"] not in retry:      # a retried class is read again; its new row is appended
+                    done[sha] = r["class"]
         if paths.exists():
             for line in paths.open(encoding="utf-8"):
                 r = json.loads(line)
@@ -248,12 +264,14 @@ def main():
     ap.add_argument("--limit", type=int, default=0, help="stop after about this many images read (0 = no cap)")
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--dry-run", action="store_true", help="count what would be read; open nothing")
+    ap.add_argument("--retry", default="", help="comma-separated classes to read again, e.g. unsupported,unreadable")
     a = ap.parse_args()
     missing = [str(r) for r in a.root if not r.is_dir()]
     if missing:
         sys.exit(f"not a folder: {missing}")
     below_normal()
-    stats = run([str(r) for r in a.root], a.out, a.limit, a.workers, a.dry_run)
+    stats = run([str(r) for r in a.root], a.out, a.limit, a.workers, a.dry_run,
+                retry=tuple(x for x in a.retry.split(",") if x))
     print()
     for k, v in stats.items():
         print(f"  {k:<20} {v:>10,}" if isinstance(v, int) else f"  {k:<20} {v:>10}")
