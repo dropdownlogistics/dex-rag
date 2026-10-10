@@ -8,7 +8,10 @@ the server or the sweep.
 Layout, as decided:
   - the full vectors stay on disk (float32, unit length, 1024 wide), read through a memory map;
   - a SHORTLIST matrix is held in memory: the first PREFIX dimensions of every row, float32,
-    re-normalised, one contiguous block (3.3 GiB at 3.44M rows);
+    re-normalised, one contiguous block. Size follows the row count read at load (rows x 256 x 4
+    bytes) and is checked against free memory first: about 6.8 GiB at the ~7.1 M rows the 2026-10-10
+    build is projected to reach (Wren Keeler's measurement; the embedder splits seven chunks in ten,
+    so the store has about twice the rows first assumed);
   - a question scores every row against the shortlist matrix, keeps the best SHORTLIST rows, then
     re-scores exactly those rows against their full vectors. The final order is exact for every
     row that reached the shortlist. A row can only be missed if it fell outside the shortlist.
