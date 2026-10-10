@@ -337,6 +337,13 @@ def main():
                 if args.limit and stats["files_indexed"] >= args.limit:
                     stop = True
                     break
+                # A clean stop: a file named STOP in --out ends the run between two files, with
+                # every row and its vector on disk. Killing the process instead can land between
+                # a file's vectors and its rows, which the next start refuses.
+                if not args.dry_run and (args.out / "STOP").exists():
+                    print("\n[STOP file found: stopping cleanly. Delete it and run the same command to resume.]")
+                    stop = True
+                    break
             if stop:
                 break
         by_root[name] = {"files": r_files, "chunks": r_chunks}
