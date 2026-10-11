@@ -244,3 +244,31 @@ def test_summary_with_no_log_and_with_nothing_sampled(tmp_path):
     assert lines[1] == "checked against exact search: none sampled in the window"
     log.write_text(_row(now - timedelta(hours=30)) + "\n", encoding="utf-8")
     assert ps.summary_lines(ps.summary(log, now=now)) == ["private search: 0 searches in the window (0 unreadable rows)"]
+
+
+def test_vectors_come_back_in_the_order_asked_across_shards_with_repeats(tmp_path):
+    d = make_store(tmp_path, shard_sizes=(300, 200, 50))
+    st = ps.Store(d, prefix=PREFIX, dim=DIM)
+    rows = [549, 0, 299, 300, 499, 500, 7, 7, 301, 2]             # out of order, every shard, shard edges, a repeat
+    got = st.vectors(rows)
+    for j, r in enumerate(rows):
+        sh, k = st._locate(r)
+        assert np.array_equal(got[j], np.asarray(st.maps[sh][k])), r
+    assert st.vectors([]).shape == (0, DIM)
+    for bad in ([550], [-1], [0, 9999]):
+        with pytest.raises(IndexError):
+            st.vectors(bad)
+
+
+def test_drop_live_leaves_out_the_last_shard_only(tmp_path):
+    d = make_store(tmp_path, shard_sizes=(300, 200, 50))
+    assert ps.Store(d, prefix=PREFIX, dim=DIM).n == 550
+    st = ps.Store(d, prefix=PREFIX, dim=DIM, drop_live=True)
+    assert st.n == 500 and len(st.maps) == 2
+    # a live shard whose chunks file is behind its vectors file does not stop a store opened without it
+    with open(d / "chunks-0002.jsonl", "w", encoding="utf-8") as f:
+        f.write("")
+    assert ps.Store(d, prefix=PREFIX, dim=DIM, drop_live=True).chunk(499)["id"] == "row-499"
+    one = make_store(tmp_path, shard_sizes=(10,), name="one")
+    with pytest.raises(ps.StoreError, match="besides the live shard"):
+        ps.Store(one, prefix=PREFIX, dim=DIM, drop_live=True)

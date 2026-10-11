@@ -64,12 +64,17 @@ def _unit(a):
 class Store:
     """An opened store: full vectors memory-mapped, the shortlist matrix in memory."""
 
-    def __init__(self, path, prefix=PREFIX, dim=DIM, memcheck=None):
+    def __init__(self, path, prefix=PREFIX, dim=DIM, memcheck=None, drop_live=False):
+        """`drop_live` leaves out the highest-numbered shard: while a build is running that is the one
+        still being written, and its chunks file can be behind its vectors file. Scoring a growing
+        store without it is safe; chunk() on the live shard is not (Wren Keeler, 2026-10-11)."""
         self.path = Path(path)
         self.dim, self.prefix = dim, prefix
         chunk_files = sorted(self.path.glob("chunks-*.jsonl"))
+        if drop_live:
+            chunk_files = chunk_files[:-1]
         if not chunk_files:
-            raise StoreError(f"no chunks-*.jsonl in {self.path}")
+            raise StoreError(f"no chunks-*.jsonl in {self.path}" + (" besides the live shard" if drop_live else ""))
         self.chunk_files, self.maps, self.starts = chunk_files, [], []
         total = 0
         for c in chunk_files:
@@ -102,10 +107,20 @@ class Store:
         return s, row - self.starts[s]
 
     def vectors(self, rows):
+        """Full vectors for `rows`, in the order asked. Read one shard at a time, not one row at a time:
+        the per-row loop was the shortlist's whole latency cost (Wren Keeler's measurement, 2026-10-11)."""
+        rows = np.asarray(rows, dtype=np.int64)
         out = np.empty((len(rows), self.dim), dtype=np.float32)
-        for j, r in enumerate(rows):
-            s, k = self._locate(int(r))
-            out[j] = self.maps[s][k]
+        if len(rows) == 0:
+            return out
+        if rows.min() < 0 or rows.max() >= self.n:
+            raise IndexError(int(rows.min() if rows.min() < 0 else rows.max()))
+        shard = np.searchsorted(self.starts, rows, side="right") - 1
+        for s in np.unique(shard):
+            at = np.nonzero(shard == s)[0]
+            local = rows[at] - self.starts[s]
+            order = np.argsort(local, kind="stable")           # ascending reads from the memory map
+            out[at[order]] = self.maps[s][local[order]]
         return out
 
     def _shard_offsets(self, s):
