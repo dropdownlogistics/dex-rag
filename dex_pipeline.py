@@ -360,6 +360,7 @@ def ensure_backup_current(
         "triggers_fired": triggers_fired,
         "backup_age_hours": status.get("age_hours"),
         "status": "current",
+        "recheck": None,          # None: no re-check was run (no backup was needed, or a dry run)
     }
 
     if not needs_backup:
@@ -396,20 +397,59 @@ def ensure_backup_current(
         return result
     result["status"] = "force_refreshed" if force_check else "refreshed"
 
-    # Step 3: re-check to capture new backup metadata
-    rc = subprocess.run(
-        [sys.executable, str(script), "--check-only", "--json", "--expected-chunks", "0"],
-        capture_output=True, text=True, timeout=300,
-    )
+    # Step 3: re-check to capture new backup metadata.
+    # FND-0034, 2026-10-11: this step may NOT fail the caller. The backup above has already succeeded
+    # when it runs; all it adds is the new backup's path and age. On 10-10 and 10-11 it timed out at
+    # 300 s (the 04:40 corpus refresh was writing to the live store by then, and the check counts the
+    # live store), which failed the whole 4am sweep and stopped ingestion for a detail nothing needs.
+    # A timeout is now recorded in the result (`recheck`) and the caller carries on. The path is then
+    # read from the backup log's last success row, written by the backup that just returned.
+    # Operator: "Go" (2026-10-11), after the two failed nights were measured.
+    result["recheck"] = "ok"
+    try:
+        rc = subprocess.run(
+            [sys.executable, str(script), "--check-only", "--json", "--expected-chunks", "0"],
+            capture_output=True, text=True, timeout=300,
+        )
+    except subprocess.TimeoutExpired:
+        result["recheck"] = "timed_out"
+        newest = _last_successful_backup_path()
+        if newest:
+            result["backup_path"] = newest
+            result["backup_age_hours"] = None        # not measured; the backup finished moments ago
+        return result
     if rc.returncode == 0:
         try:
             new_status = json.loads(rc.stdout)
             result["backup_path"] = new_status.get("most_recent_path", result["backup_path"])
             result["backup_age_hours"] = new_status.get("age_hours")
         except json.JSONDecodeError:
-            pass
+            result["recheck"] = "unreadable"
+    else:
+        result["recheck"] = f"exit_{rc.returncode}"
 
     return result
+
+
+def _last_successful_backup_path(log_path=None):
+    """The backup_path of the last `result: success` row in the backup log, or None. Never raises:
+    it is only used to fill in a detail after a backup that has already succeeded."""
+    try:
+        if log_path is None:
+            from dex_core import BACKUP_DIR
+            log_path = Path(BACKUP_DIR) / "_backup_log.jsonl"
+        last = None
+        with open(log_path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if row.get("result") == "success" and row.get("backup_path"):
+                    last = row["backup_path"]
+        return last
+    except OSError:
+        return None
 
 
 # ────────────────────────────────────────────────────────────────────────
