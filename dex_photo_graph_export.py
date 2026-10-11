@@ -5,21 +5,29 @@ For Lena Marsh / DDL-3005 (gaminglaptop-cowork/work/WORK-GRAPH/PHOTO_ALBUM_GRAPH
 Operator's "yes to both" (2026-10-10): photos go into the PRIVATE graph only, and a photo marked hidden
 stays out of everything, the private graph included.
 
-One JSON Lines file, one row per photo:
-    photo_id, albums, width, height, bytes, pile, has_text, taken, taken_source, place, source,
-    in_graveyard, twin_of, looks_like (photo ids), kind_suggestion, ids_found
+The format is hers (her EDIT of 2026-10-10, "built, waiting on the export"). One JSON Lines file:
+    {"row": "album", "id", "title", "count", "note"}        one per album; count is of the photos exported here
+    {"row": "photo", "photo_id", "albums", "pile", "kind", "has_text", "words", "confidence", "width",
+     "height", "bytes", "modified", "taken", "date_source", "from_phone", "twin_of", "looks_like",
+     "hidden", "ids_found", "about", "in_graveyard", "has_place"}
+Where my names differed from hers I use hers: `kind` (a guess from the words, null when there is none)
+and `date_source` ("file" | "name" | "none": where `taken` came from; never the modified time).
+Two fields are mine and optional to her: `in_graveyard` and `has_place`.
+
 Left out on purpose:
-    - every hidden photo, entirely. A row never written cannot leak.
-    - the words read from the image (they stay in the search index on Reborn)
+    - every hidden photo, entirely. Her reader also honours `hidden: true`, but a row never written
+      cannot leak, so no exported row is ever hidden and the field is always false.
+    - the words read from the image, and the excerpt (they stay in the search index on Reborn)
     - `was_at`, the old file paths and names
     - the sha256 (the photo id is its first ten digits; the graph does not need the rest)
-`kind_suggestion` is a guess from the words and is named as one. `ids_found` is empty until the
-identifier patterns are agreed with Lena; it is present so the shape does not change later.
+    - the coordinates. `has_place` says a photo carries one; where is not needed by any graph link yet.
+`ids_found` and `about` are empty lists until identifiers are read with their word confidence and
+until someone or something says what a photo is about. They are present so the shape does not change.
 
-The file is plain JSON and contains album names and dates, which are personal. It is written where
---out says and nowhere else; putting it in git is a separate, deliberate step into an encrypted path.
+The file holds album names and dates, which are personal. It is written where --out says and nowhere
+else. Its home is ddl-vault/private/photo-album/photos.jsonl, in a repo git-crypt encrypts whole.
 
-    python dex_photo_graph_export.py --library D:\\DDL_Corpus\\library --out C:\\Users\\dexjr\\dex-data\\album\\graph-export.jsonl
+    python dex_photo_graph_export.py --library D:\\DDL_Corpus\\library --out C:\\Users\\dexjr\\ddl-vault\\private\\photo-album\\photos.jsonl
 """
 import argparse
 import collections
@@ -49,6 +57,7 @@ def states(library):
 
 
 def build(library):
+    """(rows, stats). Album rows first, then photo rows in index order."""
     library = Path(library)
     index = load_jsonl(library / "index.jsonl")
     labels = {r["sha256"]: r for r in load_jsonl(library / "labels.jsonl")}
@@ -56,7 +65,7 @@ def build(library):
     copies = {r["sha256"]: r for r in load_jsonl(library / "copies.jsonl")}
     hidden, grave = states(library)
     pid = {sha: lab["photo_id"] for sha, lab in labels.items()}
-    rows, stats = [], collections.Counter()
+    photos, stats, in_album = [], collections.Counter(), collections.Counter()
     for r in index:
         sha = r["sha256"]
         lab = labels.get(sha)
@@ -73,18 +82,28 @@ def build(library):
         if pile == "low-confidence" and r.get("words", 0) < MIN_WORDS:
             pile = "no-text"
         kind = r.get("bin")
-        rows.append({
-            "photo_id": lab["photo_id"], "albums": lab["albums"], "width": r.get("width"), "height": r.get("height"),
-            "bytes": r.get("bytes"), "pile": pile, "has_text": pile != "no-text",
-            "taken": f.get("taken"), "taken_source": f.get("taken_source", "none") if f.get("taken") else "none",
-            "place": f.get("place"), "source": f.get("source", "corpus"), "in_graveyard": sha in grave,
+        taken = f.get("taken")
+        photos.append({
+            "row": "photo", "photo_id": lab["photo_id"], "albums": list(lab["albums"]), "pile": pile,
+            "kind": kind if kind and kind != "unsorted" and pile != "no-text" else None,
+            "has_text": pile != "no-text", "words": r.get("words", 0) if pile != "no-text" else 0,
+            "confidence": r.get("confidence") if pile != "no-text" else None,
+            "width": r.get("width"), "height": r.get("height"), "bytes": r.get("bytes"), "modified": r.get("modified"),
+            "taken": taken, "date_source": (f.get("taken_source") or "none") if taken else "none",
+            "from_phone": bool(r.get("phone")),
             "twin_of": keeper if c and c["why"] == "same-words" else None,
             "looks_like": keeper if c and c["why"] == "looks-same" else None,
-            "kind_suggestion": kind if kind and kind != "unsorted" and pile != "no-text" else None,
-            "ids_found": [],
+            "hidden": False, "ids_found": [], "about": [],
+            "in_graveyard": sha in grave, "has_place": bool(f.get("place")),
         })
-        stats["exported"] += 1
-    return rows, dict(stats)
+        for a in lab["albums"]:
+            in_album[a] += 1
+        stats["photos"] += 1
+    known = {a["id"]: a for a in load_jsonl(library / "albums.jsonl")}
+    albums = [{"row": "album", "id": a, "title": known.get(a, {}).get("title") or a, "count": in_album[a],
+               "note": known.get(a, {}).get("note", "")} for a in sorted(set(known) | set(in_album))]
+    stats["albums"] = len(albums)
+    return albums + photos, dict(stats)
 
 
 def main():
@@ -101,7 +120,8 @@ def main():
     os.replace(tmp, a.out)
     for k, v in sorted(stats.items()):
         print(f"  {k:<18} {v:>8,}")
-    print(f"  fields             {', '.join(rows[0]) if rows else '(none)'}")
+    photo = next((r for r in rows if r["row"] == "photo"), None)
+    print(f"  photo fields       {', '.join(photo) if photo else '(none)'}")
 
 
 if __name__ == "__main__":
