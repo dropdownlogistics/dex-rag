@@ -35,19 +35,29 @@ from pathlib import Path
 EXCERPT_WORDS = 20
 MIN_WORDS = 5
 NAME_DATE = re.compile(r"(?<!\d)((?:19|20)\d{2})[-_.]?(0[1-9]|1[0-2])[-_.]?(0[1-9]|[12]\d|3[01])(?!\d)")
+# A clock time written straight after that date: "2026-10-10 220641", "2026-09-25 14 03 22", "20140719_101500".
+NAME_TIME = re.compile(r"^[ _T-]([01]\d|2[0-3])[ .:_-]?([0-5]\d)[ .:_-]?([0-5]\d)(?!\d)")
 EXIF_DATE = re.compile(r"^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2}):(\d{2})")
 FIRST_YEAR, MAX_PIXELS = 1990, 200_000_000
 
 
 def date_from_names(paths, this_year):
-    """The earliest plausible date written in any of a photo's old file names, as YYYY-MM-DD, or None.
+    """The earliest plausible date written in any of a photo's old file names, or None: YYYY-MM-DD, or
+    YYYY-MM-DDTHH:MM:SS when a clock time is written straight after it (the machine's own local time, the
+    same as a camera's). The earliest day wins; on that day a name with a time beats one without.
     Only the file name is read, not its folders: a folder called 2026-09-25 says when it was filed."""
     found = []
     for p in paths:
-        for y, m, d in NAME_DATE.findall(p.rsplit("/", 1)[-1]):
+        name = p.rsplit("/", 1)[-1]
+        for hit in NAME_DATE.finditer(name):
+            y, m, d = hit.groups()
             if FIRST_YEAR <= int(y) <= this_year:
-                found.append(f"{y}-{m}-{d}")
-    return min(found) if found else None
+                t = NAME_TIME.match(name[hit.end():])
+                found.append((f"{y}-{m}-{d}", not t, "T%s:%s:%s" % t.groups() if t else ""))
+    if not found:
+        return None
+    day, _, clock = min(found)
+    return day + clock
 
 
 def exif_taken(raw, this_year):

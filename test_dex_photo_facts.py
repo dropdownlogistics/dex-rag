@@ -13,7 +13,11 @@ import dex_photo_facts as pf
 
 def test_dates_from_file_names_only_and_only_plausible_ones():
     assert pf.date_from_names(["google-takeout/Chat/File-2015-03-08(5).jpg"], 2026) == "2015-03-08"
-    assert pf.date_from_names(["a/IMG_20140719_101500.jpg", "b/2016-01-02 copy.jpg"], 2026) == "2014-07-19"   # earliest wins
+    assert pf.date_from_names(["a/IMG_20140719_101500.jpg", "b/2016-01-02 copy.jpg"], 2026) == "2014-07-19T10:15:00"   # earliest wins
+    assert pf.date_from_names(["s/Screenshot 2026-10-10 220641.png"], 2026) == "2026-10-10T22:06:41"
+    assert pf.date_from_names(["s/2026-09-25 14 03 22 - Some Chat - IMG_0001.png"], 2026) == "2026-09-25T14:03:22"
+    assert pf.date_from_names(["a/2015-03-08.jpg", "b/2015-03-08 09.30.00.jpg", "c/2015-03-08 08.00.00.jpg"], 2026) == "2015-03-08T08:00:00"   # a time beats none
+    assert pf.date_from_names(["x/2015-03-08 256199.jpg", "x/2015-03-08 1015001.jpg", "x/2015-03-08 (3).jpg"], 2026) == "2015-03-08"   # not a clock time
     assert pf.date_from_names(["icloud/_catchall/2026-09-25/shot.png"], 2026) is None      # a folder date is when it was filed
     assert pf.date_from_names(["x/File-2031-01-01.jpg", "x/1985-01-01.jpg", "x/2015-13-40.jpg"], 2026) is None
     assert pf.date_from_names(["x/IMG_1234567890123.jpg"], 2026) is None                   # digits inside a longer number
