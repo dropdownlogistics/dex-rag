@@ -32,6 +32,22 @@ def test_r2_key_shapes_are_strong():
     assert ss.scan("ask the bearer of bad news; risk-averse; pk", []) == ([], None)
 
 
+def test_r2_prefix_inside_a_word_is_not_a_key():
+    for t in ("src/modules/risk-register/TourStickyNav.tsx", "task-scheduler-service", "disk-management", "desk-booking-app_v2"):
+        assert ss.scan(t, []) == ([], None), t
+    for t in ("key=" + FAKE_KEY, "(" + FAKE_KEY + ")", "token: " + FAKE_KEY):          # after punctuation it still counts
+        assert "R2" in ss.scan(t, [])[0], t
+
+
+def test_spots_give_offsets_for_each_reading_rule_and_nothing_else():
+    text = "Password: " + MIXED + "\nopen Bitwarden " + FAKE_KEY
+    got = ss.spots(text)
+    assert [(r, text[a:b]) for r, a, b in got if r != "R3"] == [("R1", "Password"), ("R6", "Bitwarden"), ("R2", FAKE_KEY)]
+    assert ("R3", 10, 10 + len(MIXED)) in got
+    assert all(isinstance(v, (str, int)) and (not isinstance(v, str) or v in ("R1", "R2", "R3", "R6")) for row in got for v in row)
+    assert ss.spots("") == [] and ss.spots(None) == []
+
+
 def test_r3_needs_all_three_kinds_sixteen_long_and_skips_ddl_ids():
     assert ss.scan(MIXED, []) == (["R3"], "medium")
     assert ss.scan(MIXED[:15], []) == ([], None)                             # fifteen is not sixteen

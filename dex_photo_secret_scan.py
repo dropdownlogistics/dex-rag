@@ -43,8 +43,9 @@ from pathlib import Path
 NEAR = 120
 R1 = re.compile(r"(?i)\b(password|passcode|passphrase|pin|secret key|recovery code|backup code|security question|"
                 r"one[- ]time code|2fa|mfa|seed phrase|mnemonic)\b")
-R2 = re.compile(r"sk-[A-Za-z0-9_-]{8,}|pk_[A-Za-z0-9_]{8,}|ghp_[A-Za-z0-9]{8,}|github_pat_[A-Za-z0-9_]{4,}|xox[a-z]-[A-Za-z0-9-]{4,}|"
-                r"AKIA[A-Z0-9]{8,}|-----BEGIN|Bearer\s+\S|eyJ[A-Za-z0-9_-]{30,}")
+# A prefix counts only at the start of a word: "risk-register" and "task-scheduler" are not keys.
+R2 = re.compile(r"(?<![A-Za-z0-9])(?:sk-[A-Za-z0-9_-]{8,}|pk_[A-Za-z0-9_]{8,}|ghp_[A-Za-z0-9]{8,}|github_pat_[A-Za-z0-9_]{4,}|"
+                r"xox[a-z]-[A-Za-z0-9-]{4,}|AKIA[A-Z0-9]{8,}|eyJ[A-Za-z0-9_-]{30,})|-----BEGIN|Bearer\s+\S")
 R3_RUN = re.compile(r"(?<![A-Za-z0-9_+=-])[A-Za-z0-9_+=-]{16,}(?![A-Za-z0-9_+=-])")
 R3_SKIP = re.compile(r"^(P-|ASSET-|DDL-|FND-)")
 R4_ITEM = re.compile(r"(?m)^\s*(\d{1,2})[.):]?\s+([a-z]{3,10})\s*$")
@@ -53,16 +54,32 @@ R6 = re.compile(r"(?i)\b(keeper|1password|bitwarden|copy password)\b|sign-in & s
 STRONG = {"R2", "R4", "R5", "R7"}
 
 
-def random_runs(text):
-    """Start offsets of runs that mix upper case, lower case and digits and are not a DDL id."""
+def random_spans(text):
+    """(start, end) of runs that mix upper case, lower case and digits and are not a DDL id."""
     out = []
     for m in R3_RUN.finditer(text):
         s = m.group(0)
         if R3_SKIP.match(s):
             continue
         if re.search(r"[A-Z]", s) and re.search(r"[a-z]", s) and re.search(r"[0-9]", s):
-            out.append(m.start())
+            out.append(m.span())
     return out
+
+
+def random_runs(text):
+    """Start offsets of those runs."""
+    return [a for a, _ in random_spans(text)]
+
+
+def spots(text):
+    """Where in `text` the rules that read words fired: [(rule, start, end)]. Offsets only, never the
+    text. R4 spans lines and R5/R7 are about where the photo was kept, so they have no spot."""
+    text = text or ""
+    out = [("R1", *m.span()) for m in R1.finditer(text)]
+    out += [("R2", *m.span()) for m in R2.finditer(text)]
+    out += [("R3", a, b) for a, b in random_spans(text)]
+    out += [("R6", *m.span()) for m in R6.finditer(text)]
+    return sorted(out, key=lambda t: (t[1], t[0]))
 
 
 def numbered_words(text):
