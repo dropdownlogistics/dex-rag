@@ -43,7 +43,7 @@ def test_hidden_photos_are_left_out_entirely_and_nothing_points_at_one(tmp_path)
     rows, stats = ge.build(make(tmp_path))
     albums, by = split(rows)
     assert sorted(by) == ["P-aaaaaaaaaa", "P-cccccccccc", "P-dddddddddd"]
-    assert stats == {"photos": 3, "hidden_left_out": 1, "no_label": 1, "albums": 5}
+    assert stats == {"photos": 3, "hidden_left_out": 1, "no_label": 1, "albums": 5, "photos_with_ids": 0, "photos_with_dates": 0, "ids": 0}
     photo_text = json.dumps(list(by.values()))
     assert "bbbbbbbbbb" not in photo_text and "kansas" not in photo_text       # the hidden photo, its id and its album
     assert by["P-aaaaaaaaaa"]["twin_of"] is None and by["P-dddddddddd"]["looks_like"] is None   # their keeper is hidden
@@ -59,7 +59,7 @@ def test_no_words_no_paths_no_sha_no_coordinates(tmp_path):
         assert leak not in text, leak
     _, by = split(rows)
     assert set(by["P-aaaaaaaaaa"]) == {"row", "photo_id", "albums", "pile", "kind", "has_text", "words", "confidence", "width", "height", "bytes",
-                                       "modified", "taken", "date_source", "from_phone", "twin_of", "looks_like", "hidden", "ids_found", "about",
+                                       "modified", "taken", "date_source", "from_phone", "twin_of", "looks_like", "hidden", "ids_found", "dates_seen", "about",
                                        "in_graveyard", "has_place"}
 
 
@@ -82,4 +82,31 @@ def test_fields_say_what_they_know(tmp_path):
     assert (c["taken"], c["date_source"]) == (None, "none")                   # no date means source none, whatever the facts row said
     assert (c["pile"], c["has_text"], c["kind"], c["words"], c["confidence"]) == ("no-text", False, None, 0, None)   # two stray words is no text
     assert (d["in_graveyard"], d["kind"], d["date_source"], d["has_place"]) == (True, None, "none", False)   # catch-all kind is no kind
-    assert all(r["ids_found"] == [] and r["about"] == [] for r in by.values())
+    assert all(r["ids_found"] == [] and r["dates_seen"] == [] and r["about"] == [] for r in by.values())
+
+
+def boxes_for(tmp_path, by_sha):
+    d = tmp_path / "boxes"
+    for sha, words in by_sha.items():
+        f = d / sha[:2] / f"{sha}.json"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(json.dumps({"w": 100, "h": 100, "words": [[t, c, 0, 0, 10, 10] for t, c in words]}), encoding="utf-8")
+    return d
+
+
+def test_ids_and_dates_come_from_the_boxes_and_nothing_else_does(tmp_path):
+    lib = make(tmp_path)
+    boxes = boxes_for(tmp_path, {
+        "aaaaaaaaaa01": [("meeting", 95), ("with", 95), ("DDL-3012", 93.0), ("about", 95), ("ASSET-0011", 61.5), ("on", 95), ("2026-03-02", 88.0), ("hunter2", 95)],
+        "bbbbbbbbbb02": [("DDL-3004", 99)],                         # hidden: its boxes are never read into a row
+        "cccccccccc03": [("DDL-3005", 99)]})                        # fewer than five words read: counted as no text, so not read
+    rows, stats = ge.build(lib, boxes)
+    _, by = split(rows)
+    a = by["P-aaaaaaaaaa"]
+    assert a["ids_found"] == [{"id": "ASSET-0011", "conf": 61.5}, {"id": "DDL-3012", "conf": 93.0}]      # low readings kept as read; the graph draws the line
+    assert a["dates_seen"] == [{"date": "2026-03-02", "conf": 88.0}]
+    assert by["P-cccccccccc"]["ids_found"] == [] and by["P-dddddddddd"]["ids_found"] == []
+    assert (stats["with_boxes"], stats["photos_with_ids"], stats["photos_with_dates"], stats["ids"]) == (1, 1, 1, 2)
+    text = json.dumps(rows)
+    for leak in ("hunter2", "meeting", "DDL-3004", "DDL-3005", '"words": ['):
+        assert leak not in text, leak

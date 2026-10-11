@@ -9,7 +9,7 @@ The format is hers (her EDIT of 2026-10-10, "built, waiting on the export"). One
     {"row": "album", "id", "title", "count", "note"}        one per album; count is of the photos exported here
     {"row": "photo", "photo_id", "albums", "pile", "kind", "has_text", "words", "confidence", "width",
      "height", "bytes", "modified", "taken", "date_source", "from_phone", "twin_of", "looks_like",
-     "hidden", "ids_found", "about", "in_graveyard", "has_place"}
+     "hidden", "ids_found", "dates_seen", "about", "in_graveyard", "has_place"}
 Where my names differed from hers I use hers: `kind` (a guess from the words, null when there is none)
 and `date_source` ("file" | "name" | "none": where `taken` came from; never the modified time).
 Two fields are mine and optional to her: `in_graveyard` and `has_place`.
@@ -21,13 +21,15 @@ Left out on purpose:
     - `was_at`, the old file paths and names
     - the sha256 (the photo id is its first ten digits; the graph does not need the rest)
     - the coordinates. `has_place` says a photo carries one; where is not needed by any graph link yet.
-`ids_found` and `about` are empty lists until identifiers are read with their word confidence and
-until someone or something says what a photo is about. They are present so the shape does not change.
+`ids_found` and `dates_seen` come from the word boxes (--boxes), by dex_photo_ids.py: the DDL ids of her
+patterns and any full date written in the image, each with its word confidence, and nothing else from
+the words. Without --boxes, or for a photo with no boxes, they are empty lists. `about` is empty until
+someone or something says what a photo is about. All three are always present so the shape is fixed.
 
 The file holds album names and dates, which are personal. It is written where --out says and nowhere
 else. Its home is ddl-vault/private/photo-album/photos.jsonl, in a repo git-crypt encrypts whole.
 
-    python dex_photo_graph_export.py --library D:\\DDL_Corpus\\library --out C:\\Users\\dexjr\\ddl-vault\\private\\photo-album\\photos.jsonl
+    python dex_photo_graph_export.py --library D:\\DDL_Corpus\\library --boxes C:\\Users\\dexjr\\dex-data\\ocr\\boxes --out C:\\Users\\dexjr\\ddl-vault\\private\\photo-album\\photos.jsonl
 """
 import argparse
 import collections
@@ -35,6 +37,8 @@ import json
 import os
 import sys
 from pathlib import Path
+
+import dex_photo_ids
 
 MIN_WORDS = 5
 
@@ -56,7 +60,15 @@ def states(library):
     return hidden, grave
 
 
-def build(library):
+def read_boxes(boxes, sha):
+    """The words read from one photo with their confidence, or None if that photo has no boxes file."""
+    f = Path(boxes) / sha[:2] / f"{sha}.json"
+    if not f.exists():
+        return None
+    return json.loads(f.read_text(encoding="utf-8")).get("words", [])
+
+
+def build(library, boxes=None):
     """(rows, stats). Album rows first, then photo rows in index order."""
     library = Path(library)
     index = load_jsonl(library / "index.jsonl")
@@ -83,6 +95,14 @@ def build(library):
             pile = "no-text"
         kind = r.get("bin")
         taken = f.get("taken")
+        words = read_boxes(boxes, sha) if boxes and pile != "no-text" else None
+        ids = dex_photo_ids.ids_in(words) if words else []
+        dates = dex_photo_ids.dates_in(words) if words else []
+        if words is not None:
+            stats["with_boxes"] += 1
+        stats["photos_with_ids"] += bool(ids)
+        stats["photos_with_dates"] += bool(dates)
+        stats["ids"] += len(ids)
         photos.append({
             "row": "photo", "photo_id": lab["photo_id"], "albums": list(lab["albums"]), "pile": pile,
             "kind": kind if kind and kind != "unsorted" and pile != "no-text" else None,
@@ -93,7 +113,7 @@ def build(library):
             "from_phone": bool(r.get("phone")),
             "twin_of": keeper if c and c["why"] == "same-words" else None,
             "looks_like": keeper if c and c["why"] == "looks-same" else None,
-            "hidden": False, "ids_found": [], "about": [],
+            "hidden": False, "ids_found": ids, "dates_seen": dates, "about": [],
             "in_graveyard": sha in grave, "has_place": bool(f.get("place")),
         })
         for a in lab["albums"]:
@@ -110,8 +130,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--library", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
+    ap.add_argument("--boxes", type=Path, help="the word boxes folder (<ocr>/boxes); fills ids_found and dates_seen")
     a = ap.parse_args()
-    rows, stats = build(a.library)
+    rows, stats = build(a.library, a.boxes)
     a.out.parent.mkdir(parents=True, exist_ok=True)
     tmp = Path(str(a.out) + ".part")
     with open(tmp, "w", encoding="utf-8", newline="\n") as f:
