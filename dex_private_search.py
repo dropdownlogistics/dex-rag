@@ -2,8 +2,9 @@
 dex_private_search.py -- search over the plain-file private store that dex-private-rebuild.py writes.
 
 Operator approval: _shared/OPERATOR-DECISIONS.md in ddl-org, 2026-10-10 (layout revised; telemetry
-kept). NOTHING ANSWERS FROM THIS until the Operator says to switch; this module is not imported by
-the server or the sweep.
+kept). The Operator said "switch v2" on 2026-10-12 (Reed Vane, DDL-2004:20261012T150001Z-a2e6): the
+Dex server's private answers come from here through `Resident`, while the file named in dex.py says
+"v2". The old Chroma collection is untouched and is the fallback.
 
 Layout, as decided:
   - the full vectors stay on disk (float32, unit length, 1024 wide), read through a memory map;
@@ -29,6 +30,7 @@ import hashlib
 import json
 import os
 import sys
+import threading
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -37,7 +39,10 @@ import numpy as np
 
 DIM = 1024
 PREFIX = 256
-SHORTLIST = 1000
+# 5000 at width 256 is Wren Keeler's ruling of 2026-10-11 (reborn-studio/work/retrieval/RULING-20261011-shortlist.md):
+# at 1000 two of her 26 questions lost a chunk that belongs in the top 4. It holds only while production
+# fetches 4. Whoever raises the fetch depth re-runs her measurement first; above 4 her answer is width 512.
+SHORTLIST = 5000
 SAMPLE_EVERY = 20          # one search in this many also runs the exact scan
 SCAN_BLOCK = 200_000       # rows per block in the exact scan (bounds memory, not the result)
 # mxbai's documented query form. NOT applied by default: nothing in dex-rag uses it today, and
@@ -227,6 +232,68 @@ class Search:
         self.log_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.log_path, "a", encoding="utf-8", newline="\n") as f:
             f.write(json.dumps(rec) + "\n")
+
+
+class NotReady(Exception):
+    """The resident store cannot answer yet, or at all. str() says which."""
+
+
+class Resident:
+    """A store opened once, in the background, and kept for the life of the process.
+
+    Opening reads every vector to build the shortlist matrix (16 s for 3.6 M rows with the files in the
+    page cache, longer cold), so it cannot be done per question. `state` is "idle", "loading", "ready"
+    or "failed"; ask() raises NotReady in every state but "ready", so a caller can fall back and say why.
+    """
+
+    def __init__(self, path, log_path=None, shortlist=SHORTLIST, embed=None, memcheck=None, open_store=None):
+        self.path = Path(path)
+        self.log_path = Path(log_path) if log_path else self.path / "search-telemetry.jsonl"
+        self.shortlist, self.embed, self.memcheck = shortlist, embed, memcheck
+        self._open = open_store or (lambda: Store(self.path, memcheck=self.memcheck))
+        self.state, self.error, self.search, self.opened_s = "idle", None, None, None
+        self._lock, self._thread = threading.Lock(), None
+
+    def start(self):
+        """Begin opening the store if that has not been tried. Returns at once."""
+        with self._lock:
+            if self.state != "idle":
+                return self
+            self.state = "loading"
+            self._thread = threading.Thread(target=self._load, name="private-search-open", daemon=True)
+            self._thread.start()
+        return self
+
+    def _load(self):
+        t0 = time.perf_counter()
+        try:
+            store = self._open()
+            self.search = Search(store, self.log_path, embed=self.embed or (lambda t: ollama_embed(t, "")), shortlist=self.shortlist)
+            self.opened_s = round(time.perf_counter() - t0, 1)
+            self.state = "ready"
+        except Exception as e:                                  # named, never swallowed: ask() reports it
+            self.error = f"{type(e).__name__}: {e}"
+            self.state = "failed"
+
+    def wait(self, timeout=None):
+        if self._thread is not None:
+            self._thread.join(timeout)
+        return self.state
+
+    def ask(self, question, k):
+        """([chunk dicts, best first, each with "score"], the telemetry row). One question at a time."""
+        if self.state != "ready":
+            raise NotReady({"idle": "the store has not been opened", "loading": "the store is still opening",
+                            "failed": f"the store did not open ({self.error})"}[self.state])
+        with self._lock:
+            rows, scores, rec = self.search.ask(question, k)
+            return [{**self.search.store.chunk(r), "score": float(s)} for r, s in zip(rows, scores)], rec
+
+    def status(self):
+        s = self.search.store if self.search else None
+        return {"state": self.state, "error": self.error, "rows": s.n if s else None, "prefix": s.prefix if s else None,
+                "shortlist": self.shortlist, "opened_s": self.opened_s,
+                "shortlist_gib": round(s.short.nbytes / 2**30, 2) if s else None}
 
 
 def summary(log_path, now=None, hours=24):
