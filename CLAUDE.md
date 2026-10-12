@@ -1,3 +1,8 @@
+> **DDL standing projects and house rules live on one page: `START-HERE.md` at the root of `dropdownlogistics/ddl-org`.**
+> BEFORE YOUR FIRST ANSWER, read it (attach `dropdownlogistics/ddl-org` with add_repo if it is not in this session) and
+> begin your first reply with `Read START-HERE (updated <date>)`. Do not ask the Operator where a DDL project, log or
+> record lives. If the page is wrong or stale, say so. (Added by the steward, DDL-2004, 2026-10-12.)
+
 # CLAUDE.md — dex-rag
 
 Standing instructions for any Claude Code session in this repo.
