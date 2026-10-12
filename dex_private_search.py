@@ -81,7 +81,7 @@ class Store:
         if not chunk_files:
             raise StoreError(f"no chunks-*.jsonl in {self.path}" + (" besides the live shard" if drop_live else ""))
         self.chunk_files, self.maps, self.starts = chunk_files, [], []
-        total = 0
+        total, files = 0, []
         for c in chunk_files:
             v = c.with_name(c.name.replace("chunks-", "vectors-").replace(".jsonl", ".f32"))
             if not v.exists():
@@ -91,9 +91,11 @@ class Store:
                 raise StoreError(f"{v.name} is {size} bytes, not a whole number of {dim}-wide rows")
             n = size // (dim * 4)
             self.starts.append(total)
-            self.maps.append(np.memmap(v, dtype=np.float32, mode="r", shape=(n, dim)) if n else
-                             np.zeros((0, dim), dtype=np.float32))
+            files.append((v, n))
             total += n
+        mapped = lambda: [np.memmap(v, dtype=np.float32, mode="r", shape=(n, dim)) if n else
+                          np.zeros((0, dim), dtype=np.float32) for v, n in files]
+        self.maps = mapped()
         self.n = total
         if memcheck is not None:                       # e.g. memguard.require
             memcheck(self.n * prefix * 4 / 2**30)
@@ -102,6 +104,12 @@ class Store:
             for i in range(0, len(m), SCAN_BLOCK):
                 block = np.asarray(m[i:i + SCAN_BLOCK, :prefix])
                 self.short[start + i:start + i + len(block)] = _unit(block)
+        # Building the shortlist touched every page of every vectors file, and those pages stay counted
+        # in this process's working set (17 GiB for 3.6 M rows) for as long as the maps live. Map the
+        # files again and let the first maps go: the pages return to the file cache, where the system
+        # can reuse them, and a search only pulls in the rows it re-scores.
+        block = m = None
+        self.maps = mapped()
         self._offsets = {}
 
     # -- rows ------------------------------------------------------------------------------
