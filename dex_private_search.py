@@ -254,11 +254,11 @@ class Resident:
     or "failed"; ask() raises NotReady in every state but "ready", so a caller can fall back and say why.
     """
 
-    def __init__(self, path, log_path=None, shortlist=SHORTLIST, embed=None, memcheck=None, open_store=None):
+    def __init__(self, path, log_path=None, shortlist=SHORTLIST, embed=None, memcheck=None, open_store=None, prefix=PREFIX):
         self.path = Path(path)
         self.log_path = Path(log_path) if log_path else self.path / "search-telemetry.jsonl"
         self.shortlist, self.embed, self.memcheck = shortlist, embed, memcheck
-        self._open = open_store or (lambda: Store(self.path, memcheck=self.memcheck))
+        self._open = open_store or (lambda: Store(self.path, prefix=prefix, memcheck=self.memcheck))
         self.state, self.error, self.search, self.opened_s = "idle", None, None, None
         self._lock, self._thread = threading.Lock(), None
 
