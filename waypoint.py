@@ -37,7 +37,7 @@ try:
 except Exception:                               # noqa: BLE001 -- a missing scanner withholds every snippet (below)
     secrets = None
 
-VERSION = "waypoint/0.2"
+VERSION = "waypoint/0.3"
 DEFAULT_K, MAX_K = 8, 25
 OVERFETCH, MAX_CANDIDATES = 8, 200          # candidates looked at = min(k * OVERFETCH, MAX_CANDIDATES) when a filter is set
 SNIPPET_CHARS = 400
@@ -56,20 +56,45 @@ HEADER = re.compile(r"\Afile: .*\npath: .*\n\n")
 # the photo scanner masked the KEYWORD and left the value, and knew only a short prefix list. These rules mask
 # the VALUE. They over-mask on purpose: a snippet that hides a harmless "key: value" costs a seat one file open;
 # a snippet that shows a live credential cannot be taken back.
-_NAME = (r"(?<![A-Za-z0-9])(?:[A-Za-z0-9]+[_.-])*"
-         r"(?:api[_-]?key|key|secret|token|passwd|password|pwd|passcode|pin|sig|signature|credentials?|auth|authorization)"
-         r"(?![A-Za-z0-9])")
+# v0.3 (Amos's second pass, WAYPOINT_SECOND_PASS_v0.2.md, classes A, B, C):
+#  A. a credential word counts ANYWHERE inside a name (accessToken, PGPASSWORD, AccountKey, secretkey, passphrase);
+#     short words that are also ordinary prose (key, pin, sig, pass, auth) still need to stand alone as a name part,
+#     so "monkey" and "author" are left alone. A capital-K "Key" ending a camelCase name counts (privateKey).
+#  B. the value is whatever follows: a quoted value to its closing quote, an unquoted one to the end of the token
+#     (so ; , and ' inside it do not cut it short); a scheme word (Basic, Bearer, ...) is skipped to reach the value;
+#     ":" "=" "is" and a folded-YAML next line all lead into a value ("=>" works as "=" then a marker); `--password X` is its own rule.
+#  C. the prefix list grew by seven families. It is a floor: a list is always behind.
+_SUB = (r"token|secret|passw|pwd|passphrase|passcode|accountkey|apikey|privatekey|credential|authoriz|authent")
+_WORD = r"api[_-]key|key|pin|sig|signature|pass|auth"
+_NAME = (r"(?<![A-Za-z0-9_.\-])[A-Za-z0-9_.\-]*?(?:"
+         r"(?:" + _SUB + r")[A-Za-z0-9_.\-]*"
+         r"|(?<![A-Za-z0-9])(?:" + _WORD + r")(?![A-Za-z0-9])(?:[_.\-][A-Za-z0-9_.\-]*)?"
+         r"|(?-i:(?<=[a-z0-9])Key)(?![A-Za-z])[A-Za-z0-9_.\-]*)")
+_VALUE = (r"""(?:(?:basic|bearer|token|negotiate|ntlm|bot)[ \t]+(?=\S))?"""
+          r"""(?:"((?:\\.|[^"\\\r\n])+)"|'((?:\\.|[^'\\\r\n])+)'|`([^`\r\n]+)`"""
+          r"""|[\"'`]([^\r\n]{1,80})|([^\s"'`]\S*))""")
 TEXT_RULES = (
-    # a name, an optional closing quote, ":" or "=", then the value (which may be on the next line)
-    ("assignment", re.compile(_NAME + r"""["']?[ \t]*[:=][ \t]*(?:\r?\n[ \t]*)?["']?([^\s"';,]+)""", re.I)),
+    # a name, an optional closing quote, then ":" "=" or "is", an optional folded-YAML marker, the value
+    # (which may be on the next line)
+    ("assignment", re.compile(_NAME + r"""["'`]?(?:[ \t]*[:=]|[ \t]+(?:is|was)\b)[ \t]*(?:[>|][+-]?[ \t]*)?"""
+                              r"""(?:\r?\n[ \t]*)?""" + _VALUE, re.I)),
+    # --password X, --api-key X (a long option with its value after a space)
+    ("long_option", re.compile(r"(?<![\w-])--[\w-]*?(?:" + _SUB + r"|api-key|pass|auth(?!or))[\w-]*[ \t]+(?!-)" + _VALUE, re.I)),
+    # curl -u user:password
+    ("basic_flag", re.compile(r"(?<!\S)-u[ \t]+[^\s:]+:(\S+)")),
     ("bearer", re.compile(r"(?i)\bbearer[ \t]+([A-Za-z0-9\-._~+/]+=*)")),
     ("url_userinfo", re.compile(r"(?i)\b[a-z][a-z0-9+.-]*://[^/\s:@]+:([^/\s@]+)@")),
     ("pem", re.compile(r"(-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----.*?(?:-----END [A-Z0-9 ]*PRIVATE KEY-----|\Z))", re.S)),
     ("jwt", re.compile(r"\b(eyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,})")),
     ("prefix", re.compile(r"\b((?:AKIA|ASIA)[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{20,}|(?:sk|rk|pk)_(?:live|test)_[0-9A-Za-z]{10,}"
                           r"|xox[abposr]-[0-9A-Za-z-]{10,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_\w{20,}|glpat-[\w-]{20,}"
-                          r"|sk-[A-Za-z0-9_-]{20,})")),
+                          r"|sk-[A-Za-z0-9_-]{20,}"
+                          r"|npm_[A-Za-z0-9]{20,}|hf_[A-Za-z0-9]{20,}|SG\.[\w-]{16,}\.[\w-]{16,}|pypi-[A-Za-z0-9_-]{20,}"
+                          r"|shp(?:at|ss|ca|pa)_[A-Za-z0-9]{16,}|ya29\.[\w-]{20,}|whsec_[A-Za-z0-9]{16,}"
+                          r"|tskey-[\w-]{20,}|dckr_pat_[\w-]{16,}|glsa_[A-Za-z0-9_]{20,}|dop_v1_[0-9a-f]{20,}|xapp-[\w-]{20,})")),
 )
+# a credential word followed by a separator and a long mixed tail, inside ONE path segment (notes/accessToken_Zq81....md)
+PATH_RULE = re.compile(r"(?i)(?:" + _SUB + r")[A-Za-z0-9]*[_\-.=:]((?=[A-Za-z0-9+%_\-]*\d)(?=[A-Za-z0-9+%_\-]*[A-Za-z])[A-Za-z0-9+%_\-]{16,})")
 
 
 def credential_spans(text):
@@ -77,15 +102,29 @@ def credential_spans(text):
     Raises if the photo scanner is missing, so callers fail closed."""
     if secrets is None:
         raise RuntimeError("the credential scanner is missing")
-    spans = [(m.start(1), m.end(1)) for _, rx in TEXT_RULES for m in rx.finditer(text)]
+    spans = []
+    for _, rx in TEXT_RULES:
+        for m in rx.finditer(text):
+            g = next((i for i in range(1, rx.groups + 1) if m.group(i) is not None), None)
+            if g:
+                spans.append((m.start(g), m.end(g)))
     spans += [(a, b) for rule, a, b in secrets.spots(text) if rule in CREDENTIAL_RULES]
     return sorted(spans)
 
 
-def mask(text):
-    """(text with every credential span replaced by MASK, how many spans were masked). Overlaps merge."""
+def path_spans(text):
+    """The extra spans that only make sense in a single path segment."""
+    return [(m.start(1), m.end(1)) for m in PATH_RULE.finditer(text)]
+
+
+def mask(text, path=False):
+    """(text with every credential span replaced by MASK, how many spans were masked). Overlaps merge.
+    `path=True` adds the file-name rule; the caller masks one path segment at a time."""
     out, at, masked = [], 0, 0
-    for a, b in credential_spans(text):
+    spans = credential_spans(text)
+    if path:
+        spans = sorted(spans + path_spans(text))
+    for a, b in spans:
         if b <= at:
             continue                            # inside a span already masked
         if a < at:
@@ -102,8 +141,12 @@ def mask(text):
 # ---- Left out for every seat, at query time (audit section 2) --------------------------------------------
 # Hidden photos are kept out by the build; this is the second lock, so a store rebuilt with photos in it still
 # serves none of them. Nothing here is per seat and nothing here can be undone by a filter.
-LEFT_OUT_ROOTS = ("photos", "photo-album", "album", "icloud-photos")
-LEFT_OUT_EXTS = ("jpg", "jpeg", "png", "heic", "heif", "gif", "webp", "tif", "tiff", "bmp", "dng", "raw", "mov", "mp4")
+LEFT_OUT_ROOTS = ("photos", "photo-album", "album", "icloud-photos", "dcim", "camera roll", "camera-roll", "cameraroll",
+                  "pictures", "my pictures")
+LEFT_OUT_EXTS = ("jpg", "jpeg", "jpe", "jfif", "png", "heic", "heif", "heics", "hif", "avif", "gif", "webp", "tif", "tiff",
+                 "bmp", "dng", "raw", "cr2", "cr3", "nef", "arw", "orf", "rw2", "raf", "mov", "mp4", "m4v", "avi", "mkv",
+                 "wmv", "webm", "3gp")
+LEFT_OUT_DIRS = ("dcim",)                       # a camera folder anywhere in a path (a phone's DCIM/100APPLE/...)
 
 
 def left_out(chunk):
@@ -111,7 +154,7 @@ def left_out(chunk):
     path = str(chunk.get("rel_path", "")).replace("\\", "/").lower()
     name = path.rsplit("/", 1)[-1]
     ext = name.rsplit(".", 1)[-1] if "." in name else ""
-    return root in LEFT_OUT_ROOTS or ext in LEFT_OUT_EXTS
+    return root in LEFT_OUT_ROOTS or ext in LEFT_OUT_EXTS or any(d in LEFT_OUT_DIRS for d in path.split("/")[:-1])
 
 
 def parse(query):
@@ -186,7 +229,15 @@ def snippet_of(text):
 def path_of(path):
     """(the path with any credential-shaped part masked, how many). None if masking fails."""
     try:
-        return mask(str(path or ""))
+        out, total = [], 0
+        for seg in re.split(r"([\\/])", str(path or "")):     # one segment at a time, so a value cannot run across a "/"
+            if seg in ("/", "\\"):
+                out.append(seg)
+                continue
+            text, n = mask(seg, path=True)
+            out.append(text)
+            total += n
+        return "".join(out), total
     except Exception:                           # noqa: BLE001
         return None, 0
 

@@ -33,6 +33,47 @@ PROBES = [
 ]
 
 
+# Part B: Amos Sayer's second-pass shapes (waypoint_credential_probes_v2.py, 2026-10-16), the new regression floor.
+# They were written after reading the v0.2 rules, so they are the shapes a name list would miss. The 40-hex string in
+# prose with no name beside it is left out on purpose: no name-based rule can know it, and he did not score it.
+NEW = [
+    ("camel_accessToken", '{"accessToken": "%s"}', "Zq81xKd02LmPw93TnVb7RcYe45HsUg"),
+    ("camel_clientSecret", "clientSecret = {}", "Mn47PqRs91TuVw23XyZa65BcDe08Fg"),
+    ("pgpassword_env", "export PGPASSWORD={}", "pgHunter2Fake9Value"),
+    ("azure_accountkey", "DefaultEndpointsProtocol=https;AccountName=x;AccountKey={};EndpointSuffix=core.windows.net",
+     "dGhpcyBpcyBhIGZha2UgYWNjb3VudCBrZXkgdmFsdWU9PQ"),
+    ("passphrase_word", "passphrase: {}", "violet-anchor-lantern-42"),
+    ("pass_word", "pass = {}", "Fake9Pass!Value77"),
+    ("secretkey_nosep", "secretkey: {}", "Kd83Jf02Lq91Mn47Pz65"),
+    ("camel_privateKey", "privateKey: {}", "Pk55Qr82St19Uv03Wx66"),
+    ("camel_accessKey", "accessKey: {}", "Ak55Qr82St19Uv03Wx66"),
+    ("passphrase_quoted_spaces", 'password: "%s"', "correct horse battery staple extra"),
+    ("single_quoted_spaces", "password: '%s'", "correct horse battery staple extra"),
+    ("escaped_quote_inside", 'password: "%s"', 'Ab12\\"CdEf34GhIj56KlMn'),
+    ("unterminated_quote", 'password: "{}', "Un7erm1natedFakeValue99"),
+    ("password_with_semicolon", "password={}", "Ab12;CdEf34;GhIj56"),
+    ("password_with_comma", "password: {}", "Ab12,CdEf34,GhIj56"),
+    ("password_with_apostrophe", "password: {}", "Ab12'CdEf34'GhIj56"),
+    ("password_is_words", "the password is {} so keep it", "Tr0ubl3sFake77Word"),
+    ("cli_flag_space", "mysql --password {} --host db", "Cl1Fl4gFakeValue88"),
+    ("cli_flag_api_key", "tool --api-key {} --verbose", "Ap1K3yFlagFakeValue11"),
+    ("curl_basic_flag", "curl -u deploy:{} https://example.test", "Cu7lBasicFakeValue22"),
+    ("authorization_basic", "Authorization: Basic {}", "dXNlcm5hbWU6ZmFrZXBhc3N3b3JkMTIz"),
+    ("authorization_token_scheme", "Authorization: Token {}", "Tk55SchemeFakeValue33"),
+    ("password_arrow", "'password' => '{}'", "Ph9Arrow11FakeValue"),
+    ("yaml_folded", "password: >-\n  {}", "Yaml88FoldedFakeValue"),
+    ("npm_token", "//registry.example.test/:_authToken={}", "npm_" + "aB3dE6gH9jK2mN5pQ8sT1vW4yZ7cF0hJ3lN6"),
+    ("huggingface", "token {} end", "hf_" + "aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789"),
+    ("sendgrid", "key {} end", "SG." + "aBcDeFgHiJkLmNoPqRsTuV.wXyZ0123456789aBcDeFgHiJkLmNoPqRsTuV"),
+    ("pypi", "token {} end", "pypi-AgEIcHlwaS5vcmc" + "aBcDeFgHiJkLmNoPqRsT0123456789"),
+    ("shopify", "token {} end", "shpat_" + "aBcDeFgHiJkLmNoPqRsT0123456789ab"),
+    ("google_oauth", "token {} end", "ya29." + "a0AfH6SMBaBcDeFgHiJkLmNoPqRsT0123456789"),
+    ("stripe_webhook", "secret {} end", "whsec_" + "aBcDeFgHiJkLmNoPqRsT0123456789ab"),
+    ("anthropic_style", "key {} end", "sk-ant-api03-" + "aBcDeFgHiJkLmNoPqRsT0123456789-aBcDeFgHiJkLm"),
+    ("tailscale_key", "key {} end", "tskey-" + "auth-kAbCdEfGhIjKlMnOpQrStUv-aBcDeFgHiJkLmNoPqRsT"),
+]
+
+
 def survives(secret, out):
     return any(secret[i:i + 10] in out for i in range(0, max(1, len(secret) - 9)))
 
@@ -101,3 +142,56 @@ def test_photos_are_left_out_for_every_seat_and_no_filter_brings_them_back():
     for q in ("thing", "thing root:photos", "thing ext:heic"):
         env = wp.search(q, 5, ask)
         assert all(h["id"] == "n" for h in env["hits"]) and env["removed"]["left_out_for_everyone"] == 2
+
+
+@pytest.mark.parametrize("pid,tpl,secret", NEW, ids=[p[0] for p in NEW])
+def test_second_pass_shapes_are_masked_in_the_snippet(pid, tpl, secret):
+    snip, m = wp.snippet_of("file: x\npath: y\n\nsome prose before. " + fill(tpl, secret) + " and some prose after.")
+    assert not survives(secret, snip), pid
+    assert m >= 1 and wp.MASK in snip
+
+
+def test_the_prose_around_a_second_pass_shape_stays():
+    # an unterminated quote cannot say where the value ends, so it masks to the end of the line by design
+    rows = [r for r in NEW if r[0] != "unterminated_quote"]
+    text = "\n".join("line %d: %s and plain words" % (i, fill(t, s)) for i, (_, t, s) in enumerate(rows))
+    out, m = wp.mask(text)
+    assert [p for p, t, s in rows if survives(s, out)] == [] and m >= len(rows)
+    assert out.count("and plain words") == len(rows)
+
+
+def test_the_wider_name_rule_still_leaves_ordinary_words_alone():
+    for s in ("the monkey: sat on the donkey; a turkey = dinner",
+              "author: Silas Reeve and authority: the steward",
+              "mkdir -p out/dir && ls -p out and pinned to the board",
+              "tokenised the text: 4 parts; sigma = 3; a pinch of salt"):
+        out, m = wp.mask(s)
+        # the words after a colon may be masked where a credential WORD is in the name (tokenised: ...), and that is the
+        # intended over-mask; what must hold is that the names that are not credential words are not touched.
+        if "tokenised" not in s:
+            assert (out, m) == (s, 0), s
+
+
+@pytest.mark.parametrize("path,secret,tail", [
+    ("notes/accessToken_Zq81xKd02LmPw93TnVb7.md", "Zq81xKd02LmPw93TnVb7", ".md"),
+    ("backup/PGPASSWORD=pgHunter2Fake9Value/x.md", "pgHunter2Fake9Value", "/x.md"),
+    ("notes/password=Hunter2FakeValue.md", "Hunter2FakeValue", ""),
+])
+def test_credential_shaped_path_segments_are_masked_and_the_rest_of_the_path_stays(path, secret, tail):
+    out, n = wp.path_of(path)
+    assert not survives(secret, out) and n >= 1 and out.startswith(path.split("/")[0] + "/")
+    assert out.endswith(tail)                   # a value stops at its "/", it does not eat the folders after it
+
+
+def test_an_ordinary_file_name_with_a_credential_word_in_it_is_not_hidden():
+    for p in ("notes/token-economics-notes.md", "work/secret-santa.md", "notes/pinned-sigma.md"):
+        assert wp.path_of(p) == (p, 0), p
+
+
+@pytest.mark.parametrize("root,rel", [
+    ("vault", "x/y.avif"), ("vault", "x/y.CR2"), ("vault", "x/y.NEF"), ("vault", "x/y.ARW"), ("vault", "x/y.jfif"),
+    ("vault", "x/y.avi"), ("vault", "x/y.mkv"), ("vault", "x/y.m4v"), ("Camera Roll", "x/y.md"), ("DCIM", "x/y.md"),
+    ("pictures", "x/y.md"), ("vault", "phone/DCIM/100APPLE/y.md"),
+])
+def test_more_photo_shapes_are_left_out(root, rel):
+    assert wp.left_out({"source_root": root, "rel_path": rel})
