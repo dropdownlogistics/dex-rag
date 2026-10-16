@@ -32,9 +32,12 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-import dex_photo_secret_scan as secrets
+try:
+    import dex_photo_secret_scan as secrets     # the photo scanner's prefix rules, used as one more source of spans
+except Exception:                               # noqa: BLE001 -- a missing scanner withholds every snippet (below)
+    secrets = None
 
-VERSION = "waypoint/0.1"
+VERSION = "waypoint/0.2"
 DEFAULT_K, MAX_K = 8, 25
 OVERFETCH, MAX_CANDIDATES = 8, 200          # candidates looked at = min(k * OVERFETCH, MAX_CANDIDATES) when a filter is set
 SNIPPET_CHARS = 400
@@ -47,6 +50,68 @@ LATER = ("repo", "kind", "from", "to", "after", "before", "wt", "is")       # in
 TOKEN = re.compile(r'(-?)(?:(\w+):)?(?:"([^"]*)"|(\S+))')
 IDENT = re.compile(r"^(?:[A-Z][A-Z0-9]{1,9}-(?:[A-Z0-9]+-)*\d+[A-Z]?|[0-9a-f]{7,40})$")
 HEADER = re.compile(r"\Afile: .*\npath: .*\n\n")
+
+# ---- Text credential masking (v0.2) ---------------------------------------------------------------------
+# Amos Sayer's pre-install audit (surface-audit/work/WAYPOINT-AUDIT/WAYPOINT_PHASE1_AUDIT_v0.1.md, section 1):
+# the photo scanner masked the KEYWORD and left the value, and knew only a short prefix list. These rules mask
+# the VALUE. They over-mask on purpose: a snippet that hides a harmless "key: value" costs a seat one file open;
+# a snippet that shows a live credential cannot be taken back.
+_NAME = (r"(?<![A-Za-z0-9])(?:[A-Za-z0-9]+[_.-])*"
+         r"(?:api[_-]?key|key|secret|token|passwd|password|pwd|passcode|pin|sig|signature|credentials?|auth|authorization)"
+         r"(?![A-Za-z0-9])")
+TEXT_RULES = (
+    # a name, an optional closing quote, ":" or "=", then the value (which may be on the next line)
+    ("assignment", re.compile(_NAME + r"""["']?[ \t]*[:=][ \t]*(?:\r?\n[ \t]*)?["']?([^\s"';,]+)""", re.I)),
+    ("bearer", re.compile(r"(?i)\bbearer[ \t]+([A-Za-z0-9\-._~+/]+=*)")),
+    ("url_userinfo", re.compile(r"(?i)\b[a-z][a-z0-9+.-]*://[^/\s:@]+:([^/\s@]+)@")),
+    ("pem", re.compile(r"(-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----.*?(?:-----END [A-Z0-9 ]*PRIVATE KEY-----|\Z))", re.S)),
+    ("jwt", re.compile(r"\b(eyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,})")),
+    ("prefix", re.compile(r"\b((?:AKIA|ASIA)[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{20,}|(?:sk|rk|pk)_(?:live|test)_[0-9A-Za-z]{10,}"
+                          r"|xox[abposr]-[0-9A-Za-z-]{10,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_\w{20,}|glpat-[\w-]{20,}"
+                          r"|sk-[A-Za-z0-9_-]{20,})")),
+)
+
+
+def credential_spans(text):
+    """Every (start, end) to mask in `text`, from the text rules and the photo scanner's two credential rules.
+    Raises if the photo scanner is missing, so callers fail closed."""
+    if secrets is None:
+        raise RuntimeError("the credential scanner is missing")
+    spans = [(m.start(1), m.end(1)) for _, rx in TEXT_RULES for m in rx.finditer(text)]
+    spans += [(a, b) for rule, a, b in secrets.spots(text) if rule in CREDENTIAL_RULES]
+    return sorted(spans)
+
+
+def mask(text):
+    """(text with every credential span replaced by MASK, how many spans were masked). Overlaps merge."""
+    out, at, masked = [], 0, 0
+    for a, b in credential_spans(text):
+        if b <= at:
+            continue                            # inside a span already masked
+        if a < at:
+            at = b                              # overlaps the last mask: widen it, no second marker
+            continue
+        out.append(text[at:a])
+        out.append(MASK)
+        masked += 1
+        at = b
+    out.append(text[at:])
+    return "".join(out), masked
+
+
+# ---- Left out for every seat, at query time (audit section 2) --------------------------------------------
+# Hidden photos are kept out by the build; this is the second lock, so a store rebuilt with photos in it still
+# serves none of them. Nothing here is per seat and nothing here can be undone by a filter.
+LEFT_OUT_ROOTS = ("photos", "photo-album", "album", "icloud-photos")
+LEFT_OUT_EXTS = ("jpg", "jpeg", "png", "heic", "heif", "gif", "webp", "tif", "tiff", "bmp", "dng", "raw", "mov", "mp4")
+
+
+def left_out(chunk):
+    root = str(chunk.get("source_root", "")).lower()
+    path = str(chunk.get("rel_path", "")).replace("\\", "/").lower()
+    name = path.rsplit("/", 1)[-1]
+    ext = name.rsplit(".", 1)[-1] if "." in name else ""
+    return root in LEFT_OUT_ROOTS or ext in LEFT_OUT_EXTS
 
 
 def parse(query):
@@ -106,19 +171,24 @@ def denied(chunk, deny):
 
 
 def snippet_of(text):
-    """(snippet, how many possible credentials were masked). The embed header is dropped first."""
+    """(snippet, how many possible credentials were masked). The embed header is dropped first.
+    Masking runs on the whole chunk before it is cut, so a secret cannot straddle the cut. If masking
+    fails for any reason the snippet is None: no text is better than unchecked text."""
     body = HEADER.sub("", text or "", count=1)
-    spans = sorted((a, b) for rule, a, b in secrets.spots(body) if rule in CREDENTIAL_RULES)
-    out, at, masked = [], 0, 0
-    for a, b in spans:
-        if a < at:
-            continue
-        out.append(body[at:a])
-        out.append(MASK)
-        at, masked = b, masked + 1
-    out.append(body[at:])
-    s = " ".join("".join(out).split())
+    try:
+        masked_body, masked = mask(body)
+    except Exception:                           # noqa: BLE001 -- fail closed, counted by the caller
+        return None, 0
+    s = " ".join(masked_body.split())
     return (s[:SNIPPET_CHARS] + (" ..." if len(s) > SNIPPET_CHARS else "")), masked
+
+
+def path_of(path):
+    """(the path with any credential-shaped part masked, how many). None if masking fails."""
+    try:
+        return mask(str(path or ""))
+    except Exception:                           # noqa: BLE001
+        return None, 0
 
 
 def search(query, k, ask, deny=(), seat=None, log_path=None, now=None):
@@ -136,8 +206,11 @@ def search(query, k, ask, deny=(), seat=None, log_path=None, now=None):
     narrowing = any(parsed["filters"].values()) or any(parsed["exclude_filters"].values()) or bool(deny)
     looked = min(k * OVERFETCH, MAX_CANDIDATES) if narrowing else k
     chunks, rec = ask(parsed["meaning"], looked)
-    hits, removed, masked = [], {"filters": 0, "denied_for_seat": 0}, 0
+    hits, removed, masked, withheld = [], {"filters": 0, "denied_for_seat": 0, "left_out_for_everyone": 0}, 0, 0
     for rank, c in enumerate(chunks, 1):
+        if left_out(c):
+            removed["left_out_for_everyone"] += 1
+            continue
         if denied(c, deny):
             removed["denied_for_seat"] += 1
             continue
@@ -147,8 +220,12 @@ def search(query, k, ask, deny=(), seat=None, log_path=None, now=None):
         if len(hits) == k:
             continue
         snip, m = snippet_of(c.get("text", ""))
-        masked += m
-        hits.append({"id": c.get("id"), "root": c.get("source_root"), "path": c.get("rel_path"),
+        path, pm = path_of(c.get("rel_path"))
+        if snip is None or path is None:
+            withheld += 1
+            continue
+        masked += m + pm
+        hits.append({"id": c.get("id"), "root": c.get("source_root"), "path": path,
                      "chunk": [int(c.get("chunk_index", 0)) + 1, c.get("total_chunks")], "lines": None,
                      "snippet": snip, "score": {"meaning": round(float(c["score"]), 4), "words": None},
                      "rank_before_filters": rank})
@@ -160,10 +237,12 @@ def search(query, k, ask, deny=(), seat=None, log_path=None, now=None):
         limits.append(f"the shortlist setting was measured for the top {RULED_DEPTH}; results below rank {RULED_DEPTH} can be missing a closer match")
     if narrowing and len(hits) < k:
         limits.append(f"filters were applied to the best {looked} candidates and left {len(hits)}; a narrower match may exist further down")
+    if withheld:
+        limits.append(f"{withheld} hit(s) withheld because the credential check could not run on them")
     env = {"version": VERSION, "query": parsed, "not_applied": not_applied, "hits": hits,
            "settings": {"k": k, "candidates_looked_at": looked, "rows": rec.get("rows"), "prefix": rec.get("prefix"),
                         "shortlist": rec.get("shortlist"), "ranking": "meaning"},
-           "removed": removed, "credentials_masked": masked, "limits": limits,
+           "removed": removed, "credentials_masked": masked, "withheld_unchecked": withheld, "limits": limits,
            "ms": round((time.perf_counter() - t0) * 1000, 1)}
     if log_path:
         roots = {}
@@ -171,7 +250,7 @@ def search(query, k, ask, deny=(), seat=None, log_path=None, now=None):
             roots[h["root"]] = roots.get(h["root"], 0) + 1
         row = {"at": (now or datetime.now(timezone.utc)).strftime("%Y-%m-%dT%H:%M:%SZ"), "tool": "search", "seat": seat,
                "k": k, "looked": looked, "hits": len(hits), "hits_by_root": roots, "removed": removed,
-               "masked": masked, "filters_used": sorted(f for f in FILTERS if parsed["filters"][f] or parsed["exclude_filters"][f]),
+               "masked": masked, "withheld": withheld, "filters_used": sorted(f for f in FILTERS if parsed["filters"][f] or parsed["exclude_filters"][f]),
                "not_applied": len(not_applied), "rows": rec.get("rows"), "prefix": rec.get("prefix"),
                "shortlist": rec.get("shortlist"), "ms": env["ms"]}
         Path(log_path).parent.mkdir(parents=True, exist_ok=True)
