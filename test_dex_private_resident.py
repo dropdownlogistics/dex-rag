@@ -66,6 +66,18 @@ def test_a_store_that_will_not_open_is_failed_and_named(tmp_path):
     assert r.status()["error"].startswith("StoreError")
 
 
+def test_the_query_prefix_reaches_the_embedder_and_bare_stays_bare(tmp_path, monkeypatch):
+    d = make_store(tmp_path)
+    q = np.random.default_rng(3).normal(size=DIM).astype(np.float32)
+    seen = []
+    monkeypatch.setattr(ps, "ollama_embed", lambda question, prefix="": (seen.append(prefix + question), q)[1])
+    for pre, want in ((ps.MXBAI_QUERY_PREFIX, ps.MXBAI_QUERY_PREFIX + "where is it"), ("", "where is it")):
+        r = ps.Resident(d, open_store=lambda: ps.Store(d, prefix=PREFIX, dim=DIM), query_prefix=pre)
+        assert r.start().wait(10) == "ready"
+        r.ask("where is it", 4)
+        assert seen[-1] == want and r.status()["query_prefix"] is bool(pre)
+
+
 def test_start_twice_opens_once(tmp_path):
     d = make_store(tmp_path)
     opened = []

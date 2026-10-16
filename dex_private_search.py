@@ -254,10 +254,14 @@ class Resident:
     or "failed"; ask() raises NotReady in every state but "ready", so a caller can fall back and say why.
     """
 
-    def __init__(self, path, log_path=None, shortlist=SHORTLIST, embed=None, memcheck=None, open_store=None, prefix=PREFIX):
+    def __init__(self, path, log_path=None, shortlist=SHORTLIST, embed=None, memcheck=None, open_store=None, prefix=PREFIX,
+                 query_prefix=""):
         self.path = Path(path)
         self.log_path = Path(log_path) if log_path else self.path / "search-telemetry.jsonl"
         self.shortlist, self.embed, self.memcheck = shortlist, embed, memcheck
+        # The text put in front of every question before it is embedded: "" (bare) or MXBAI_QUERY_PREFIX.
+        # Wren Keeler's v2 re-test (2026-10-16) favoured the prefix; the Operator said yes the same day.
+        self.query_prefix = query_prefix
         self._open = open_store or (lambda: Store(self.path, prefix=prefix, memcheck=self.memcheck))
         self.state, self.error, self.search, self.opened_s = "idle", None, None, None
         self._lock, self._thread = threading.Lock(), None
@@ -276,7 +280,8 @@ class Resident:
         t0 = time.perf_counter()
         try:
             store = self._open()
-            self.search = Search(store, self.log_path, embed=self.embed or (lambda t: ollama_embed(t, "")), shortlist=self.shortlist)
+            self.search = Search(store, self.log_path, embed=self.embed or (lambda t: ollama_embed(t, self.query_prefix)),
+                                 shortlist=self.shortlist)
             self.opened_s = round(time.perf_counter() - t0, 1)
             self.state = "ready"
         except Exception as e:                                  # named, never swallowed: ask() reports it
@@ -300,7 +305,7 @@ class Resident:
     def status(self):
         s = self.search.store if self.search else None
         return {"state": self.state, "error": self.error, "rows": s.n if s else None, "prefix": s.prefix if s else None,
-                "shortlist": self.shortlist, "opened_s": self.opened_s,
+                "shortlist": self.shortlist, "query_prefix": bool(self.query_prefix), "opened_s": self.opened_s,
                 "shortlist_gib": round(s.short.nbytes / 2**30, 2) if s else None}
 
 
