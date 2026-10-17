@@ -70,6 +70,13 @@ NEW = [
     ("google_oauth", "token {} end", "ya29." + "a0AfH6SMBaBcDeFgHiJkLmNoPqRsT0123456789"),
     ("stripe_webhook", "secret {} end", "whsec_" + "aBcDeFgHiJkLmNoPqRsT0123456789ab"),
     ("anthropic_style", "key {} end", "sk-ant-api03-" + "aBcDeFgHiJkLmNoPqRsT0123456789-aBcDeFgHiJkLm"),
+    # third pass (Amos, waypoint_credential_probes_v3_fresh.py): shapes he wrote without showing them first
+    ("pw_short_name", "pw: {}", "Mint-Ocelot-77-Fresh"),
+    ("set_cookie_session", "Set-Cookie: sessionid={}; Path=/", "9fA8sD7fG6hJ5kL4zX3cV2bN1m"),
+    ("cookie_header", "Cookie: {}", "k3Jf9Lm2Qp7Rt5Vw1Xz8Yb4"),
+    ("pat_ado", "AZURE_DEVOPS_EXT_PAT={}", "abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrst"),
+    ("mysql_glued_p", "mysql -u root -p{} appdb", "My5qlGluedFakeValue44"),
+    ("mysqldump_glued_p", "mysqldump -h db.example.test -p{} --all-databases", "Dump5GluedFakeValue55"),
     ("tailscale_key", "key {} end", "tskey-" + "auth-kAbCdEfGhIjKlMnOpQrStUv-aBcDeFgHiJkLmNoPqRsT"),
 ]
 
@@ -195,3 +202,9 @@ def test_an_ordinary_file_name_with_a_credential_word_in_it_is_not_hidden():
 ])
 def test_more_photo_shapes_are_left_out(root, rel):
     assert wp.left_out({"source_root": root, "rel_path": rel})
+
+
+def test_a_bare_p_flag_is_left_alone_and_only_the_glued_mysql_form_is_masked():
+    for s in ("mkdir -p out/dir/sub", "docker run -p 8080:80 image", "mysql -p", "mysql -u root -p appdb",
+              "mysql -h db -P3306 appdb", "ls -p /tmp and rsync -avp a b"):
+        assert wp.mask(s) == (s, 0), s

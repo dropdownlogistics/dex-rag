@@ -37,7 +37,7 @@ try:
 except Exception:                               # noqa: BLE001 -- a missing scanner withholds every snippet (below)
     secrets = None
 
-VERSION = "waypoint/0.3"
+VERSION = "waypoint/0.3.1"
 DEFAULT_K, MAX_K = 8, 25
 OVERFETCH, MAX_CANDIDATES = 8, 200          # candidates looked at = min(k * OVERFETCH, MAX_CANDIDATES) when a filter is set
 SNIPPET_CHARS = 400
@@ -65,7 +65,7 @@ HEADER = re.compile(r"\Afile: .*\npath: .*\n\n")
 #     ":" "=" "is" and a folded-YAML next line all lead into a value ("=>" works as "=" then a marker); `--password X` is its own rule.
 #  C. the prefix list grew by seven families. It is a floor: a list is always behind.
 _SUB = (r"token|secret|passw|pwd|passphrase|passcode|accountkey|apikey|privatekey|credential|authoriz|authent")
-_WORD = r"api[_-]key|key|pin|sig|signature|pass|auth"
+_WORD = r"api[_-]key|key|pin|sig|signature|pass|auth|pw|pat|sid|sess(?:ion)?[_-]?id|cookie"     # v0.3.1: Amos's third pass
 _NAME = (r"(?<![A-Za-z0-9_.\-])[A-Za-z0-9_.\-]*?(?:"
          r"(?:" + _SUB + r")[A-Za-z0-9_.\-]*"
          r"|(?<![A-Za-z0-9])(?:" + _WORD + r")(?![A-Za-z0-9])(?:[_.\-][A-Za-z0-9_.\-]*)?"
@@ -80,6 +80,9 @@ TEXT_RULES = (
                               r"""(?:\r?\n[ \t]*)?""" + _VALUE, re.I)),
     # --password X, --api-key X (a long option with its value after a space)
     ("long_option", re.compile(r"(?<![\w-])--[\w-]*?(?:" + _SUB + r"|api-key|pass|auth(?!or))[\w-]*[ \t]+(?!-)" + _VALUE, re.I)),
+    # mysql -u root -pSECRET db (the value glued to a lower-case -p, only on a mysql-family command line; a bare -p
+    # elsewhere is mkdir -p and docker -p, which are not credentials)
+    ("mysql_glued_p", re.compile(r"(?i)\b(?:mysql|mysqldump|mysqladmin|mariadb(?:-dump)?)\b[^\n]*?(?<!\S)(?-i:-p)(\S+)")),
     # curl -u user:password
     ("basic_flag", re.compile(r"(?<!\S)-u[ \t]+[^\s:]+:(\S+)")),
     ("bearer", re.compile(r"(?i)\bbearer[ \t]+([A-Za-z0-9\-._~+/]+=*)")),
